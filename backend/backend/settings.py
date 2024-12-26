@@ -146,3 +146,5 @@ STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 STATICFILES_STORAGE = "django.contrib.staticfiles.storage.ManifestStaticFilesStorage"
 
 ALLOWED_HOSTS = [ 'localhost','maki-backend-production.up.railway.app']
+
+CSRF_TRUSTED_ORIGINS = ['http://*','https://maki-backend-production.up.railway.app']
