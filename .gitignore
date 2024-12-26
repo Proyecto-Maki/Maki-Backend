@@ -6,5 +6,9 @@ api/__pycache__
 api/migrations/__pycache__
 backend/api/__pycache__
 backend/api/migrations/__pycache__
-backend/backend/__pycache__/
+__pycache__
+
 staticfiles
+.venv
+backend/backend/__pycache__/__init__.cpython-313.pyc
+backend/backend/__pycache__/settings.cpython-313.pyc
