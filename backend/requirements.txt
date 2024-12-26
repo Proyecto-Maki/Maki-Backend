@@ -7,6 +7,7 @@ PyJWT
 pytz
 sqlparse
 psycopg2-binary
+psycopg2
 python-dotenv
 gunicorn
 whitenoise
