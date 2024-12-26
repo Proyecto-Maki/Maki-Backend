@@ -138,3 +138,5 @@ CORS_ALLOWS_CREDENTIALS = True
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, "api/static"),
 ]
+
+ALLOWED_HOSTS = [ 'localhost','maki-backend-production.up.railway.app']
