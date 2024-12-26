@@ -7,7 +7,7 @@ djangorestframework
 djangorestframework-simplejwt
 PyJWT
 pytz
-#setuptools
+drf-yasg
 sqlparse
 psycopg2-binary
 psycopg2
