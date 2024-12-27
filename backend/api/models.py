@@ -19,6 +19,8 @@ class User(AbstractUser):
     #     if not self.pk:
     #         self.role = self.base_role
     #         return super().save(*args, **kwargs)
+    first_name = None
+    last_name = None
     is_cliente = models.BooleanField(default=False)
     is_fundacion = models.BooleanField(default=False)
     direccion = models.CharField(max_length=255, null=True, blank=True)
