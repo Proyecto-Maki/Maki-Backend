@@ -3,5 +3,7 @@ from api import views
 
 
 urlpatterns = [
-    path('', views.hola, name='hola')
+    #path('', views.hola, name='hola'),
+    path('registro/', views.registro, name='registro'),
+
 ]
