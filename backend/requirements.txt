@@ -10,6 +10,7 @@ pytz
 drf-yasg
 sqlparse
 psycopg2-binary
+psycopg-binary
 psycopg2
 psycopg
 python-dotenv
