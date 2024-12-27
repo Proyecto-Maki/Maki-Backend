@@ -28,7 +28,7 @@ class Cliente(AbstractUser):
     )
 
     def __str__(self):
-        return self.username
+        return f'Cliente: {self.username}'
 
     def save(self, *args, **kwargs):
         if not self.pk and not self.password:
@@ -100,7 +100,7 @@ class Fundacion(AbstractUser):
     )
 
     def __str__(self):
-        return self.username
+        return f'Fundacion: {self.username}'
 
     def save(self, *args, **kwargs):
         if not self.pk and not self.password:
