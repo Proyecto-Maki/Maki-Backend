@@ -1,167 +1,265 @@
-from django.contrib.auth.models import AbstractUser
+from django.conf import settings
+from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.db import models
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+from rest_framework.authtoken.models import Token
 
-class Cliente(AbstractUser):
+
+
+class User(AbstractUser):
+    # class Role(models.TextChoices):
+    #     CLIENTE = 'CLIENTE', 'Cliente'
+    #     FUNDACION = 'FUNDACION', 'Fundacion'
+    #     ADMIN = 'ADMIN', 'Admin'
+
+    # base_role = Role.ADMIN
+    # role = models.CharField(max_length=50, choices=Role.choices)
+    # def save(self, *args, **kwargs):
+    #     if not self.pk:
+    #         self.role = self.base_role
+    #         return super().save(*args, **kwargs)
+    is_cliente = models.BooleanField(default=False)
+    is_fundacion = models.BooleanField(default=False)
     direccion = models.CharField(max_length=255, null=True, blank=True)
     telefono = models.CharField(max_length=20, null=True, blank=True)
-    saldo = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
-    password = models.CharField(max_length=128, null=True, blank=True)
-    email = models.EmailField(unique=True)
-    username = models.CharField(max_length=150, unique=True, default='default_username')  # Agrega un valor predeterminado aquí
-
-    REQUIRED_FIELDS = ['email']
-    #USERNAME_FIELD = 'username'
-    USERNAME_FIELD = 'email'
-    EMAIL_FIELD = 'email'
-
-    groups = models.ManyToManyField(
-        'auth.Group',
-        related_name='cliente_set',
-        blank=True,
-        help_text='The groups this user belongs to.',
-        verbose_name='groups',
-    )
-    user_permissions = models.ManyToManyField(
-        'auth.Permission',
-        related_name='cliente_user_set',
-        blank=True,
-        help_text='Specific permissions for this user.',
-        verbose_name='user permissions',
-    )
+    saldo = models.DecimalField(max_digits=7, decimal_places=2, default=0.00)
 
     def __str__(self):
-        return f'Cliente: {self.username}'
+        return self.username
+    
+@receiver(post_save, sender=settings.AUTH_USER_MODEL)
+def create_auth_token(sender, instance=None, created=False, **kwargs):
+    if created:
+        Token.objects.create(user=instance)
 
-    def save(self, *args, **kwargs):
-        if not self.pk and not self.password:
-            self.set_password('default_password')
-        super().save(*args, **kwargs)
-
-class Mascota(models.Model):
-    nombre = models.CharField(max_length=255)
-    tipo = models.CharField(max_length=255)
-    raza = models.CharField(max_length=255, null=True, blank=True)
-    edad = models.IntegerField(null=True, blank=True)
-    estado_salud = models.CharField(max_length=255, null=True, blank=True)
-    cliente = models.ForeignKey(Cliente, on_delete=models.SET_NULL, null=True, blank=True)
-    fundacion = models.ForeignKey('Fundacion', on_delete=models.CASCADE, null=True, blank=True)
-
+class Cliente(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    primer_nombre = models.CharField(max_length=255, null=True, blank=True)
+    segundo_nombre = models.CharField(max_length=255, null=True, blank=True)
+    primer_apellido = models.CharField(max_length=255, null=True, blank=True)
+    segundo_apellido = models.CharField(max_length=255, null=True, blank=True)
+    # direccion = models.CharField(max_length=255, null=True, blank=True)
+    # telefono = models.CharField(max_length=20, null=True, blank=True)
+    # saldo = models.DecimalField(max_digits=7, decimal_places=2, default=0.00)
     def __str__(self):
-        return self.nombre
+        return self.user.username
 
-class Producto(models.Model):
-    nombre = models.CharField(max_length=255)
+
+class Fundacion(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    nombre = models.CharField(max_length=255, null=True, blank=True)
+    # direccion = models.CharField(max_length=255, null=True, blank=True)
+    # telefono = models.CharField(max_length=20, null=True, blank=True)
+    # saldo = models.DecimalField(max_digits=7, decimal_places=2, default=0.00)
+    nit = models.CharField(max_length=255, null=True, blank=True)
     descripcion = models.TextField(null=True, blank=True)
-    precio = models.DecimalField(max_digits=10, decimal_places=2)
-    stock = models.IntegerField(default=0)
+    premium = models.BooleanField(default=False)
 
     def __str__(self):
-        return self.nombre
+        return self.user.username
 
-class Resena(models.Model):
-    contenido = models.TextField()
-    fecha = models.DateField(auto_now_add=True)
-    likes = models.IntegerField(default=0)
-    calificacion = models.IntegerField()
-    cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE)
-    producto = models.ForeignKey(Producto, on_delete=models.CASCADE)
+# class ClienteManager(BaseUserManager):
+#     def get_queryset(self, *args, **kwargs):
+#         results = super().get_queryset(*args, **kwargs)
+#         return results.filter(role=User.Role.CLIENTE)
 
-    class Meta:
-        constraints = [
-            models.CheckConstraint(
-                check=models.Q(calificacion__gte=1, calificacion__lte=5),
-                name="calificacion_rango"
-            )
-        ]
+# class Cliente(User):
+#     base_role = User.Role.CLIENTE
+#     cliente = ClienteManager()
+#     class Meta:
+#         proxy = True
 
-    def __str__(self):
-        return f'Reseña de {self.cliente} para {self.producto}'
+#     def welcome(self):
+#         return "Solo para clientes"
+    
+# @receiver(post_save, sender=Cliente)
+# def create_user_profile(sender, instance, created, **kwargs):
+#     if created and instance.role == User.Role.CLIENTE:
+#         ClienteProfile.objects.create(user=instance)
+# class ClienteProfile(models.Model):
+#     user = models.OneToOneField(User, on_delete=models.CASCADE)
+#     cliente_id = models.AutoField(primary_key=True)
+#     direccion = models.CharField(max_length=255, null=True, blank=True)
+#     telefono = models.CharField(max_length=20, null=True, blank=True)
+#     saldo = models.DecimalField(max_digits=7, decimal_places=2, default=0.00)
+#     email = models.EmailField(unique=True)
 
-class Fundacion(AbstractUser):
-    direccion = models.CharField(max_length=255, null=True, blank=True)
-    telefono = models.CharField(max_length=20, null=True, blank=True)
-    email = models.EmailField(unique=True)
-    saldo = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+# class FundacionManager(BaseUserManager):
+#     def get_queryset(self, *args, **kwargs):
+#         results = super().get_queryset(*args, **kwargs)
+#         return results.filter(role=User.Role.FUNDACION)
 
-    REQUIRED_FIELDS = ['email']
-    # USERNAME_FIELD = 'username'
-    USERNAME_FIELD = 'email'
-    EMAIL_FIELD = 'email'
+# class Fundacion(User):
+#     base_role = User.Role.FUNDACION
+#     fundacion = FundacionManager()
+#     class Meta:
+#         proxy = True
 
-    groups = models.ManyToManyField(
-        'auth.Group',
-        related_name='fundacion_set',  # Cambia el related_name
-        blank=True,
-        help_text='The groups this user belongs to.',
-        verbose_name='groups',
-    )
-    user_permissions = models.ManyToManyField(
-        'auth.Permission',
-        related_name='fundacion_user_set',  # Cambia el related_name
-        blank=True,
-        help_text='Specific permissions for this user.',
-        verbose_name='user permissions',
-    )
+#     def welcome(self):
+#         return "Solo para fundaciones"
 
-    def __str__(self):
-        return f'Fundacion: {self.username}'
+# class Cliente(AbstractUser):
+#     direccion = models.CharField(max_length=255, null=True, blank=True)
+#     telefono = models.CharField(max_length=20, null=True, blank=True)
+#     saldo = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+#     password = models.CharField(max_length=128, null=True, blank=True)
+#     email = models.EmailField(unique=True)
+#     username = models.CharField(max_length=150, unique=True, default='default_username')  # Agrega un valor predeterminado aquí
 
-    def save(self, *args, **kwargs):
-        if not self.pk and not self.password:
-            self.set_password('default_password')  # Define un valor predeterminado aquí
-        super().save(*args, **kwargs)
+#     REQUIRED_FIELDS = ['email']
+#     #USERNAME_FIELD = 'username'
+#     USERNAME_FIELD = 'email'
+#     EMAIL_FIELD = 'email'
 
-class PublicacionAdopcion(models.Model):
-    titulo = models.CharField(max_length=255)
-    descripcion = models.TextField(null=True, blank=True)
-    fecha = models.DateField(auto_now_add=True)
-    fundacion = models.ForeignKey(Fundacion, on_delete=models.CASCADE)
-    mascota = models.ForeignKey(Mascota, on_delete=models.CASCADE)
+#     groups = models.ManyToManyField(
+#         'auth.Group',
+#         related_name='cliente_set',
+#         blank=True,
+#         help_text='The groups this user belongs to.',
+#         verbose_name='groups',
+#     )
+#     user_permissions = models.ManyToManyField(
+#         'auth.Permission',
+#         related_name='cliente_user_set',
+#         blank=True,
+#         help_text='Specific permissions for this user.',
+#         verbose_name='user permissions',
+#     )
 
-    def __str__(self):
-        return self.titulo
+#     def __str__(self):
+#         return f'Cliente: {self.username}'
 
-class Pedido(models.Model):
-    fecha = models.DateField(auto_now_add=True)
-    total = models.DecimalField(max_digits=10, decimal_places=2)
-    cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE, null=True, blank=True)
-    fundacion = models.ForeignKey(Fundacion, on_delete=models.CASCADE, null=True, blank=True)
+#     def save(self, *args, **kwargs):
+#         if not self.pk and not self.password:
+#             self.set_password('default_password')
+#         super().save(*args, **kwargs)
 
-    class Meta:
-        constraints = [
-            models.CheckConstraint(
-                check=models.Q(cliente__isnull=False) | models.Q(fundacion__isnull=False),
-                name="cliente_o_fundacion"
-            )
-        ]
+# class Mascota(models.Model):
+#     nombre = models.CharField(max_length=255)
+#     tipo = models.CharField(max_length=255)
+#     raza = models.CharField(max_length=255, null=True, blank=True)
+#     edad = models.IntegerField(null=True, blank=True)
+#     estado_salud = models.CharField(max_length=255, null=True, blank=True)
+#     cliente = models.ForeignKey(Cliente, on_delete=models.SET_NULL, null=True, blank=True)
+#     fundacion = models.ForeignKey('Fundacion', on_delete=models.CASCADE, null=True, blank=True)
 
-    def __str__(self):
-        return f'Pedido {self.id}'
+#     def __str__(self):
+#         return self.nombre
 
-class PedidoProducto(models.Model):
-    pedido = models.ForeignKey(Pedido, on_delete=models.CASCADE)
-    producto = models.ForeignKey(Producto, on_delete=models.CASCADE)
-    cantidad = models.IntegerField()
-    precio_unitario = models.DecimalField(max_digits=10, decimal_places=2)
+# class Producto(models.Model):
+#     nombre = models.CharField(max_length=255)
+#     descripcion = models.TextField(null=True, blank=True)
+#     precio = models.DecimalField(max_digits=10, decimal_places=2)
+#     stock = models.IntegerField(default=0)
 
-    def __str__(self):
-        return f'{self.cantidad} x {self.producto}'
+#     def __str__(self):
+#         return self.nombre
 
-class Cuidador(models.Model):
-    nombre = models.CharField(max_length=255)
-    correo = models.EmailField(unique=True)
-    telefono = models.CharField(max_length=20, null=True, blank=True)
+# class Resena(models.Model):
+#     contenido = models.TextField()
+#     fecha = models.DateField(auto_now_add=True)
+#     likes = models.IntegerField(default=0)
+#     calificacion = models.IntegerField()
+#     cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE)
+#     producto = models.ForeignKey(Producto, on_delete=models.CASCADE)
 
-    def __str__(self):
-        return self.nombre
+#     class Meta:
+#         constraints = [
+#             models.CheckConstraint(
+#                 check=models.Q(calificacion__gte=1, calificacion__lte=5),
+#                 name="calificacion_rango"
+#             )
+#         ]
 
-class SolicitudCuidado(models.Model):
-    fecha_inicio = models.DateField()
-    fecha_fin = models.DateField()
-    estado = models.CharField(max_length=255)
-    cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE)
-    cuidador = models.ForeignKey(Cuidador, on_delete=models.CASCADE)
-    mascota = models.ForeignKey(Mascota, on_delete=models.CASCADE)
+#     def __str__(self):
+#         return f'Reseña de {self.cliente} para {self.producto}'
 
-    def __str__(self):
-        return f'Solicitud de {self.cliente} para {self.mascota}'
+# class Fundacion(AbstractUser):
+#     direccion = models.CharField(max_length=255, null=True, blank=True)
+#     telefono = models.CharField(max_length=20, null=True, blank=True)
+#     email = models.EmailField(unique=True)
+#     saldo = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+
+#     REQUIRED_FIELDS = ['email']
+#     # USERNAME_FIELD = 'username'
+#     USERNAME_FIELD = 'email'
+#     EMAIL_FIELD = 'email'
+
+#     groups = models.ManyToManyField(
+#         'auth.Group',
+#         related_name='fundacion_set',  # Cambia el related_name
+#         blank=True,
+#         help_text='The groups this user belongs to.',
+#         verbose_name='groups',
+#     )
+#     user_permissions = models.ManyToManyField(
+#         'auth.Permission',
+#         related_name='fundacion_user_set',  # Cambia el related_name
+#         blank=True,
+#         help_text='Specific permissions for this user.',
+#         verbose_name='user permissions',
+#     )
+
+#     def __str__(self):
+#         return f'Fundacion: {self.username}'
+
+#     def save(self, *args, **kwargs):
+#         if not self.pk and not self.password:
+#             self.set_password('default_password')  # Define un valor predeterminado aquí
+#         super().save(*args, **kwargs)
+
+# class PublicacionAdopcion(models.Model):
+#     titulo = models.CharField(max_length=255)
+#     descripcion = models.TextField(null=True, blank=True)
+#     fecha = models.DateField(auto_now_add=True)
+#     fundacion = models.ForeignKey(Fundacion, on_delete=models.CASCADE)
+#     mascota = models.ForeignKey(Mascota, on_delete=models.CASCADE)
+
+#     def __str__(self):
+#         return self.titulo
+
+# class Pedido(models.Model):
+#     fecha = models.DateField(auto_now_add=True)
+#     total = models.DecimalField(max_digits=10, decimal_places=2)
+#     cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE, null=True, blank=True)
+#     fundacion = models.ForeignKey(Fundacion, on_delete=models.CASCADE, null=True, blank=True)
+
+#     class Meta:
+#         constraints = [
+#             models.CheckConstraint(
+#                 check=models.Q(cliente__isnull=False) | models.Q(fundacion__isnull=False),
+#                 name="cliente_o_fundacion"
+#             )
+#         ]
+
+#     def __str__(self):
+#         return f'Pedido {self.id}'
+
+# class PedidoProducto(models.Model):
+#     pedido = models.ForeignKey(Pedido, on_delete=models.CASCADE)
+#     producto = models.ForeignKey(Producto, on_delete=models.CASCADE)
+#     cantidad = models.IntegerField()
+#     precio_unitario = models.DecimalField(max_digits=10, decimal_places=2)
+
+#     def __str__(self):
+#         return f'{self.cantidad} x {self.producto}'
+
+# class Cuidador(models.Model):
+#     nombre = models.CharField(max_length=255)
+#     correo = models.EmailField(unique=True)
+#     telefono = models.CharField(max_length=20, null=True, blank=True)
+
+#     def __str__(self):
+#         return self.nombre
+
+# class SolicitudCuidado(models.Model):
+#     fecha_inicio = models.DateField()
+#     fecha_fin = models.DateField()
+#     estado = models.CharField(max_length=255)
+#     cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE)
+#     cuidador = models.ForeignKey(Cuidador, on_delete=models.CASCADE)
+#     mascota = models.ForeignKey(Mascota, on_delete=models.CASCADE)
+
+#     def __str__(self):
+#         return f'Solicitud de {self.cliente} para {self.mascota}'

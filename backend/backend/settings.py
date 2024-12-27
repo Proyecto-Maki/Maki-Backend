@@ -47,9 +47,18 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     "api",
     "rest_framework",
+    "rest_framework.authtoken",
     "corsheaders",
     "drf_yasg",
 ]
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',
+    ],
+}
+
+ACCOUNT_UNIQUE_EMAIL = True
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -154,3 +163,5 @@ STATICFILES_STORAGE = "django.contrib.staticfiles.storage.ManifestStaticFilesSto
 ALLOWED_HOSTS = [ '127.0.0.1','localhost','maki-backend-production.up.railway.app']
 
 CSRF_TRUSTED_ORIGINS = ['http://*','https://maki-backend-production.up.railway.app']
+
+AUTH_USER_MODEL = 'api.User'
