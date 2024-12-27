@@ -1,9 +1,12 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth import login
-from rest_framework import generics
+from rest_framework import generics, status, permissions
 from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
 from .serializers import UserSerializer, ClienteSignupSerializer, FundacionSignupSerializer
+from rest_framework.authtoken.views import ObtainAuthToken
+from rest_framework.views import APIView
+from .permissions import IsClienteUser, IsFundacionUser
 # from .forms import RegistroForm, ClienteCreationForm, FundacionCreationForm
 
 def hola(request):
@@ -34,6 +37,36 @@ class FundacionSignupView(generics.CreateAPIView):
             })
 
 
+class CustomAuthToken(ObtainAuthToken):
+    def post(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data, context={'request':request})
+        serializer.is_valid(raise_exception=True)
+        user = serializer.validated_data['user']
+        token, created = Token.objects.get_or_create(user=user)
+        return Response({
+            'token': token.key,
+            'user_id': user.pk,
+            'is_cliente': user.is_cliente,
+            'is_fundacion': user.is_fundacion,
+        })
+    
+class LogoutView(APIView):
+    def post(self, request, format=None):
+        request.auth.delete()
+        return Response(status=status.HTTP_200_OK)
+    
+class ClienteOnlyView(generics.RetrieveAPIView):
+    permission_classes = [permissions.IsAuthenticated&IsClienteUser]
+    serializer_class = UserSerializer
+    def get_object(self):
+        return self.request.user
+
+class FundacionOnlyView(generics.RetrieveAPIView):
+    permission_classes = [permissions.IsAuthenticated&IsFundacionUser]
+    serializer_class = UserSerializer
+    def get_object(self):
+        return self.request.user
+    
 
 # def registro(request):
 #     return render(request, 'registro.html')
