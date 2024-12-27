@@ -6,10 +6,12 @@ class Cliente(AbstractUser):
     telefono = models.CharField(max_length=20, null=True, blank=True)
     saldo = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     password = models.CharField(max_length=128, null=True, blank=True)
+    email = models.EmailField(unique=True)
     username = models.CharField(max_length=150, unique=True, default='default_username')  # Agrega un valor predeterminado aquí
 
     REQUIRED_FIELDS = ['email']
-    USERNAME_FIELD = 'username'
+    #USERNAME_FIELD = 'username'
+    USERNAME_FIELD = 'email'
     EMAIL_FIELD = 'email'
 
     groups = models.ManyToManyField(
@@ -78,10 +80,12 @@ class Resena(models.Model):
 class Fundacion(AbstractUser):
     direccion = models.CharField(max_length=255, null=True, blank=True)
     telefono = models.CharField(max_length=20, null=True, blank=True)
+    email = models.EmailField(unique=True)
     saldo = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
 
     REQUIRED_FIELDS = ['email']
-    USERNAME_FIELD = 'username'
+    # USERNAME_FIELD = 'username'
+    USERNAME_FIELD = 'email'
     EMAIL_FIELD = 'email'
 
     groups = models.ManyToManyField(
