@@ -36,6 +36,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     last_name = None
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
+    is_verified = models.BooleanField(default=False)
     is_cliente = models.BooleanField(default=False)
     is_fundacion = models.BooleanField(default=False)
     is_verified = models.BooleanField(default=False)
@@ -52,6 +53,7 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return self.email
+    
     
 # @receiver(post_save, sender=settings.AUTH_USER_MODEL)
 # def create_auth_token(sender, instance=None, created=False, **kwargs):
@@ -83,6 +85,13 @@ class Fundacion(models.Model):
 
     def __str__(self):
         return f"{self.nombre}"
+
+class OneTimePassword(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    code = models.CharField(max_length=6, unique=True)
+
+    def __str__(self):
+        return f"{self.user.email}-passcode"
 
 # class ClienteManager(BaseUserManager):
 #     def get_queryset(self, *args, **kwargs):

@@ -9,7 +9,8 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework import exceptions
 # from .forms import RegistroForm, ClienteCreationForm, FundacionCreationForm
-from .models import User, Cliente, Fundacion
+from .models import User, Cliente, Fundacion, OneTimePassword
+from .utils import send_code_to_user
 
 def hola(request):
     return render(request, 'hola.html')
@@ -33,6 +34,7 @@ class ClienteSignupView(generics.ListCreateAPIView):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
+            send_code_to_user(user.email)
             return Response({
                 "user": UserSerializer(user, context=self.get_serializer_context()).data,
                 "message": "Cliente creado exitosamente",
@@ -82,6 +84,26 @@ class FundacionSignupView(generics.ListCreateAPIView):
 #             'is_fundacion': user.is_fundacion,
 #         })
 
+class VerificarCodigo(generics.GenericAPIView):
+    def post(self, request):
+        otpcode = request.data.get('otp')   
+        try:
+            user_code_obj = OneTimePassword.objects.get(code=otpcode)
+            user = user_code_obj.user
+            if not user.is_verified:
+                user.is_verified = True
+                user.save()
+                return Response({
+                    'message': 'Usuario verificado exitosamente'
+                }, status=status.HTTP_200_OK)
+            return Response({
+                'message': 'Código no es válido. Usuario ya verificado'
+            }, status=status.HTTP_204_NO_CONTENT)
+        
+        except OneTimePassword.DoesNotExist:
+            return Response({
+                'message': 'Código no es válido'
+            }, status=status.HTTP_404_NOT_FOUND)
 class CustomAuthToken(TokenObtainPairSerializer):
     username_field = 'email'
 
@@ -95,7 +117,8 @@ class CustomAuthToken(TokenObtainPairSerializer):
         if user:
             if not user.is_active:
                 raise exceptions.AuthenticationFailed('User account is disabled.')
-            
+            if not user.is_verified:
+                raise exceptions.AuthenticationFailed('User account is not verified.')
             data = {}
             refresh = self.get_token(user)
             data['email'] = user.email
@@ -103,6 +126,7 @@ class CustomAuthToken(TokenObtainPairSerializer):
             data['is_fundacion'] = user.is_fundacion
             data['refresh'] = str(refresh)
             data['access'] = str(refresh.access_token)
+          
             return data
         else:
             raise exceptions.AuthenticationFailed('Unable to log in with provided credentials.')
