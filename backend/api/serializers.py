@@ -1,10 +1,11 @@
 from rest_framework import serializers
 from .models import User, Cliente, Fundacion
+from django.contrib.auth import authenticate
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['username', 'email', 'is_cliente', 'direccion', 'telefono']
+        fields = ['email','is_cliente', 'direccion', 'telefono','saldo']
 
 class ClienteSignupSerializer(serializers.ModelSerializer):
     password2 = serializers.CharField(style={'input_type': 'password'}, write_only=True)
@@ -16,16 +17,14 @@ class ClienteSignupSerializer(serializers.ModelSerializer):
     segundo_apellido = serializers.CharField(max_length=255, required=False, allow_blank=True, write_only=True)
     class Meta:
         model = User
-        fields = ['username', 'email', 'password', 'password2', 'direccion', 'telefono', 'primer_nombre', 'primer_apellido', 'segundo_nombre', 'segundo_apellido']
+        fields = ['email', 'password', 'password2', 'direccion', 'telefono', 'primer_nombre', 'primer_apellido', 'segundo_nombre', 'segundo_apellido']
         extra_kwargs = {
             'password': {'write_only': True}
         }
 
     def save(self, **kwargs):
         user = User(
-            username=self.validated_data['username'],
             email=self.validated_data['email'],
-
         )
         password = self.validated_data['password']
         password2 = self.validated_data['password2']
@@ -65,14 +64,13 @@ class FundacionSignupSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['username', 'email', 'password', 'password2', 'direccion', 'telefono','nombre', 'nit', 'descripcion']
+        fields = ['email', 'password', 'password2', 'direccion', 'telefono','nombre', 'nit', 'descripcion']
         extra_kwargs = {
             'password': {'write_only': True}
         }
 
     def save(self, **kwargs):
         user = User(
-            username=self.validated_data['username'],
             email=self.validated_data['email'],
         )
         password = self.validated_data['password']
@@ -99,3 +97,24 @@ class FundacionSignupSerializer(serializers.ModelSerializer):
             descripcion=descripcion
         )
         return user
+    
+
+# class EmailAuthSerializer(serializers.Serializer):
+#     email = serializers.EmailField()
+#     password = serializers.CharField(style={'input_type': 'password'}, trim_whitespace=False)
+
+#     def validate(self, attrs):
+#         email = attrs.get('email')
+#         password = attrs.get('password')
+
+#         if email and password:
+#             user = authenticate(request=self.context.get('request'), username=email, password=password)
+#             if not user:
+#                 msg = 'Unable to log in with provided credentials.'
+#                 raise serializers.ValidationError(msg, code='authorization')
+#         else:
+#             msg = 'Must include "email" and "password".'
+#             raise serializers.ValidationError(msg, code='authorization')
+
+#         attrs['user'] = user
+#         return attrs
