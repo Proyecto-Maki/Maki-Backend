@@ -1,13 +1,26 @@
 from django.conf import settings
-from django.contrib.auth.models import AbstractUser, BaseUserManager
+from django.contrib.auth.models import AbstractUser, AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from rest_framework.authtoken.models import Token
 
+class UserManager(BaseUserManager):
+    def create_user(self, email, password=None, **extra_fields):
+        if not email:
+            raise ValueError('El email es obligatorio')
+        email = self.normalize_email(email)
+        user = self.model(email=email, **extra_fields)
+        user.set_password(password)
+        user.save()
+        return user
+    
+    def create_superuser(self, email, password=None, **extra_fields):
+        extra_fields.setdefault('is_staff', True)
+        extra_fields.setdefault('is_superuser', True)
+        return self.create_user(email, password, **extra_fields)
 
-
-class User(AbstractUser):
+class User(AbstractBaseUser, PermissionsMixin):
     # class Role(models.TextChoices):
     #     CLIENTE = 'CLIENTE', 'Cliente'
     #     FUNDACION = 'FUNDACION', 'Fundacion'
@@ -21,19 +34,28 @@ class User(AbstractUser):
     #         return super().save(*args, **kwargs)
     first_name = None
     last_name = None
+    is_active = models.BooleanField(default=True)
+    is_staff = models.BooleanField(default=False)
     is_cliente = models.BooleanField(default=False)
     is_fundacion = models.BooleanField(default=False)
+    email = models.EmailField(unique=True)
+    # username = models.CharField(max_length=255, unique=True, null=True, blank=True)
     direccion = models.CharField(max_length=255, null=True, blank=True)
     telefono = models.CharField(max_length=20, null=True, blank=True)
     saldo = models.DecimalField(max_digits=7, decimal_places=2, default=0.00)
 
+    objects = UserManager()
+
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = []
+
     def __str__(self):
-        return self.username
+        return self.email
     
-@receiver(post_save, sender=settings.AUTH_USER_MODEL)
-def create_auth_token(sender, instance=None, created=False, **kwargs):
-    if created:
-        Token.objects.create(user=instance)
+# @receiver(post_save, sender=settings.AUTH_USER_MODEL)
+# def create_auth_token(sender, instance=None, created=False, **kwargs):
+#     if created:
+#         Token.objects.create(user=instance)
 
 class Cliente(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
@@ -45,7 +67,7 @@ class Cliente(models.Model):
     # telefono = models.CharField(max_length=20, null=True, blank=True)
     # saldo = models.DecimalField(max_digits=7, decimal_places=2, default=0.00)
     def __str__(self):
-        return self.user.username
+        return f"{self.primer_nombre} {self.primer_apellido}"
 
 
 class Fundacion(models.Model):
@@ -59,7 +81,7 @@ class Fundacion(models.Model):
     premium = models.BooleanField(default=False)
 
     def __str__(self):
-        return self.user.username
+        return f"{self.nombre}"
 
 # class ClienteManager(BaseUserManager):
 #     def get_queryset(self, *args, **kwargs):

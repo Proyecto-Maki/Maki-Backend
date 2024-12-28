@@ -1,55 +1,115 @@
 from django.shortcuts import render, redirect
-from django.contrib.auth import login
+from django.contrib.auth import login, authenticate
 from rest_framework import generics, status, permissions
 from rest_framework.response import Response
-from rest_framework.authtoken.models import Token
 from .serializers import UserSerializer, ClienteSignupSerializer, FundacionSignupSerializer
-from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.views import APIView
 from .permissions import IsClienteUser, IsFundacionUser
+from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from rest_framework import exceptions
 # from .forms import RegistroForm, ClienteCreationForm, FundacionCreationForm
+from .models import User, Cliente, Fundacion
 
 def hola(request):
     return render(request, 'hola.html')
 
-class ClienteSignupView(generics.CreateAPIView):
+class ClienteSignupView(generics.ListCreateAPIView):
+    # serializer_class = ClienteSignupSerializer
+    # def post(self, request, *args, **kwargs):
+    #     serializer = self.get_serializer(data=request.data)
+    #     serializer.is_valid(raise_exception=True)
+    #     user = serializer.save()
+    #     return Response({
+    #             "user": UserSerializer(user, context=self.get_serializer_context()).data,
+    #             "token": Token.objects.get(user=user).key,
+    #             "message": "Cliente creado exitosamente",
+    #         })
+    queryset = Cliente.objects.all()
     serializer_class = ClienteSignupSerializer
-    def post(self, request, *args, **kwargs):
+    permission_classes = [permissions.AllowAny]
+
+    def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        user = serializer.save()
-        return Response({
+        if serializer.is_valid():
+            user = serializer.save()
+            return Response({
                 "user": UserSerializer(user, context=self.get_serializer_context()).data,
-                "token": Token.objects.get(user=user).key,
                 "message": "Cliente creado exitosamente",
             })
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
     
-class FundacionSignupView(generics.CreateAPIView):
+class FundacionSignupView(generics.ListCreateAPIView):
+
+    queryset = Fundacion.objects.all()
     serializer_class = FundacionSignupSerializer
-    def post(self, request, *args, **kwargs):
+    permission_classes = [permissions.AllowAny]
+
+    def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        user = serializer.save()
-        return Response({
+        if serializer.is_valid():
+            user = serializer.save()
+            return Response({
                 "user": UserSerializer(user, context=self.get_serializer_context()).data,
-                "token": Token.objects.get(user=user).key,
                 "message": "Fundacion creada exitosamente",
             })
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    # serializer_class = FundacionSignupSerializer
+    # def post(self, request, *args, **kwargs):
+    #     serializer = self.get_serializer(data=request.data)
+    #     serializer.is_valid(raise_exception=True)
+    #     user = serializer.save()
+    #     return Response({
+    #             "user": UserSerializer(user, context=self.get_serializer_context()).data,
+    #             "token": Token.objects.get(user=user).key,
+    #             "message": "Fundacion creada exitosamente",
+    #         })
 
 
-class CustomAuthToken(ObtainAuthToken):
-    def post(self, request, *args, **kwargs):
-        serializer = self.serializer_class(data=request.data, context={'request':request})
-        serializer.is_valid(raise_exception=True)
-        user = serializer.validated_data['user']
-        token, created = Token.objects.get_or_create(user=user)
-        return Response({
-            'token': token.key,
-            'user_id': user.pk,
-            'is_cliente': user.is_cliente,
-            'is_fundacion': user.is_fundacion,
-        })
+# class CustomAuthToken(ObtainAuthToken):
+#     serializer_class = EmailAuthSerializer
+
+#     def post(self, request, *args, **kwargs):
+#         serializer = self.serializer_class(data=request.data, context={'request':request})
+#         serializer.is_valid(raise_exception=True)
+#         user = serializer.validated_data['user']
+#         token, created = Token.objects.get_or_create(user=user)
+#         return Response({
+#             'token': token.key,
+#             'user_id': user.pk,
+#             'is_cliente': user.is_cliente,
+#             'is_fundacion': user.is_fundacion,
+#         })
+
+class CustomAuthToken(TokenObtainPairSerializer):
+    username_field = 'email'
+
+    def validate(self, attrs):
+        credentials ={
+            'email': attrs.get('email'),
+            'password': attrs.get('password')
+        }
+
+        user  = authenticate(**credentials)
+        if user:
+            if not user.is_active:
+                raise exceptions.AuthenticationFailed('User account is disabled.')
+            
+            data = {}
+            refresh = self.get_token(user)
+            data['email'] = user.email
+            data['is_cliente'] = user.is_cliente
+            data['is_fundacion'] = user.is_fundacion
+            data['refresh'] = str(refresh)
+            data['access'] = str(refresh.access_token)
+            return data
+        else:
+            raise exceptions.AuthenticationFailed('Unable to log in with provided credentials.')
     
+class CustomTokenObtainPairView(TokenObtainPairView):
+    serializer_class = CustomAuthToken
+
 class LogoutView(APIView):
     def post(self, request, format=None):
         request.auth.delete()
