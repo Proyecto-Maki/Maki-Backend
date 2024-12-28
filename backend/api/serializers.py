@@ -5,7 +5,7 @@ from django.contrib.auth import authenticate
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['email','is_cliente', 'direccion', 'telefono','saldo']
+        fields = ['email', 'is_cliente', 'direccion', 'telefono', 'saldo', 'is_verified']
 
 class ClienteSignupSerializer(serializers.ModelSerializer):
     password2 = serializers.CharField(style={'input_type': 'password'}, write_only=True)
@@ -37,6 +37,7 @@ class ClienteSignupSerializer(serializers.ModelSerializer):
         user.direccion = direccion
         user.telefono = telefono
         user.is_cliente = True
+        user.is_verified = False  # Set is_verified to False
         user.save()
 
         primer_nombre = self.validated_data.get('primer_nombre', '')
@@ -84,6 +85,7 @@ class FundacionSignupSerializer(serializers.ModelSerializer):
         user.direccion = direccion
         user.telefono = telefono
         user.is_fundacion = True
+        user.is_verified = False  # Set is_verified to False
         user.save()
 
         nombre = self.validated_data.get('nombre', '')
@@ -97,24 +99,3 @@ class FundacionSignupSerializer(serializers.ModelSerializer):
             descripcion=descripcion
         )
         return user
-    
-
-# class EmailAuthSerializer(serializers.Serializer):
-#     email = serializers.EmailField()
-#     password = serializers.CharField(style={'input_type': 'password'}, trim_whitespace=False)
-
-#     def validate(self, attrs):
-#         email = attrs.get('email')
-#         password = attrs.get('password')
-
-#         if email and password:
-#             user = authenticate(request=self.context.get('request'), username=email, password=password)
-#             if not user:
-#                 msg = 'Unable to log in with provided credentials.'
-#                 raise serializers.ValidationError(msg, code='authorization')
-#         else:
-#             msg = 'Must include "email" and "password".'
-#             raise serializers.ValidationError(msg, code='authorization')
-
-#         attrs['user'] = user
-#         return attrs
