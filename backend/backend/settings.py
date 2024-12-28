@@ -26,10 +26,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-5&9323xcfc&^j7n*#myq%jc@mf)v7#&xv1+&#2cj+u&4wb9tx+'
+SECRET_KEY = os.getenv("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv("DEBUG")
 
 ALLOWED_HOSTS = ["*"]
 
@@ -65,7 +65,15 @@ REST_FRAMEWORK = {
     )
 }
 
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
+    "AUTH_HEADER_TYPES": ("Bearer",),
+}
+
 ACCOUNT_UNIQUE_EMAIL = True
+
+
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -173,3 +181,10 @@ ALLOWED_HOSTS = [ '127.0.0.1','localhost','maki-backend-production.up.railway.ap
 CSRF_TRUSTED_ORIGINS = ['http://*','https://maki-backend-production.up.railway.app']
 
 AUTH_USER_MODEL = 'api.User'
+
+EMAIL_HOST = 'sandbox.smtp.mailtrap.io'
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
+EMAIL_PORT = '2525'
+DEFAULT_FROM_EMAIL = 'makishopmanagement@gmail.com'
+EMAIL_USE_TLS = True
