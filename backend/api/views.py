@@ -45,7 +45,7 @@ class ClienteSignupView(generics.ListCreateAPIView):
             }, status=status.HTTP_201_CREATED)
         return Response({
             "error": serializer.errors,
-            "message": serializer.errors.get('email', [None])[0],
+            "message": serializer.errors.get('email', [])[0],
             }, status=status.HTTP_400_BAD_REQUEST)
 
     
