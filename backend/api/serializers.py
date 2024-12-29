@@ -2,9 +2,10 @@ from rest_framework import serializers
 from .models import User, Cliente, Fundacion
 from django.contrib.auth import authenticate
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
-from django.utils.http import urlsafe_base64_encode
-from django.utils.encoding import smart_str, smart_bytes
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils.encoding import smart_bytes, force_str
 from django.contrib.sites.shortcuts import get_current_site
+from rest_framework.exceptions import AuthenticationFailed
 from django.urls import reverse
 from .utils import send_normal_email
 class UserSerializer(serializers.ModelSerializer):
@@ -128,6 +129,35 @@ class PasswordResetRequestSerializer(serializers.Serializer):
             send_normal_email(data)
         return super().validate(attrs)
 
+class SetNewPasswordSerializer(serializers.Serializer):
+    password = serializers.CharField(min_length=6, max_length=100, write_only=True)
+    confirm_password = serializers.CharField(min_length=6, max_length=100, write_only=True)
+    uidb64 = serializers.CharField(write_only=True)
+    token = serializers.CharField(write_only=True)
+
+    class Meta:
+        fields = ['password', 'confirm_password', 'uidb64', 'token']
+
+    def validate(self, attrs):
+
+        try:
+            token = attrs.get('token')
+            uidb64 = attrs.get('uidb64')
+            password = attrs.get('password')
+            confirm_password = attrs.get('confirm_password')
+            user_id = force_str(urlsafe_base64_decode(uidb64))
+            user = User.objects.get(id=user_id)
+            if not PasswordResetTokenGenerator().check_token(user, token):
+                raise AuthenticationFailed('El enlace no es válido o ha expirado', 401)
+            
+            if password != confirm_password:
+                raise AuthenticationFailed('Las contraseñas no coinciden', 401)
+            user.set_password(password)
+            user.save()
+
+            return user
+        except Exception as e:
+            raise AuthenticationFailed('El enlace no es válido o ha expirado', 401)
 
 # class EmailAuthSerializer(serializers.Serializer):
 #     email = serializers.EmailField()

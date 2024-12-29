@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect
 from django.contrib.auth import login, authenticate
 from rest_framework import generics, status, permissions
 from rest_framework.response import Response
-from .serializers import UserSerializer, ClienteSignupSerializer, FundacionSignupSerializer, PasswordResetRequestSerializer
+from .serializers import UserSerializer, ClienteSignupSerializer, FundacionSignupSerializer, PasswordResetRequestSerializer, SetNewPasswordSerializer
 from rest_framework.views import APIView
 from .permissions import IsClienteUser, IsFundacionUser
 from rest_framework_simplejwt.views import TokenObtainPairView
@@ -11,6 +11,10 @@ from rest_framework import exceptions
 # from .forms import RegistroForm, ClienteCreationForm, FundacionCreationForm
 from .models import User, Cliente, Fundacion, OneTimePassword
 from .utils import send_code_to_user
+from django.utils.http import urlsafe_base64_decode
+from django.utils.encoding import smart_str, DjangoUnicodeDecodeError
+from django.contrib.auth.tokens import PasswordResetTokenGenerator
+
 
 def hola(request):
     return render(request, 'hola.html')
@@ -158,6 +162,24 @@ class PasswordResetRequestView(generics.GenericAPIView):
         serializer = self.serializer_class(data=request.data, context={'request': request})
         serializer.is_valid(raise_exception=True)
         return Response({'message': 'Se envió a tu correo electrónico un link para restablecer tu contraseña'}, status=status.HTTP_200_OK)
+
+class PasswordResetConfirm(generics.GenericAPIView):
+    def get(self, request, uidb64, token):
+        try:
+            user_id = smart_str(urlsafe_base64_decode(uidb64))
+            user = User.objects.get(id=user_id)
+            if not PasswordResetTokenGenerator().check_token(user, token):
+                return Response({'error': 'Token no es válido o está expirado'}, status=status.HTTP_401_UNAUTHORIZED)
+            return Response({'success': True, 'message': 'Credenciales válidas', 'uidb6':uidb64, 'token':token}, status=status.HTTP_200_OK)
+        except DjangoUnicodeDecodeError:
+            return Response({'error': 'Token no es válido o está expirado'}, status=status.HTTP_401_UNAUTHORIZED)
+
+class SetNewPassword(generics.GenericAPIView):
+    serializer_class = SetNewPasswordSerializer
+    def patch(self, request):
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        return Response({'message': 'Contraseña restablecida exitosamente'}, status=status.HTTP_200_OK)
 
 # def registro(request):
 #     return render(request, 'registro.html')
