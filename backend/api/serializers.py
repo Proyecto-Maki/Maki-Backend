@@ -17,7 +17,7 @@ class UserSerializer(serializers.ModelSerializer):
 class ClienteSignupSerializer(serializers.ModelSerializer):
     password2 = serializers.CharField(style={'input_type': 'password'}, write_only=True)
     direccion = serializers.CharField(max_length=255, required=False, allow_blank=True, write_only=True)
-    telefono = serializers.CharField(max_length=20, required=False, allow_blank=True, write_only=True)
+    telefono = serializers.CharField(max_length=10, required=False, allow_blank=True, write_only=True)
     primer_nombre = serializers.CharField(max_length=255, required=True, allow_blank=True, write_only=True)
     primer_apellido = serializers.CharField(max_length=255, required=True, allow_blank=True, write_only=True)
     segundo_nombre = serializers.CharField(max_length=255, required=False, allow_blank=True, write_only=True)
@@ -64,7 +64,7 @@ class ClienteSignupSerializer(serializers.ModelSerializer):
 class FundacionSignupSerializer(serializers.ModelSerializer):
     password2 = serializers.CharField(style={'input_type': 'password'}, write_only=True)
     direccion = serializers.CharField(max_length=255, required=False, allow_blank=True, write_only=True)
-    telefono = serializers.CharField(max_length=20, required=False, allow_blank=True, write_only=True)
+    telefono = serializers.CharField(max_length=10, required=False, allow_blank=True, write_only=True)
     nombre = serializers.CharField(max_length=255, required=True, allow_blank=True, write_only=True)
     nit = serializers.CharField(max_length=255, required=True, allow_blank=True, write_only=True)
     descripcion = serializers.CharField(max_length=255, required=True, allow_blank=True, write_only=True)

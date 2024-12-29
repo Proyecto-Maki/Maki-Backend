@@ -43,9 +43,15 @@ class ClienteSignupView(generics.ListCreateAPIView):
                 "user": UserSerializer(user, context=self.get_serializer_context()).data,
                 "message": "Cliente creado exitosamente. Se envió un código de verificación a tu correo electrónico",
             }, status=status.HTTP_201_CREATED)
+        
+        errores = {}
+        for key, value in serializer.errors.items():
+            errores[key] = ", ".join(value)
+
+        mensaje = " | ".join([f"{key}: {value}" for key, value in errores.items()])
         return Response({
             "error": serializer.errors,
-            "message": serializer.errors.get('email', [])[0],
+            "message": mensaje,
             }, status=status.HTTP_400_BAD_REQUEST)
 
     
@@ -64,12 +70,17 @@ class FundacionSignupView(generics.ListCreateAPIView):
                 "user": UserSerializer(user, context=self.get_serializer_context()).data,
                 "message": "Fundacion creada exitosamente. Se envió un código de verificación a tu correo electrónico",
             }, status=status.HTTP_201_CREATED)
+        errores = {}
+        for key, value in serializer.errors.items():
+            errores[key] = ", ".join(value)
+
+        mensaje = " | ".join([f"{key}: {value}" for key, value in errores.items()])
         return Response({
             "error": serializer.errors,
-            "message": serializer.errors.get('email', [None])[0],
+            "message": mensaje,
             }, status=status.HTTP_400_BAD_REQUEST)
     
-    
+
     # serializer_class = FundacionSignupSerializer
     # def post(self, request, *args, **kwargs):
     #     serializer = self.get_serializer(data=request.data)
