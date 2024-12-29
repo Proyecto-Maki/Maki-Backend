@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect
 from django.contrib.auth import login, authenticate
 from rest_framework import generics, status, permissions
 from rest_framework.response import Response
-from .serializers import UserSerializer, ClienteSignupSerializer, FundacionSignupSerializer, PasswordResetRequestSerializer, SetNewPasswordSerializer
+from .serializers import UserSerializer, ClienteSignupSerializer, FundacionSignupSerializer, PasswordResetRequestSerializer, SetNewPasswordSerializer, LogoutSerializer
 from rest_framework.views import APIView
 from .permissions import IsClienteUser, IsFundacionUser
 from rest_framework_simplejwt.views import TokenObtainPairView
@@ -140,9 +140,13 @@ class CustomTokenObtainPairView(TokenObtainPairView):
     serializer_class = CustomAuthToken
 
 class LogoutView(APIView):
-    def post(self, request, format=None):
-        request.auth.delete()
-        return Response(status=status.HTTP_200_OK)
+    serializer_class = LogoutSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    def post(self, request):
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(status=status.HTTP_204_NO_CONTENT)
     
 class ClienteOnlyView(generics.RetrieveAPIView):
     permission_classes = [permissions.IsAuthenticated&IsClienteUser]
@@ -180,6 +184,8 @@ class SetNewPassword(generics.GenericAPIView):
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
         return Response({'message': 'Contraseña restablecida exitosamente'}, status=status.HTTP_200_OK)
+
+
 
 # def registro(request):
 #     return render(request, 'registro.html')
