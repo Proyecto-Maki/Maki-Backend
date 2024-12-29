@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect
 from django.contrib.auth import login, authenticate
 from rest_framework import generics, status, permissions
 from rest_framework.response import Response
-from .serializers import UserSerializer, ClienteSignupSerializer, FundacionSignupSerializer
+from .serializers import UserSerializer, ClienteSignupSerializer, FundacionSignupSerializer, PasswordResetRequestSerializer
 from rest_framework.views import APIView
 from .permissions import IsClienteUser, IsFundacionUser
 from rest_framework_simplejwt.views import TokenObtainPairView
@@ -119,6 +119,7 @@ class CustomAuthToken(TokenObtainPairSerializer):
                 raise exceptions.AuthenticationFailed('User account is disabled.')
             if not user.is_verified:
                 raise exceptions.AuthenticationFailed('User account is not verified.')
+                
             data = {}
             refresh = self.get_token(user)
             data['email'] = user.email
@@ -151,6 +152,12 @@ class FundacionOnlyView(generics.RetrieveAPIView):
     def get_object(self):
         return self.request.user
     
+class PasswordResetRequestView(generics.GenericAPIView):
+    serializer_class = PasswordResetRequestSerializer
+    def post(self, request):
+        serializer = self.serializer_class(data=request.data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        return Response({'message': 'Se envió a tu correo electrónico un link para restablecer tu contraseña'}, status=status.HTTP_200_OK)
 
 # def registro(request):
 #     return render(request, 'registro.html')
