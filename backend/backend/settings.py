@@ -183,9 +183,12 @@ CSRF_TRUSTED_ORIGINS = ['http://*','https://maki-backend-production.up.railway.a
 
 AUTH_USER_MODEL = 'api.User'
 
-EMAIL_HOST = 'sandbox.smtp.mailtrap.io'
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+# EMAIL_HOST = 'sandbox.smtp.mailtrap.io'
+EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
-EMAIL_PORT = '2525'
-DEFAULT_FROM_EMAIL = 'makishopmanagement@gmail.com'
+# EMAIL_PORT = '2525'
+EMAIL_PORT = '587'
+DEFAULT_FROM_EMAIL = 'Maki Shop'
 EMAIL_USE_TLS = True
