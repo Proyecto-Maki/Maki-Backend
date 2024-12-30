@@ -43,7 +43,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(unique=True)
     # username = models.CharField(max_length=255, unique=True, null=True, blank=True)
     direccion = models.CharField(max_length=255, null=True, blank=True)
-    telefono = models.CharField(max_length=20, null=True, blank=True)
+    telefono = models.CharField(max_length=10, null=True, blank=True)
     saldo = models.DecimalField(max_digits=7, decimal_places=2, default=0.00)
 
     objects = UserManager()
