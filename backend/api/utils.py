@@ -11,7 +11,7 @@ def generateOTP():
     return otp
 
 def send_code_to_user(email):
-    Subject = "One Time Password para la verificación por correo electrónico"
+    Subject = "OTP para la verificación por correo electrónico"
     otp_code = generateOTP()
     print(otp_code)
     user = User.objects.get(email=email)
