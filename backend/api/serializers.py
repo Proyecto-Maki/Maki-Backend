@@ -12,7 +12,7 @@ from rest_framework_simplejwt.tokens import RefreshToken, TokenError
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['email','is_cliente', 'direccion', 'telefono','saldo']
+        fields = ['email', 'is_cliente', 'direccion', 'telefono', 'saldo', 'is_verified']
 
 class ClienteSignupSerializer(serializers.ModelSerializer):
     password2 = serializers.CharField(style={'input_type': 'password'}, write_only=True)
@@ -44,6 +44,7 @@ class ClienteSignupSerializer(serializers.ModelSerializer):
         user.direccion = direccion
         user.telefono = telefono
         user.is_cliente = True
+        user.is_verified = False  # Set is_verified to False
         user.save()
 
         primer_nombre = self.validated_data.get('primer_nombre', '')
@@ -91,6 +92,7 @@ class FundacionSignupSerializer(serializers.ModelSerializer):
         user.direccion = direccion
         user.telefono = telefono
         user.is_fundacion = True
+        user.is_verified = False  # Set is_verified to False
         user.save()
 
         nombre = self.validated_data.get('nombre', '')
