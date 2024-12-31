@@ -43,10 +43,28 @@ def send_code_to_user(email):
 
 
 def send_normal_email(data):
-    email = EmailMessage(
-        subject = data['email_subject'],
-        body = data['email_body'],
-        from_email = settings.EMAIL_HOST_USER,
-        to=[data['to_email']]
+    # email = EmailMessage(
+    #     subject = data['email_subject'],
+    #     body = data['email_body'],
+    #     from_email = settings.EMAIL_HOST_USER,
+    #     to=[data['to_email']]
+    # )
+    # email.send()
+    Subject = data['email_subject']
+    email = data['email']
+    link = data['link']
+    to_email = data['to_email']
+    context = {
+        'email': email,
+        'link': link
+    }
+    html_message = render_to_string('email-pass-recovery.html', context=context)
+    plain_message = strip_tags(html_message)
+    message = EmailMultiAlternatives(
+        subject=Subject,
+        body=plain_message,
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        to=[to_email]
     )
-    email.send()
+    message.attach_alternative(html_message, "text/html")
+    message.send()
