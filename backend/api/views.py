@@ -152,7 +152,7 @@ class CustomAuthToken(TokenObtainPairSerializer):
             data['refresh'] = str(refresh)
             data['access'] = str(refresh.access_token)
           
-            return data
+            return {'data': data, 'message': '¡Bienvenido a Maki!'}
         else:
             raise exceptions.AuthenticationFailed('No es posible iniciar sesión con esas credenciales.')
     
