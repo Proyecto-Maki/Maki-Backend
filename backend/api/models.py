@@ -62,6 +62,7 @@ class User(AbstractBaseUser, PermissionsMixin):
 
 class Cliente(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
+    cedula = models.BigIntegerField(unique=True,null=True, blank=True)
     primer_nombre = models.CharField(max_length=255, null=True, blank=True)
     segundo_nombre = models.CharField(max_length=255, null=True, blank=True)
     primer_apellido = models.CharField(max_length=255, null=True, blank=True)
