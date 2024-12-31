@@ -39,6 +39,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_verified = models.BooleanField(default=False)
     is_cliente = models.BooleanField(default=False)
     is_fundacion = models.BooleanField(default=False)
+    is_verified = models.BooleanField(default=False)
     email = models.EmailField(unique=True)
     # username = models.CharField(max_length=255, unique=True, null=True, blank=True)
     direccion = models.CharField(max_length=255, null=True, blank=True)
