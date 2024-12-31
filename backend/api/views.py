@@ -140,9 +140,9 @@ class CustomAuthToken(TokenObtainPairSerializer):
         user  = authenticate(**credentials)
         if user:
             if not user.is_active:
-                raise exceptions.AuthenticationFailed('User account is disabled.')
+                raise exceptions.AuthenticationFailed('La cuenta no está activa.')
             if not user.is_verified:
-                raise exceptions.AuthenticationFailed('User account is not verified.')
+                raise exceptions.AuthenticationFailed('La cuenta no está verificada.')
                 
             data = {}
             refresh = self.get_token(user)
@@ -154,7 +154,7 @@ class CustomAuthToken(TokenObtainPairSerializer):
           
             return data
         else:
-            raise exceptions.AuthenticationFailed('Unable to log in with provided credentials.')
+            raise exceptions.AuthenticationFailed('No es posible iniciar sesión con esas credenciales.')
     
 class CustomTokenObtainPairView(TokenObtainPairView):
     serializer_class = CustomAuthToken
@@ -193,17 +193,24 @@ class PasswordResetConfirm(generics.GenericAPIView):
             user_id = smart_str(urlsafe_base64_decode(uidb64))
             user = User.objects.get(id=user_id)
             if not PasswordResetTokenGenerator().check_token(user, token):
-                return Response({'error': 'Token no es válido o está expirado'}, status=status.HTTP_401_UNAUTHORIZED)
+                return Response({'message': 'Token no es válido o está expirado'}, status=status.HTTP_401_UNAUTHORIZED)
             return Response({'success': True, 'message': 'Credenciales válidas', 'uidb6':uidb64, 'token':token}, status=status.HTTP_200_OK)
         except DjangoUnicodeDecodeError:
-            return Response({'error': 'Token no es válido o está expirado'}, status=status.HTTP_401_UNAUTHORIZED)
+            return Response(
+                {'message': 'Token no es válido o está expirado'}, 
+                status=status.HTTP_401_UNAUTHORIZED)
 
 class SetNewPassword(generics.GenericAPIView):
     serializer_class = SetNewPasswordSerializer
     def patch(self, request):
         serializer = self.serializer_class(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        return Response({'message': 'Contraseña restablecida exitosamente'}, status=status.HTTP_200_OK)
+        if serializer.is_valid():
+            return Response({'message': 'Contraseña restablecida exitosamente'}, status=status.HTTP_200_OK)
+        # serializer.is_valid(raise_exception=True)
+        return Response({
+            'error': serializer.errors,
+            'message': 'Ha ocurrido un error para restablecer la contraseña'}, 
+            status=status.HTTP_400_BAD_REQUEST)
 
 
 

@@ -117,12 +117,14 @@ class PasswordResetRequestSerializer(serializers.Serializer):
             uidb64 = urlsafe_base64_encode(smart_bytes(user.pk))
             token = PasswordResetTokenGenerator().make_token(user)
             request = self.context.get('request')
-            site_domain = get_current_site(request).domain
+            # site_domain = get_current_site(request).domain
+            site_domain = 'localhost:3000'
             relative_link = reverse('password-reset-confirm', kwargs={'uidb64': uidb64, 'token': token})
             abslink = f"http://{site_domain}{relative_link}"
-            email_body = f"¡Hola! Usa el siguiente enlace para restablecer tu contraseña: \n {abslink}"
+            # email_body = f"¡Hola! Usa el siguiente enlace para restablecer tu contraseña: \n {abslink}"
             data = {
-                'email_body': email_body,
+                'email': email,
+                'link': abslink,
                 'to_email': user.email,
                 'email_subject': 'Restablecer contraseña'
             }
