@@ -94,110 +94,143 @@ class OneTimePassword(models.Model):
     def __str__(self):
         return f"{self.user.email}-passcode"
 
-# class ClienteManager(BaseUserManager):
-#     def get_queryset(self, *args, **kwargs):
-#         results = super().get_queryset(*args, **kwargs)
-#         return results.filter(role=User.Role.CLIENTE)
 
-# class Cliente(User):
-#     base_role = User.Role.CLIENTE
-#     cliente = ClienteManager()
-#     class Meta:
-#         proxy = True
-
-#     def welcome(self):
-#         return "Solo para clientes"
-    
-# @receiver(post_save, sender=Cliente)
-# def create_user_profile(sender, instance, created, **kwargs):
-#     if created and instance.role == User.Role.CLIENTE:
-#         ClienteProfile.objects.create(user=instance)
-# class ClienteProfile(models.Model):
-#     user = models.OneToOneField(User, on_delete=models.CASCADE)
-#     cliente_id = models.AutoField(primary_key=True)
-#     direccion = models.CharField(max_length=255, null=True, blank=True)
-#     telefono = models.CharField(max_length=20, null=True, blank=True)
-#     saldo = models.DecimalField(max_digits=7, decimal_places=2, default=0.00)
-#     email = models.EmailField(unique=True)
-
-# class FundacionManager(BaseUserManager):
-#     def get_queryset(self, *args, **kwargs):
-#         results = super().get_queryset(*args, **kwargs)
-#         return results.filter(role=User.Role.FUNDACION)
-
-# class Fundacion(User):
-#     base_role = User.Role.FUNDACION
-#     fundacion = FundacionManager()
-#     class Meta:
-#         proxy = True
-
-#     def welcome(self):
-#         return "Solo para fundaciones"
-
-# class Cliente(AbstractUser):
-#     direccion = models.CharField(max_length=255, null=True, blank=True)
-#     telefono = models.CharField(max_length=20, null=True, blank=True)
-#     saldo = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
-#     password = models.CharField(max_length=128, null=True, blank=True)
-#     email = models.EmailField(unique=True)
-#     username = models.CharField(max_length=150, unique=True, default='default_username')  # Agrega un valor predeterminado aquí
-
-#     REQUIRED_FIELDS = ['email']
-#     #USERNAME_FIELD = 'username'
-#     USERNAME_FIELD = 'email'
-#     EMAIL_FIELD = 'email'
-
-#     groups = models.ManyToManyField(
-#         'auth.Group',
-#         related_name='cliente_set',
-#         blank=True,
-#         help_text='The groups this user belongs to.',
-#         verbose_name='groups',
-#     )
-#     user_permissions = models.ManyToManyField(
-#         'auth.Permission',
-#         related_name='cliente_user_set',
-#         blank=True,
-#         help_text='Specific permissions for this user.',
-#         verbose_name='user permissions',
-#     )
-
-#     def __str__(self):
-#         return f'Cliente: {self.username}'
-
-#     def save(self, *args, **kwargs):
-#         if not self.pk and not self.password:
-#             self.set_password('default_password')
-#         super().save(*args, **kwargs)
+## MODELO DE MASCOTA
 
 # class Mascota(models.Model):
-#     nombre = models.CharField(max_length=255)
-#     tipo = models.CharField(max_length=255)
-#     raza = models.CharField(max_length=255, null=True, blank=True)
-#     edad = models.IntegerField(null=True, blank=True)
-#     estado_salud = models.CharField(max_length=255, null=True, blank=True)
-#     cliente = models.ForeignKey(Cliente, on_delete=models.SET_NULL, null=True, blank=True)
-#     fundacion = models.ForeignKey('Fundacion', on_delete=models.CASCADE, null=True, blank=True)
+#     # la mascota tiene su primaty key autoincremental
+
+#     ESTADOS = {
+#         'Saludable': 'Saludable',
+#         'Enfermo': 'Enfermo',
+#         'Recuperacion': 'Recuperacion',
+#     }
+
+    
+#     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=False, blank=False)
+#     nombre = models.CharField(max_length=255, null=False, blank=False)
+#     tipo = models.CharField(max_length=255, null=False, blank=False)
+#     raza = models.CharField(max_length=255, null=False, blank=False)
+#     edad = models.IntegerField(null=False, blank=False)
+#     estado_salud = models.CharField(max_length=255, null=False, blank=False, choices=ESTADOS)
+
+#     TAMANOS = {
+#         'P': 'Pequeño',
+#         'M': 'Mediano',
+#         'G': 'Grande',
+#     }
+#     tamano = models.CharField(max_length=1, null=False, blank=False, choices=TAMANOS)
+#     imagen = models.ImageField(upload_to='mascotas/', null=True, blank=True) # Esta es de prueba
+
 
 #     def __str__(self):
 #         return self.nombre
+
+## MODELO DE PADECIMIENTO
+
+# class Padecimiento(models.Model):
+#     mascota = models.ForeignKey(Mascota, on_delete=models.CASCADE)
+#     padecimiento = models.CharField(max_length=255, null=False, blank=False)
+
+#     def __str__(self):
+#         return f"{self.mascota.nombre} - {self.padecimiento}"
+
+## MODELO DE PRODUCTO
 
 # class Producto(models.Model):
-#     nombre = models.CharField(max_length=255)
-#     descripcion = models.TextField(null=True, blank=True)
-#     precio = models.DecimalField(max_digits=10, decimal_places=2)
+#     nombre = models.CharField(max_length=255, null=False, blank=False)
+#     descripcion = models.TextField(null=False, blank=False)
+#     precio = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, null=False, blank=False)
 #     stock = models.IntegerField(default=0)
+#     categoria = models.CharField(max_length=255, null=False, blank=False)
+#     imagen = models.ImageField(upload_to='productos/', null=True, blank=True) # Esta es de prueba
 
 #     def __str__(self):
 #         return self.nombre
 
-# class Resena(models.Model):
-#     contenido = models.TextField()
-#     fecha = models.DateField(auto_now_add=True)
-#     likes = models.IntegerField(default=0)
-#     calificacion = models.IntegerField()
+## MODELO DE PEDIDO
+
+class Descuento(models.Model):
+    descripcion = models.CharField(max_length=255, null=False, blank=False)
+    porcentaje = models.DecimalField(max_digits=5, decimal_places=2, default=0.00, null=False, blank=False)
+
+    def __str__(self):
+        return f"{self.descripcion} - {self.porcentaje}%"
+
+class Pedido(models.Model):
+
+    ESTADOS = {
+        'Preparación': 'Preparación',
+        'Entregado': 'Entregado',
+        'Transito': 'Transito',
+        'Cancelado': 'Cancelado',
+    }
+    id = models.AutoField(primary_key=True) # Lo pogo pa que abajo me deje poner el id
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    fecha = models.DateField(auto_now_add=True, null=False, blank=False)
+    estado = models.CharField(max_length=255, null=False, blank=False, choices=ESTADOS)
+    descuento = models.ForeignKey(Descuento, on_delete=models.SET_NULL, null=True, blank=True)
+    total = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, null=False, blank=False)
+
+    def __str__(self):
+        return self.id
+    
+class DetallePedido(models.Model):
+    pedido = models.ForeignKey(Pedido, on_delete=models.CASCADE)
+    producto = models.ForeignKey(Producto, on_delete=models.CASCADE)
+    cantidad = models.IntegerField(null=False, blank=False)
+
+    def __str__(self):
+        return f"{self.producto.nombre} x {self.cantidad}"
+    
+
+## MODELO DE CUIDADOR
+
+class Cuidador(models.Model):
+    cedula = models.BigIntegerField(unique=True, null=False, blank=False)
+    primer_nombre = models.CharField(max_length=255, null=False, blank=False)
+    segundo_nombre = models.CharField(max_length=255, null=True, blank=True)
+    primer_apellido = models.CharField(max_length=255, null=False, blank=False)
+    segundo_apellido = models.CharField(max_length=255, null=True, blank=True)
+    telefono = models.CharField(max_length=10, null=False, blank=False)
+    direccion = models.CharField(max_length=255, null=False, blank=False)
+    email = models.EmailField(unique=True, null=False, blank=False)
+    ocupacion = models.CharField(max_length=255, null=False, blank=False)
+    experiencia = models.TextField(null=False, blank=False)
+    descripcion_servicio = models.TextField(null=False, blank=False)
+
+    def __str__(self):
+        return f"{self.primer_nombre} {self.primer_apellido}"
+    
+## MODELO DE SOLICITUD DE CUIDADO
+
+# class SolicitudCuidado(models.Model):
+#     ESTADOS = {
+#         'Pendiente': 'Pendiente',
+#         'Aceptada': 'Aceptada',
+#         'Rechazada': 'Rechazada',
+#         'Cancelada': 'Cancelada',
+#         'Completada': 'Completada',
+#     }
+
+#     id = models.AutoField(primary_key=True) # Lo pogo pa que abajo me deje poner el id
+#     cuidador = models.ForeignKey(Cuidador, on_delete=models.CASCADE)
 #     cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE)
+#     mascota = models.ForeignKey(Mascota, on_delete=models.CASCADE)
+#     fecha_inicio = models.DateField(null=False, blank=False)
+#     fecha_fin = models.DateField(null=False, blank=False)
+#     descripcion = models.TextField(null=False, blank=False)
+#     estado = models.CharField(max_length=255, null=False, blank=False, choices=ESTADOS)
+
+
+## MODELO DE RESEÑA
+
+# class Resena(models.Model):
+#     user = models.ForeignKey(User, on_delete=models.CASCADE)
 #     producto = models.ForeignKey(Producto, on_delete=models.CASCADE)
+#     calificacion = models.IntegerField(null=False, blank=False) 
+#     comentario = models.TextField(null=True, blank=True)
+#     fecha = models.DateField(auto_now_add=True)
 
 #     class Meta:
 #         constraints = [
@@ -208,93 +241,56 @@ class OneTimePassword(models.Model):
 #         ]
 
 #     def __str__(self):
-#         return f'Reseña de {self.cliente} para {self.producto}'
+#         return f'Reseña de {self.user.id} para {self.producto.nombre}'
 
-# class Fundacion(AbstractUser):
-#     direccion = models.CharField(max_length=255, null=True, blank=True)
-#     telefono = models.CharField(max_length=20, null=True, blank=True)
-#     email = models.EmailField(unique=True)
-#     saldo = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+## MODELO DE DONACION
 
-#     REQUIRED_FIELDS = ['email']
-#     # USERNAME_FIELD = 'username'
-#     USERNAME_FIELD = 'email'
-#     EMAIL_FIELD = 'email'
-
-#     groups = models.ManyToManyField(
-#         'auth.Group',
-#         related_name='fundacion_set',  # Cambia el related_name
-#         blank=True,
-#         help_text='The groups this user belongs to.',
-#         verbose_name='groups',
-#     )
-#     user_permissions = models.ManyToManyField(
-#         'auth.Permission',
-#         related_name='fundacion_user_set',  # Cambia el related_name
-#         blank=True,
-#         help_text='Specific permissions for this user.',
-#         verbose_name='user permissions',
-#     )
+# class Tarjeta(models.Model):
+#     tipo = models.CharField(max_length=255, null=False, blank=False, primary_key=True)
+#     monto = models.DecimalField(max_digits=7, decimal_places=2, default=0.00, null=False, blank=False)
 
 #     def __str__(self):
-#         return f'Fundacion: {self.username}'
+#         return self.tipo
 
-#     def save(self, *args, **kwargs):
-#         if not self.pk and not self.password:
-#             self.set_password('default_password')  # Define un valor predeterminado aquí
-#         super().save(*args, **kwargs)
+# class Donacion(models.Model):
+#     cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE)
+#     fundacion = models.ForeignKey(Fundacion, on_delete=models.CASCADE)
+#     tarjeta = models.ForeignKey(Tarjeta, on_delete=models.CASCADE)
+#     fecha = models.DateField(auto_now_add=True)
+
+#     def __str__(self):
+#         return f'Donacion de {self.cliente.primer_nombre} {self.cliente.primer_apellido} para {self.fundacion.nombre}'
+
+
+## MODELO DE ADOPCIONES
 
 # class PublicacionAdopcion(models.Model):
-#     titulo = models.CharField(max_length=255)
-#     descripcion = models.TextField(null=True, blank=True)
-#     fecha = models.DateField(auto_now_add=True)
+    
 #     fundacion = models.ForeignKey(Fundacion, on_delete=models.CASCADE)
 #     mascota = models.ForeignKey(Mascota, on_delete=models.CASCADE)
-
-#     def __str__(self):
-#         return self.titulo
-
-# class Pedido(models.Model):
+#     titulo = models.CharField(max_length=255, null=False, blank=False)
+#     descripcion = models.TextField(null=False, blank=False)
 #     fecha = models.DateField(auto_now_add=True)
-#     total = models.DecimalField(max_digits=10, decimal_places=2)
-#     cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE, null=True, blank=True)
-#     fundacion = models.ForeignKey(Fundacion, on_delete=models.CASCADE, null=True, blank=True)
-
-#     class Meta:
-#         constraints = [
-#             models.CheckConstraint(
-#                 check=models.Q(cliente__isnull=False) | models.Q(fundacion__isnull=False),
-#                 name="cliente_o_fundacion"
-#             )
-#         ]
 
 #     def __str__(self):
-#         return f'Pedido {self.id}'
+#         return f'{self.titulo} - {self.mascota.nombre}'
+    
+# class SolicitudAdopcion(models.Model):
 
-# class PedidoProducto(models.Model):
-#     pedido = models.ForeignKey(Pedido, on_delete=models.CASCADE)
-#     producto = models.ForeignKey(Producto, on_delete=models.CASCADE)
-#     cantidad = models.IntegerField()
-#     precio_unitario = models.DecimalField(max_digits=10, decimal_places=2)
-
-#     def __str__(self):
-#         return f'{self.cantidad} x {self.producto}'
-
-# class Cuidador(models.Model):
-#     nombre = models.CharField(max_length=255)
-#     correo = models.EmailField(unique=True)
-#     telefono = models.CharField(max_length=20, null=True, blank=True)
-
-#     def __str__(self):
-#         return self.nombre
-
-# class SolicitudCuidado(models.Model):
-#     fecha_inicio = models.DateField()
-#     fecha_fin = models.DateField()
-#     estado = models.CharField(max_length=255)
+#     ESTADOS = {
+#         'Pendiente': 'Pendiente',
+#         'Aceptada': 'Aceptada',
+#         'Rechazada': 'Rechazada',
+#         'Cancelada': 'Cancelada',
+#         'Completada': 'Completada',
+#     }
 #     cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE)
-#     cuidador = models.ForeignKey(Cuidador, on_delete=models.CASCADE)
-#     mascota = models.ForeignKey(Mascota, on_delete=models.CASCADE)
+#     publicacion = models.ForeignKey(PublicacionAdopcion, on_delete=models.CASCADE)
+#     fecha = models.DateField(auto_now_add=True)
+#     motivo = models.TextField(null=False, blank=False)
+#     estado = models.CharField(max_length=255, null=False, blank=False, choices=ESTADOS)
 
 #     def __str__(self):
-#         return f'Solicitud de {self.cliente} para {self.mascota}'
+#         return f'{self.cliente.primer_nombre} {self.cliente.primer_apellido} - {self.publicacion.titulo}'
+
+
