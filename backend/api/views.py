@@ -10,7 +10,8 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework import exceptions
 # from .forms import RegistroForm, ClienteCreationForm, FundacionCreationForm
 from .models import User, Cliente, Fundacion, OneTimePassword
-from .utils import send_code_to_user
+# from .utils import send_code_to_user
+from .new_utils import send_code_to_user
 from django.utils.http import urlsafe_base64_decode
 from django.utils.encoding import smart_str, DjangoUnicodeDecodeError
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
@@ -238,3 +239,14 @@ class SetNewPassword(generics.GenericAPIView):
 #     else:
 #         form = FundacionCreationForm()
 #     return render(request, 'registro_fundacion.html', {'form': form})
+
+
+### METODOS DE GETS, PUTS y DELETES
+
+
+class CurrentUserView(generics.GenericAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        return Response({'email': user.email, 'is_cliente': user.is_cliente, 'is_fundacion': user.is_fundacion})

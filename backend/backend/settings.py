@@ -15,6 +15,8 @@ from datetime import timedelta
 from dotenv import load_dotenv
 import dj_database_url
 import os
+import json
+import tempfile
 
 load_dotenv()
 
@@ -183,6 +185,8 @@ ALLOWED_HOSTS = [ '127.0.0.1','localhost','maki-backend-production.up.railway.ap
 CSRF_TRUSTED_ORIGINS = ['http://*','https://maki-backend-production.up.railway.app']
 
 AUTH_USER_MODEL = 'api.User'
+
+SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY")
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 # EMAIL_HOST = 'sandbox.smtp.mailtrap.io'

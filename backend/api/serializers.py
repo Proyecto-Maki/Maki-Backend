@@ -7,7 +7,8 @@ from django.utils.encoding import smart_bytes, force_str
 from django.contrib.sites.shortcuts import get_current_site
 from rest_framework.exceptions import AuthenticationFailed
 from django.urls import reverse
-from .utils import send_normal_email
+# from .utils import send_normal_email
+from .new_utils import send_normal_email
 from rest_framework_simplejwt.tokens import RefreshToken, TokenError
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -21,10 +22,11 @@ class ClienteSignupSerializer(serializers.ModelSerializer):
     primer_nombre = serializers.CharField(max_length=255, required=True, allow_blank=True, write_only=True)
     primer_apellido = serializers.CharField(max_length=255, required=True, allow_blank=True, write_only=True)
     segundo_nombre = serializers.CharField(max_length=255, required=False, allow_blank=True, write_only=True)
+    cedula = serializers.CharField(max_length=10, required=True, allow_blank=True, write_only=True)
     segundo_apellido = serializers.CharField(max_length=255, required=False, allow_blank=True, write_only=True)
     class Meta:
         model = User
-        fields = ['email', 'password', 'password2', 'direccion', 'telefono', 'primer_nombre', 'primer_apellido', 'segundo_nombre', 'segundo_apellido']
+        fields = ['email', 'password', 'password2', 'direccion', 'telefono', 'cedula', 'primer_nombre', 'primer_apellido', 'segundo_nombre', 'segundo_apellido']
         extra_kwargs = {
             'password': {'write_only': True}
         }
@@ -37,16 +39,18 @@ class ClienteSignupSerializer(serializers.ModelSerializer):
         password2 = self.validated_data['password2']
         direccion = self.validated_data.get('direccion', '')
         telefono = self.validated_data.get('telefono', '')
+        
 
         if password != password2:
             raise serializers.ValidationError({'password': 'Las contraseñas no coinciden'})
         user.set_password(password)
         user.direccion = direccion
         user.telefono = telefono
+        
         user.is_cliente = True
         user.is_verified = False  # Set is_verified to False
         user.save()
-
+        cedula = self.validated_data.get('cedula', '')
         primer_nombre = self.validated_data.get('primer_nombre', '')
         primer_apellido = self.validated_data.get('primer_apellido', '')
         segundo_nombre = self.validated_data.get('segundo_nombre', '')
@@ -54,6 +58,7 @@ class ClienteSignupSerializer(serializers.ModelSerializer):
 
         Cliente.objects.create(
             user=user,
+            cedula=cedula,
             primer_nombre=primer_nombre,
             primer_apellido=primer_apellido,
             segundo_nombre=segundo_nombre,

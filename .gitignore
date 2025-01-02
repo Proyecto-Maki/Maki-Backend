@@ -13,4 +13,6 @@ staticfiles
 backend/backend/__pycache__/__init__.cpython-313.pyc
 backend/backend/__pycache__/settings.cpython-313.pyc
 
-backend/.env/
+backend/.env
+credentials.json
+.env
