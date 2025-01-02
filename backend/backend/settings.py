@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     "whitenoise.runserver_nostatic",
     'django.contrib.staticfiles',
     "api",
+    "backend",
     "rest_framework",
     # "rest_framework.authtoken",
     'rest_framework_simplejwt',
