@@ -18,3 +18,8 @@ Pillow
 dj_database_url
 gunicorn
 whitenoise
+google-auth
+google-auth-oauthlib
+google-api-python-client
+pip-system-certs -U --use-feature=truststore
+python-certifi-win32

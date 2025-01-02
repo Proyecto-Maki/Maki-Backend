@@ -239,3 +239,14 @@ class SetNewPassword(generics.GenericAPIView):
 #     else:
 #         form = FundacionCreationForm()
 #     return render(request, 'registro_fundacion.html', {'form': form})
+
+
+### METODOS DE GETS, PUTS y DELETES
+
+
+class CurrentUserView(generics.GenericAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        return Response({'email': user.email, 'is_cliente': user.is_cliente, 'is_fundacion': user.is_fundacion})
