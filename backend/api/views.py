@@ -10,7 +10,8 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework import exceptions
 # from .forms import RegistroForm, ClienteCreationForm, FundacionCreationForm
 from .models import User, Cliente, Fundacion, OneTimePassword
-from .utils import send_code_to_user
+# from .utils import send_code_to_user
+from .new_utils import send_code_to_user
 from django.utils.http import urlsafe_base64_decode
 from django.utils.encoding import smart_str, DjangoUnicodeDecodeError
 from django.contrib.auth.tokens import PasswordResetTokenGenerator

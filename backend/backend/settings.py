@@ -15,6 +15,8 @@ from datetime import timedelta
 from dotenv import load_dotenv
 import dj_database_url
 import os
+import json
+import tempfile
 
 load_dotenv()
 
@@ -183,6 +185,26 @@ ALLOWED_HOSTS = [ '127.0.0.1','localhost','maki-backend-production.up.railway.ap
 CSRF_TRUSTED_ORIGINS = ['http://*','https://maki-backend-production.up.railway.app']
 
 AUTH_USER_MODEL = 'api.User'
+
+CREDENTIALS_FILE = {
+    "installed": {
+        "client_id": os.getenv("CREDENTIALS_CLIENT_ID"),
+        "project_id": os.getenv("CREDENTIALS_PROJECT_ID"),
+        "auth_uri": os.getenv("CREDENTIALS_AUTH_URI"),
+        "token_uri": os.getenv("CREDENTIALS_TOKEN_URI"),
+        "auth_provider_x509_cert_url": os.getenv("CREDENTIALS_AUTH_PROVIDER_X509_CERT_URL"),
+        "client_secret": os.getenv("CREDENTIALS_CLIENT_SECRET"),
+        "redirect_uris": [os.getenv("CREDENTIALS_REDIRECT_URIS")]
+    }
+}
+temp_file_path = None
+with tempfile.NamedTemporaryFile(delete=False, mode='w', suffix='.json') as temp_file:
+    json.dump(CREDENTIALS_FILE, temp_file)
+    temp_file_path = temp_file.name
+
+CREDENTIALS_FILE_PATH = temp_file_path
+
+SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY")
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 # EMAIL_HOST = 'sandbox.smtp.mailtrap.io'
