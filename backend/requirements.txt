@@ -14,6 +14,7 @@ psycopg-binary
 psycopg2
 psycopg
 python-dotenv
+Pillow
 dj_database_url
 gunicorn
 whitenoise
