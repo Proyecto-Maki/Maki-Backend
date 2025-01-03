@@ -22,10 +22,8 @@ from rest_framework.decorators import api_view
 @api_view(['GET'])
 def SendTestEmail(request):
     try: 
-        send_test_email()
-        return Response({
-            'message': 'Correo enviado con éxito'
-        }, status=status.HTTP_200_OK)
+        response = send_test_email()
+        return response
     except Exception as e:
         return Response({
             'error': str(e.body),
