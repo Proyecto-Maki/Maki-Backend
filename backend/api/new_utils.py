@@ -125,8 +125,8 @@ def send_test_email():
         return {
             "message": "Correo electrónico enviado con éxito",
             "status_code": response.status_code,
-            "body": response.body,
-            "headers": response.headers
+            "body": response.body.decode("utf-8") if hasattr(response.body, "decode") else str(response.body),
+            "headers": {k: str(v) for k, v in response.headers.items()}  # Convierte los headers a strings
         }
 
     except Exception as e:
