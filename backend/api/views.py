@@ -16,8 +16,10 @@ from django.utils.http import urlsafe_base64_decode
 from django.utils.encoding import smart_str, DjangoUnicodeDecodeError
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.shortcuts import get_object_or_404
+from rest_framework.decorators import api_view
 
 
+@api_view(['GET'])
 def SendTestEmail(request):
     try: 
         send_test_email()
