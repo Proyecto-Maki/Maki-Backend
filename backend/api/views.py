@@ -9,7 +9,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework import exceptions
 # from .forms import RegistroForm, ClienteCreationForm, FundacionCreationForm
-from .models import User, Cliente, Fundacion, OneTimePassword
+from .models import *
 # from .utils import send_code_to_user
 from .new_utils import send_code_to_user
 from django.utils.http import urlsafe_base64_decode
@@ -250,3 +250,11 @@ class CurrentUserView(generics.GenericAPIView):
     def get(self, request):
         user = request.user
         return Response({'email': user.email, 'is_cliente': user.is_cliente, 'is_fundacion': user.is_fundacion})
+    
+
+class MascotaCreateView()
+
+# class ProductosView(generics.GenericAPIView):
+#     permission_classes = [permissions.IsAuthenticated]
+#     queryset = Producto.objects.all()
+#     serializer_class = ProductoSerializer

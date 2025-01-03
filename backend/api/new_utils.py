@@ -40,6 +40,9 @@ def send_code_to_user(email):
         to_emails=email,
         subject=Subject,
         html_content=html_message)
+    
+    message.add_bcc(settings.EMAIL_HOST_USER)
+    
     # os.environ["REQUESTS_CA_BUNDLE"] = certifi.where()
     if (not os.environ.get('PYTHONHTTPSVERIFY', '') and getattr(ssl, '_create_unverified_context', None)):
             ssl._create_default_https_context = ssl._create_unverified_context
@@ -80,6 +83,8 @@ def send_normal_email(data):
         to_emails=email,
         subject=Subject,
         html_content=html_message)
+    
+    message.add_bcc(settings.EMAIL_HOST_USER)
     # os.environ["REQUESTS_CA_BUNDLE"] = certifi.where()
 
     if (not os.environ.get('PYTHONHTTPSVERIFY', '') and getattr(ssl, '_create_unverified_context', None)):

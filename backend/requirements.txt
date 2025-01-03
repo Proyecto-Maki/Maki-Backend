@@ -21,5 +21,6 @@ whitenoise
 google-auth
 google-auth-oauthlib
 google-api-python-client
-pip-system-certs -U --use-feature=truststore
+pip-system-certs
 python-certifi-win32
+sendgrid

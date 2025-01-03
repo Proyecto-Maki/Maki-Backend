@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import User, Cliente, Fundacion
+from .models import *
 from django.contrib.auth import authenticate
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
@@ -206,3 +206,49 @@ class LogoutSerializer(serializers.Serializer):
 
 #         attrs['user'] = user
 #         return attrs
+
+class MascotaSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(max_length=255, required=True, allow_blank=False)
+    nombre = serializers.CharField(max_length=255, required=True, allow_blank=True)
+    tipo = serializers.CharField(max_length=255, required=True, allow_blank=True)
+    raza = serializers.CharField(max_length=255, required=True, allow_blank=True)
+    edad = serializers.IntegerField(required=True)
+    estado_salud = serializers.CharField(max_length=255, required=True, allow_blank=True)
+    tamano = serializers.CharField(max_length=1, required=True, allow_blank=True)
+    imagen = serializers.ImageField(required=False)
+    
+    class Meta:
+        model = Mascota
+        fields = ['email', 'nombre', 'tipo', 'raza', 'edad', 'estado_salud', 'tamano', 'imagen']
+
+    def save(self, **kwargs):
+        user = User.objects.get(email=self.validated_data['email'])
+        nombre = self.validated_data['nombre']
+        tipo = self.validated_data['tipo']
+        raza = self.validated_data['raza']
+        edad = self.validated_data['edad']
+        estado_salud = self.validated_data['estado_salud']
+        tamano = self.validated_data['tamano']
+        imagen = self.validated_data.get('imagen', None)
+        mascota = Mascota.objects.create(
+            user=user,
+            nombre=nombre,
+            tipo=tipo,
+            raza=raza,
+            edad=edad,
+            estado_salud=estado_salud,
+            tamano=tamano,
+            imagen=imagen
+        )
+        return mascota
+
+class ProductoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Producto
+        fields = ['nombre', 'descripcion', 'precio', 'stock', 'categoria', 'imagen']
+
+class DescuentoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Descuento
+        fields = ['descripcion', 'porcentaje']
+
