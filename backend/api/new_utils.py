@@ -131,7 +131,4 @@ def send_test_email():
 
     except Exception as e:
         print(str(e))
-        return {
-            "message": "Error al enviar el correo electrónico",
-            "error": str(e.body)
-        }
+        return e.body
