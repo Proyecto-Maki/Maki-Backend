@@ -26,7 +26,7 @@ def SendTestEmail(request):
         return Response({response['message']})
     except Exception as e:
         return Response({
-            'error': str(e),
+            'error': e,
             'message': 'Ha ocurrido un error al enviar el correo'
         }, status=status.HTTP_400_BAD_REQUEST)
 
