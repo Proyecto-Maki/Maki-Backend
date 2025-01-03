@@ -208,7 +208,7 @@ class LogoutSerializer(serializers.Serializer):
 #         return attrs
 
 class MascotaSerializer(serializers.ModelSerializer):
-    email = serializers.EmailField(max_length=255, required=True, allow_blank=False)
+    email = serializers.EmailField(max_length=255, required=True, allow_blank=False, write_only=True)
     nombre = serializers.CharField(max_length=255, required=True, allow_blank=True)
     tipo = serializers.CharField(max_length=255, required=True, allow_blank=True)
     raza = serializers.CharField(max_length=255, required=True, allow_blank=True)

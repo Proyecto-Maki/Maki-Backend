@@ -274,7 +274,7 @@ class MascotasUserView(generics.ListAPIView):
     serializer_class = MascotaSerializer
     permission_classes = [permissions.IsAuthenticated]
 
-    def get_queryset(self, *args, **kwargs):
+    def get_queryset(self):
         email = self.kwargs.get('email')
         user = get_object_or_404(User, email=email)
         return Mascota.objects.filter(user=user)

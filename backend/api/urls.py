@@ -20,5 +20,5 @@ urlpatterns = [
     ## Mascota
 
     path('registro/mascota/', MascotaCreateView.as_view(), name='register_mascota'),
-    path('mascotas/<str:email>/', MascotasUserView.as_view(), name='mascotas_user'),
+    path('mascotas/<email>/', MascotasUserView.as_view(), name='mascotas_user'),
 ]
