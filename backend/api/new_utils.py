@@ -36,12 +36,12 @@ def send_code_to_user(email):
     plain_message = strip_tags(html_message)
 
     message = Mail(
-        from_email= settings.EMAIL_HOST_USER,
+        from_email= settings.DEFAULT_FROM_EMAIL,
         to_emails=email,
         subject=Subject,
         html_content=html_message)
     
-    message.add_bcc(settings.EMAIL_HOST_USER)
+    message.add_bcc(settings.DEFAULT_FROM_EMAIL)
     
     # os.environ["REQUESTS_CA_BUNDLE"] = certifi.where()
     if (not os.environ.get('PYTHONHTTPSVERIFY', '') and getattr(ssl, '_create_unverified_context', None)):
@@ -62,7 +62,7 @@ def send_code_to_user(email):
         print(str(e))
         return {
             "message": "Error al enviar el correo electrónico",
-            "error": str(e)
+            "error": str(e.body)
         }
 
 
@@ -79,12 +79,12 @@ def send_normal_email(data):
     html_message = render_to_string('email-pass-recovery.html', context=context)
 
     message = Mail(
-        from_email= settings.EMAIL_HOST_USER,
-        to_emails=email,
+        from_email= settings.DEFAULT_FROM_EMAIL,
+        to_email=to_email,
         subject=Subject,
         html_content=html_message)
     
-    message.add_bcc(settings.EMAIL_HOST_USER)
+    message.add_bcc(settings.DEFAULT_FROM_EMAIL)
     # os.environ["REQUESTS_CA_BUNDLE"] = certifi.where()
 
     if (not os.environ.get('PYTHONHTTPSVERIFY', '') and getattr(ssl, '_create_unverified_context', None)):
@@ -105,5 +105,33 @@ def send_normal_email(data):
         print(str(e))
         return {
             "message": "Error al enviar el correo electrónico",
-            "error": str(e)
+            "error": str(e.body)
+        }
+    
+
+def send_test_email():
+    Subject = "Test email"
+    email = "kelly.solano.1403@gmail.com"
+    message = Mail(
+        from_email= settings.DEFAULT_FROM_EMAIL,
+        to_emails=email,
+        subject=Subject,
+        html_content="<strong>Test email</strong>")
+    if (not os.environ.get('PYTHONHTTPSVERIFY', '') and getattr(ssl, '_create_unverified_context', None)):
+        ssl._create_default_https_context = ssl._create_unverified_context
+    try:
+        sg = SendGridAPIClient(api_key=settings.SENDGRID_API_KEY)
+        response = sg.send(message)
+        return {
+            "message": "Correo electrónico enviado con éxito",
+            "status_code": response.status_code,
+            "body": response.body,
+            "headers": response.headers
+        }
+
+    except Exception as e:
+        print(str(e))
+        return {
+            "message": "Error al enviar el correo electrónico",
+            "error": str(e.body)
         }

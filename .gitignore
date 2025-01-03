@@ -17,3 +17,4 @@ backend/backend/__pycache__/settings.cpython-313.pyc
 backend/.env
 credentials.json
 .env
+api/sendgrid_test.py
