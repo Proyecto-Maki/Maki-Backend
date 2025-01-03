@@ -133,5 +133,5 @@ def send_test_email():
         print(str(e))
         return {
             "message": "Error al enviar el correo electrónico",
-            "error": str(e.body)
+            "error": str(e)
         }
