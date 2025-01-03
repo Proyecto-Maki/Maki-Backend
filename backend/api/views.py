@@ -252,7 +252,7 @@ class CurrentUserView(generics.GenericAPIView):
         return Response({'email': user.email, 'is_cliente': user.is_cliente, 'is_fundacion': user.is_fundacion})
     
 
-class MascotaCreateView():
+class MascotaCreateView(generics.ListCreateAPIView):
     permissions_classes = [permissions.IsAuthenticated]
     serializer = MascotaSerializer
 
