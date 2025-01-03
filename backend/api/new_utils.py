@@ -123,13 +123,15 @@ def send_test_email():
         sg = SendGridAPIClient(api_key=settings.SENDGRID_API_KEY)
         response = sg.send(message)
         return {
-            "message": "Correo electrónico enviado con éxito",
-            "status_code": response.status_code,
-            "body": response.body.decode("utf-8") if hasattr(response.body, "decode") else str(response.body),
-            "headers": {k: str(v) for k, v in response.headers.items()}  # Convierte los headers a strings
-        }
+        "message": "Correo electrónico enviado con éxito",
+        "status_code": response.status_code,
+        "body": response.body.decode('utf-8'),  # Decodifica la respuesta si es necesario
+        "headers": response.headers
+    }
 
     except Exception as e:
-        print(settings.SENDGRID_API_KEY)
-        print(f"Este es el error {str(e)}")
-        return e
+    # Captura el error y devuelve un mensaje limpio
+        return {
+            "error": str(e),  # Asegúrate de que el error sea un string simple y serializable
+            "status_code": 500
+        }
