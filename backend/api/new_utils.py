@@ -130,5 +130,6 @@ def send_test_email():
         }
 
     except Exception as e:
+        print(settings.SENDGRID_API_KEY)
         print(f"Este es el error {str(e)}")
         return e
