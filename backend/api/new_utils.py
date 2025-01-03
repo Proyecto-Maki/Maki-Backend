@@ -130,5 +130,5 @@ def send_test_email():
         }
 
     except Exception as e:
-        print(str(e))
-        return e.body
+        print(f"Este es el error {str(e)}")
+        return e
