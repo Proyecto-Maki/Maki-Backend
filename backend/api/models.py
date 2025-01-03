@@ -120,6 +120,7 @@ class Mascota(models.Model):
         'G': 'Grande',
     }
     tamano = models.CharField(max_length=1, null=False, blank=False, choices=TAMANOS)
+    peso = models.DecimalField(max_digits=3, decimal_places=2, null=False, blank=False)
     imagen = models.ImageField(upload_to='mascotas/', null=True, blank=True) # Esta es de prueba
 
 
