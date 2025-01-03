@@ -11,15 +11,24 @@ from rest_framework import exceptions
 # from .forms import RegistroForm, ClienteCreationForm, FundacionCreationForm
 from .models import *
 # from .utils import send_code_to_user
-from .new_utils import send_code_to_user
+from .new_utils import send_code_to_user, send_test_email
 from django.utils.http import urlsafe_base64_decode
 from django.utils.encoding import smart_str, DjangoUnicodeDecodeError
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.shortcuts import get_object_or_404
+from rest_framework.decorators import api_view
 
 
-def hola(request):
-    return render(request, 'hola.html')
+@api_view(['GET'])
+def SendTestEmail(request):
+    try: 
+        response = send_test_email()
+        return Response({response['message']})
+    except Exception as e:
+        return Response({
+            'error': e,
+            'message': 'Ha ocurrido un error al enviar el correo'
+        }, status=status.HTTP_400_BAD_REQUEST)
 
 class ClienteSignupView(generics.ListCreateAPIView):
     # serializer_class = ClienteSignupSerializer
