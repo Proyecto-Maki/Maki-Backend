@@ -15,6 +15,7 @@ from .new_utils import send_code_to_user
 from django.utils.http import urlsafe_base64_decode
 from django.utils.encoding import smart_str, DjangoUnicodeDecodeError
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
+from django.shortcuts import get_object_or_404
 
 
 def hola(request):
@@ -269,6 +270,15 @@ class MascotaCreateView(generics.ListCreateAPIView):
             'message': 'Ha ocurrido un error al crear la mascota'
         }, status=status.HTTP_400_BAD_REQUEST)
 
+class MascotasUserView(generics.ListAPIView):
+    serializer_class = MascotaSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self, *args, **kwargs):
+        email = self.kwargs.get('email')
+        user = get_object_or_404(User, email=email)
+        return Mascota.objects.filter(user=user)
+    
 
 # class ProductosView(generics.GenericAPIView):
 #     permission_classes = [permissions.IsAuthenticated]
