@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect
 from django.contrib.auth import login, authenticate
 from rest_framework import generics, status, permissions
 from rest_framework.response import Response
-from .serializers import UserSerializer, ClienteSignupSerializer, FundacionSignupSerializer, PasswordResetRequestSerializer, SetNewPasswordSerializer, LogoutSerializer
+from .serializers import *
 from rest_framework.views import APIView
 from .permissions import IsClienteUser, IsFundacionUser
 from rest_framework_simplejwt.views import TokenObtainPairView
@@ -253,7 +253,21 @@ class CurrentUserView(generics.GenericAPIView):
     
 
 class MascotaCreateView():
-    pass
+    permissions_classes = [permissions.IsAuthenticated]
+    serializer = MascotaSerializer
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({
+                'message': 'Mascota creada exitosamente'
+            }, status=status.HTTP_201_CREATED)
+        return Response({
+            'error': serializer.errors,
+            'message': 'Ha ocurrido un error al crear la mascota'
+        }, status=status.HTTP_400_BAD_REQUEST)
+
 
 # class ProductosView(generics.GenericAPIView):
 #     permission_classes = [permissions.IsAuthenticated]

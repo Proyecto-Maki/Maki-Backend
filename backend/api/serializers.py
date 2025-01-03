@@ -215,11 +215,12 @@ class MascotaSerializer(serializers.ModelSerializer):
     edad = serializers.IntegerField(required=True)
     estado_salud = serializers.CharField(max_length=255, required=True, allow_blank=True)
     tamano = serializers.CharField(max_length=1, required=True, allow_blank=True)
+    peso = serializers.DecimalField(max_digits=3, decimal_places=2, required=True)
     imagen = serializers.ImageField(required=False)
     
     class Meta:
         model = Mascota
-        fields = ['email', 'nombre', 'tipo', 'raza', 'edad', 'estado_salud', 'tamano', 'imagen']
+        fields = ['email', 'nombre', 'tipo', 'raza', 'edad', 'estado_salud', 'tamano', 'peso', 'imagen']
 
     def save(self, **kwargs):
         user = User.objects.get(email=self.validated_data['email'])
@@ -229,6 +230,7 @@ class MascotaSerializer(serializers.ModelSerializer):
         edad = self.validated_data['edad']
         estado_salud = self.validated_data['estado_salud']
         tamano = self.validated_data['tamano']
+        peso = self.validated_data['peso']
         imagen = self.validated_data.get('imagen', None)
         mascota = Mascota.objects.create(
             user=user,
@@ -238,6 +240,7 @@ class MascotaSerializer(serializers.ModelSerializer):
             edad=edad,
             estado_salud=estado_salud,
             tamano=tamano,
+            peso=peso,
             imagen=imagen
         )
         return mascota
