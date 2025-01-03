@@ -253,8 +253,9 @@ class CurrentUserView(generics.GenericAPIView):
     
 
 class MascotaCreateView(generics.ListCreateAPIView):
-    permissions_classes = [permissions.IsAuthenticated]
-    serializer = MascotaSerializer
+    queryset = Mascota.objects.all()
+    permissions_classes = [permissions.AllowAny]
+    serializer_class = MascotaSerializer
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
