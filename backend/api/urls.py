@@ -31,4 +31,7 @@ urlpatterns = [
 
     path('registro/mascota/', MascotaCreateView.as_view(), name='register_mascota'),
     path('mascotas/<email>/', MascotasUserView.as_view(), name='mascotas_user'),
+    path('mascotas/update/<int:id>/', MascotaUpdateView.as_view(), name='mascota_update'),
+    path('mascotas/delete/<int:id>/', MascotaDeleteView.as_view(), name='mascota_delete'),
+    path('mascotas/detalle/<int:id>/', MascotaDetailView.as_view(), name='mascota_detail'),
 ]

@@ -253,7 +253,7 @@ class MascotaSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Mascota
-        fields = ['email', 'nombre', 'tipo', 'raza', 'edad', 'estado_salud', 'tamano', 'peso', 'imagen']
+        fields = ['id','email', 'nombre', 'tipo', 'raza', 'edad', 'estado_salud', 'tamano', 'peso', 'imagen']
 
     def save(self, **kwargs):
         user = User.objects.get(email=self.validated_data['email'])
@@ -277,6 +277,15 @@ class MascotaSerializer(serializers.ModelSerializer):
             imagen=imagen
         )
         return mascota
+    
+    def update(self, instance, validated_data):
+        """
+        Actualiza los datos de la mascota si es necesario.
+        Este método será invocado solo si el serializador es válido.
+        """
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
 
 class ProductoSerializer(serializers.ModelSerializer):
     class Meta:
