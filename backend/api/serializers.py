@@ -15,6 +15,16 @@ class UserSerializer(serializers.ModelSerializer):
         model = User
         fields = ['email', 'is_cliente', 'direccion', 'telefono', 'saldo', 'is_verified']
 
+class ClienteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Cliente
+        fields = '__all__'  # O especifica los campos que deseas incluir, por ejemplo: ['id', 'user', 'telefono']
+
+class FundacionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Fundacion
+        fields = '__all__'
+
 class ClienteSignupSerializer(serializers.ModelSerializer):
     password2 = serializers.CharField(style={'input_type': 'password'}, write_only=True)
     direccion = serializers.CharField(max_length=255, required=False, allow_blank=True, write_only=True)

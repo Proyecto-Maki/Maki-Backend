@@ -17,6 +17,7 @@ urlpatterns = [
     path('password-reset-confirm/<uidb64>/<token>/', PasswordResetConfirm.as_view(), name='password-reset-confirm'),
     path('set-new-password/', SetNewPassword.as_view(), name='password-reset-complete'),
     path('current-user/', CurrentUserView.as_view(), name='current-user'),
+    path('cliente-profile/', ClienteDetailView.as_view(), name='cliente-profile'),
 
     ## Mascota
 

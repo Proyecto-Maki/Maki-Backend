@@ -261,6 +261,25 @@ class CurrentUserView(generics.GenericAPIView):
         return Response({'email': user.email, 'is_cliente': user.is_cliente, 'is_fundacion': user.is_fundacion})
     
 
+class ClienteDetailView(generics.RetrieveUpdateDestroyAPIView):
+    permission_classes = [permissions.IsAuthenticated & IsClienteUser]
+    serializer_class = ClienteSerializer
+    queryset = Cliente.objects.all()
+
+    def get_object(self):
+        email = self.request.query_params.get('email')
+        if not email:
+            raise ValueError("Debes proporcionar un parámetro 'email' en la consulta.")
+        
+        # Busca el usuario con el email proporcionado
+        user = get_object_or_404(User, email=email)
+
+        # Busca el cliente asociado al usuario encontrado
+        cliente = get_object_or_404(self.queryset, user=user)
+
+        return cliente
+    
+
 class MascotaCreateView(generics.ListCreateAPIView):
     queryset = Mascota.objects.all()
     permissions_classes = [permissions.AllowAny]
