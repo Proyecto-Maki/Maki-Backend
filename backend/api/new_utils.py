@@ -124,16 +124,14 @@ def send_test_email():
         api_key = settings.SENDGRID_API_KEY
         sg = SendGridAPIClient(api_key=api_key)
         response = sg.send(message)
-        return Response({
-        "message": "Correo electrónico enviado con éxito",
-        "status_code": response.status_code,
-        "body": response.body.decode('utf-8'),
-        "headers": response.headers
-    })
+        return {
+            "message": "Correo electrónico enviado con éxito",
+            "status_code": response.status_code,
+            "body": response.body,
+            "headers": response.headers
+        }
 
     except Exception as e:
         print(settings.SENDGRID_API_KEY)
         print(f"Este es el error {str(e)}")
-        return {
-            "message": f"Error al enviar el correo electrónico {str(e)}"  # Convert the exception to a string
-        }
+        return e
