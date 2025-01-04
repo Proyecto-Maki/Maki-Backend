@@ -23,11 +23,10 @@ from rest_framework.decorators import api_view
 def SendTestEmail(request):
     try: 
         response = send_test_email()
-        return Response({response['message']})
+        return Response({'message': response['message']})
     except Exception as e:
         return Response({
-            'error': e,
-            'message': 'Ha ocurrido un error al enviar el correo'
+            "error": str(e)
         }, status=status.HTTP_400_BAD_REQUEST)
 
 class ClienteSignupView(generics.ListCreateAPIView):

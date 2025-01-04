@@ -11,7 +11,7 @@ from django.utils.html import strip_tags
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 import certifi
-
+from rest_framework.response import Response
 
 
 def generateOTP():
@@ -110,8 +110,9 @@ def send_normal_email(data):
     
 
 def send_test_email():
-    Subject = "Test 3 email"
-    email = "kelly.solano.1403@gmail.com"
+    Subject = "Test 5 email"
+    # email = "kelly.solano.1403@gmail.com"
+    email = "apineross@unal.edu.co"
     message = Mail(
         from_email= settings.DEFAULT_FROM_EMAIL,
         to_emails=email,
@@ -120,16 +121,19 @@ def send_test_email():
     if (not os.environ.get('PYTHONHTTPSVERIFY', '') and getattr(ssl, '_create_unverified_context', None)):
         ssl._create_default_https_context = ssl._create_unverified_context
     try:
-        sg = SendGridAPIClient(api_key=settings.SENDGRID_API_KEY)
+        api_key = settings.SENDGRID_API_KEY
+        sg = SendGridAPIClient(api_key=api_key)
         response = sg.send(message)
-        return {
-            "message": "Correo electrónico enviado con éxito",
-            "status_code": response.status_code,
-            "body": response.body,
-            "headers": response.headers
-        }
+        return Response({
+        "message": "Correo electrónico enviado con éxito",
+        "status_code": response.status_code,
+        "body": response.body.decode('utf-8'),
+        "headers": response.headers
+    })
 
     except Exception as e:
         print(settings.SENDGRID_API_KEY)
         print(f"Este es el error {str(e)}")
-        return e
+        return {
+            "message": f"Error al enviar el correo electrónico {str(e)}"  # Convert the exception to a string
+        }
