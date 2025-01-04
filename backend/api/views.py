@@ -26,8 +26,7 @@ def SendTestEmail(request):
         return Response({'message': response['message']})
     except Exception as e:
         return Response({
-            'error': e,
-            'message': 'Ha ocurrido un error al enviar el correo'
+            "error": str(e)
         }, status=status.HTTP_400_BAD_REQUEST)
 
 class ClienteSignupView(generics.ListCreateAPIView):
