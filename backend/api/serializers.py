@@ -16,27 +16,32 @@ class UserSerializer(serializers.ModelSerializer):
         fields = ['email', 'is_cliente', 'direccion', 'telefono', 'saldo', 'is_verified']
 
 class ClienteSerializer(serializers.ModelSerializer):
-    email = serializers.EmailField(source='user.email', read_only=True)
-    direccion = serializers.CharField(source='user.direccion', read_only=True)
-    telefono = serializers.CharField(source='user.telefono', read_only=True)
-    saldo = serializers.DecimalField(source='user.saldo', max_digits=7, decimal_places=2, read_only=True)
+    email = serializers.EmailField(source='user.email')
+    direccion = serializers.CharField(source='user.direccion')
+    telefono = serializers.CharField(source='user.telefono')
+    saldo = serializers.DecimalField(source='user.saldo', max_digits=7, decimal_places=2)
     is_verified = serializers.BooleanField(source='user.is_verified', read_only=True)
 
     class Meta:
         model = Cliente
         fields = ['email', 'direccion', 'telefono', 'saldo', 'is_verified', 'cedula', 'primer_nombre', 'primer_apellido', 'segundo_nombre', 'segundo_apellido']  
 
-    def update(self, instance, validated_data):
-        user_data = validated_data
-        for attr, value in validated_data.items():
-            setattr(instance.user, attr, value)
-        instance.user.save()
+    def update(self, instance_cliente, validated_data):
+        # Extraer datos relacionados con el usuario
+        user_data = validated_data.pop('user', {})
+        
+        # Actualizar el usuario relacionado
+        instance_user = instance_cliente.user
+        for attr, value in user_data.items():
+            setattr(instance_user, attr, value)
+        instance_user.save()
 
+        # Actualizar los datos del cliente
         for attr, value in validated_data.items():
-            setattr(instance, attr, value)
-        instance.save()
+            setattr(instance_cliente, attr, value)
+        instance_cliente.save()
 
-        return instance
+        return instance_cliente
 
 class FundacionSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(source='user.email', read_only=True)

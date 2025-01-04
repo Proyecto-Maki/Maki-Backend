@@ -259,7 +259,7 @@ class CurrentUserView(generics.GenericAPIView):
 
     def get(self, request):
         user = request.user
-        return Response({'email': user.email, 'is_cliente': user.is_cliente, 'is_fundacion': user.is_fundacion})
+        return Response({'id': user.id,'email': user.email, 'is_cliente': user.is_cliente, 'is_fundacion': user.is_fundacion})
     
 
 class ClienteDetailView(generics.RetrieveUpdateDestroyAPIView):
@@ -284,16 +284,21 @@ class ClienteDetailView(generics.RetrieveUpdateDestroyAPIView):
 class ClienteUpdateView(generics.RetrieveUpdateAPIView):
     permission_classes = [permissions.IsAuthenticated & IsClienteUser]
     serializer_class = ClienteSerializer
+
     def get_object(self):
-        cliente = get_object_or_404(Cliente, user=self.request.user)
+        email = self.request.query_params.get('email')
+        if not email:
+            raise serializers.ValidationError({"error": "Se debe proporcionar un parámetro 'email'."})
+        user = get_object_or_404(User, email=email)
+        cliente = get_object_or_404(Cliente, user=user)
         return cliente
-    
-    def put(self, request, id, *args, **kwargs):
+
+    def put(self, request, *args, **kwargs):
         cliente = self.get_object()
-        serializer = ClienteSerializer(cliente, data=self.request.data)
+        serializer = self.get_serializer(cliente, data=request.data, partial=True)
         if serializer.is_valid():
-            serializer.update(cliente, serializer.validated_data)
-            return Response(serializer.data)
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
     
