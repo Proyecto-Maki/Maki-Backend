@@ -317,6 +317,28 @@ class FundacionDetailView(generics.RetrieveUpdateDestroyAPIView):
 
         return fundacion
     
+class FundacionUpdateView(generics.RetrieveUpdateAPIView):
+    permission_classes = [permissions.IsAuthenticated & IsFundacionUser]
+    serializer_class = FundacionSerializer
+    def get_object(self):
+        fundacion = get_object_or_404(Fundacion, user=self.request.user)
+        return fundacion
+    
+class ClienteDeleteView(generics.DestroyAPIView):
+    permission_classes = [permissions.IsAuthenticated & IsClienteUser]
+    serializer_class = ClienteSerializer
+    queryset = Cliente.objects.all()
+
+    def get_object(self):
+        cliente = get_object_or_404(Cliente, user=self.request.user)
+        return cliente
+    
+    def perform_destroy(self, instance):
+        user = instance.user
+        instance.delete()
+        user.delete()
+
+    
 
 class MascotaCreateView(generics.ListCreateAPIView):
     queryset = Mascota.objects.all()
