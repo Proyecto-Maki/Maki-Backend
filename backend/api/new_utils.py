@@ -11,7 +11,7 @@ from django.utils.html import strip_tags
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 import certifi
-
+from rest_framework.response import Response
 
 
 def generateOTP():
@@ -122,16 +122,16 @@ def send_test_email():
     try:
         sg = SendGridAPIClient(api_key=settings.SENDGRID_API_KEY)
         response = sg.send(message)
-        return {
+        return Response({
         "message": "Correo electrónico enviado con éxito",
         "status_code": response.status_code,
-        "body": response.body.decode('utf-8'),  # Decodifica la respuesta si es necesario
+        "body": response.body.decode('utf-8'),
         "headers": response.headers
-    }
+    })
 
     except Exception as e:
-    # Captura el error y devuelve un mensaje limpio
-        return {
-            "error": str(e),  # Asegúrate de que el error sea un string simple y serializable
+        return Response({
+            "error": str(e),
             "status_code": 500
-        }
+        })
+
