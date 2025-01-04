@@ -27,9 +27,14 @@ class ClienteSerializer(serializers.ModelSerializer):
         fields = ['email', 'direccion', 'telefono', 'saldo', 'is_verified', 'cedula', 'primer_nombre', 'primer_apellido', 'segundo_nombre', 'segundo_apellido']  
 
 class FundacionSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(source='user.email', read_only=True)
+    direccion = serializers.CharField(source='user.direccion', read_only=True)
+    telefono = serializers.CharField(source='user.telefono', read_only=True)
+    saldo = serializers.DecimalField(source='user.saldo', max_digits=7, decimal_places=2, read_only=True)
+    is_verified = serializers.BooleanField(source='user.is_verified', read_only=True)
     class Meta:
         model = Fundacion
-        fields = '__all__'
+        fields = ['email', 'direccion', 'telefono', 'saldo', 'is_verified', 'nombre', 'nit', 'descripcion']
 
 class ClienteSignupSerializer(serializers.ModelSerializer):
     password2 = serializers.CharField(style={'input_type': 'password'}, write_only=True)

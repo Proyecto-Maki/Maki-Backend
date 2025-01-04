@@ -279,6 +279,22 @@ class ClienteDetailView(generics.RetrieveUpdateDestroyAPIView):
 
         return cliente
     
+class FundacionDetailView(generics.RetrieveUpdateDestroyAPIView):
+    permission_classes = [permissions.IsAuthenticated & IsFundacionUser]
+    serializer_class = FundacionSerializer
+    queryset = Fundacion.objects.all()
+
+    def get_object(self):
+        email = self.request.query_params.get('email')
+        if not email:
+            raise ValueError("Debes proporcionar un parámetro 'email' en la consulta.")
+        
+        user = get_object_or_404(User, email=email)
+
+        fundacion = get_object_or_404(self.queryset, user=user)
+
+        return fundacion
+    
 
 class MascotaCreateView(generics.ListCreateAPIView):
     queryset = Mascota.objects.all()
