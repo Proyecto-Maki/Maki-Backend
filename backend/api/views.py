@@ -8,8 +8,10 @@ from .permissions import IsClienteUser, IsFundacionUser
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework import exceptions
+
 # from .forms import RegistroForm, ClienteCreationForm, FundacionCreationForm
 from .models import *
+
 # from .utils import send_code_to_user
 from .new_utils import send_code_to_user, send_test_email
 from django.utils.http import urlsafe_base64_decode
@@ -19,15 +21,14 @@ from django.shortcuts import get_object_or_404
 from rest_framework.decorators import api_view
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 def SendTestEmail(request):
-    try: 
+    try:
         response = send_test_email()
-        return Response({'message': response['message']})
+        return Response({"message": response["message"]})
     except Exception as e:
-        return Response({
-            "error": str(e)
-        }, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
 
 class ClienteSignupView(generics.ListCreateAPIView):
     # serializer_class = ClienteSignupSerializer
@@ -49,22 +50,30 @@ class ClienteSignupView(generics.ListCreateAPIView):
         if serializer.is_valid():
             user = serializer.save()
             send_code_to_user(user.email)
-            return Response({
-                "user": UserSerializer(user, context=self.get_serializer_context()).data,
-                "message": "Cliente creado exitosamente. Se envió un código de verificación a tu correo electrónico",
-            }, status=status.HTTP_201_CREATED)
-        
+            return Response(
+                {
+                    "user": UserSerializer(
+                        user, context=self.get_serializer_context()
+                    ).data,
+                    "message": "Cliente creado exitosamente. Se envió un código de verificación a tu correo electrónico",
+                },
+                status=status.HTTP_201_CREATED,
+            )
+
         errores = {}
         for key, value in serializer.errors.items():
             errores[key] = ", ".join(value)
 
         mensaje = " | ".join([f"{key}: {value}" for key, value in errores.items()])
-        return Response({
-            "error": serializer.errors,
-            "message": mensaje,
-            }, status=status.HTTP_400_BAD_REQUEST)
+        return Response(
+            {
+                "error": serializer.errors,
+                "message": mensaje,
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
 
-    
+
 class FundacionSignupView(generics.ListCreateAPIView):
 
     queryset = Fundacion.objects.all()
@@ -76,20 +85,27 @@ class FundacionSignupView(generics.ListCreateAPIView):
         if serializer.is_valid():
             user = serializer.save()
             send_code_to_user(user.email)
-            return Response({
-                "user": UserSerializer(user, context=self.get_serializer_context()).data,
-                "message": "Fundacion creada exitosamente. Se envió un código de verificación a tu correo electrónico",
-            }, status=status.HTTP_201_CREATED)
+            return Response(
+                {
+                    "user": UserSerializer(
+                        user, context=self.get_serializer_context()
+                    ).data,
+                    "message": "Fundacion creada exitosamente. Se envió un código de verificación a tu correo electrónico",
+                },
+                status=status.HTTP_201_CREATED,
+            )
         errores = {}
         for key, value in serializer.errors.items():
             errores[key] = ", ".join(value)
 
         mensaje = " | ".join([f"{key}: {value}" for key, value in errores.items()])
-        return Response({
-            "error": serializer.errors,
-            "message": mensaje,
-            }, status=status.HTTP_400_BAD_REQUEST)
-    
+        return Response(
+            {
+                "error": serializer.errors,
+                "message": mensaje,
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
 
     # serializer_class = FundacionSignupSerializer
     # def post(self, request, *args, **kwargs):
@@ -118,84 +134,105 @@ class FundacionSignupView(generics.ListCreateAPIView):
 #             'is_fundacion': user.is_fundacion,
 #         })
 
+
 class VerificarCodigo(generics.GenericAPIView):
     def post(self, request):
-        otpcode = request.data.get('otp')   
+        otpcode = request.data.get("otp")
         try:
             user_code_obj = OneTimePassword.objects.get(code=otpcode)
             user = user_code_obj.user
             if not user.is_verified:
                 user.is_verified = True
                 user.save()
-                return Response({
-                    'message': 'Usuario verificado exitosamente'
-                }, status=status.HTTP_200_OK)
-            return Response({
-                'message': 'Código no es válido. Usuario ya verificado'
-            }, status=status.HTTP_204_NO_CONTENT)
-        
+                return Response(
+                    {"message": "Usuario verificado exitosamente"},
+                    status=status.HTTP_200_OK,
+                )
+            return Response(
+                {"message": "Código no es válido. Usuario ya verificado"},
+                status=status.HTTP_204_NO_CONTENT,
+            )
+
         except OneTimePassword.DoesNotExist:
-            return Response({
-                'message': 'Código no es válido'
-            }, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"message": "Código no es válido"}, status=status.HTTP_404_NOT_FOUND
+            )
+
+
 class CustomAuthToken(TokenObtainPairSerializer):
-    username_field = 'email'
+    username_field = "email"
 
     def validate(self, attrs):
-        credentials ={
-            'email': attrs.get('email'),
-            'password': attrs.get('password')
-        }
+        credentials = {"email": attrs.get("email"), "password": attrs.get("password")}
 
-        user  = authenticate(**credentials)
+        user = authenticate(**credentials)
         if user:
             if not user.is_active:
-                raise exceptions.AuthenticationFailed('La cuenta no está activa.')
+                raise exceptions.AuthenticationFailed("La cuenta no está activa.")
             if not user.is_verified:
-                raise exceptions.AuthenticationFailed('La cuenta no está verificada.')
-                
+                raise exceptions.AuthenticationFailed("La cuenta no está verificada.")
+
             data = {}
             refresh = self.get_token(user)
-            data['email'] = user.email
-            data['is_cliente'] = user.is_cliente
-            data['is_fundacion'] = user.is_fundacion
-            data['refresh'] = str(refresh)
-            data['access'] = str(refresh.access_token)
-          
-            return {'data': data, 'message': '¡Bienvenido a Maki!'}
+            data["email"] = user.email
+            data["is_cliente"] = user.is_cliente
+            data["is_fundacion"] = user.is_fundacion
+            data["refresh"] = str(refresh)
+            data["access"] = str(refresh.access_token)
+
+            return {"data": data, "message": "¡Bienvenido a Maki!"}
         else:
-            raise exceptions.AuthenticationFailed('No es posible iniciar sesión con esas credenciales.')
-    
+            raise exceptions.AuthenticationFailed(
+                "No es posible iniciar sesión con esas credenciales."
+            )
+
+
 class CustomTokenObtainPairView(TokenObtainPairView):
     serializer_class = CustomAuthToken
+
 
 class LogoutView(APIView):
     serializer_class = LogoutSerializer
     permission_classes = [permissions.IsAuthenticated]
+
     def post(self, request):
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(status=status.HTTP_204_NO_CONTENT)
-    
+
+
 class ClienteOnlyView(generics.RetrieveAPIView):
-    permission_classes = [permissions.IsAuthenticated&IsClienteUser]
+    permission_classes = [permissions.IsAuthenticated & IsClienteUser]
     serializer_class = UserSerializer
+
     def get_object(self):
         return self.request.user
 
+
 class FundacionOnlyView(generics.RetrieveAPIView):
-    permission_classes = [permissions.IsAuthenticated&IsFundacionUser]
+    permission_classes = [permissions.IsAuthenticated & IsFundacionUser]
     serializer_class = UserSerializer
+
     def get_object(self):
         return self.request.user
-    
+
+
 class PasswordResetRequestView(generics.GenericAPIView):
     serializer_class = PasswordResetRequestSerializer
+
     def post(self, request):
-        serializer = self.serializer_class(data=request.data, context={'request': request})
+        serializer = self.serializer_class(
+            data=request.data, context={"request": request}
+        )
         serializer.is_valid(raise_exception=True)
-        return Response({'message': 'Se envió a tu correo electrónico un link para restablecer tu contraseña'}, status=status.HTTP_200_OK)
+        return Response(
+            {
+                "message": "Se envió a tu correo electrónico un link para restablecer tu contraseña"
+            },
+            status=status.HTTP_200_OK,
+        )
+
 
 class PasswordResetConfirm(generics.GenericAPIView):
     def get(self, request, uidb64, token):
@@ -203,25 +240,44 @@ class PasswordResetConfirm(generics.GenericAPIView):
             user_id = smart_str(urlsafe_base64_decode(uidb64))
             user = User.objects.get(id=user_id)
             if not PasswordResetTokenGenerator().check_token(user, token):
-                return Response({'message': 'Token no es válido o está expirado'}, status=status.HTTP_401_UNAUTHORIZED)
-            return Response({'success': True, 'message': 'Credenciales válidas', 'uidb6':uidb64, 'token':token}, status=status.HTTP_200_OK)
+                return Response(
+                    {"message": "Token no es válido o está expirado"},
+                    status=status.HTTP_401_UNAUTHORIZED,
+                )
+            return Response(
+                {
+                    "success": True,
+                    "message": "Credenciales válidas",
+                    "uidb6": uidb64,
+                    "token": token,
+                },
+                status=status.HTTP_200_OK,
+            )
         except DjangoUnicodeDecodeError:
             return Response(
-                {'message': 'Token no es válido o está expirado'}, 
-                status=status.HTTP_401_UNAUTHORIZED)
+                {"message": "Token no es válido o está expirado"},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
 
 class SetNewPassword(generics.GenericAPIView):
     serializer_class = SetNewPasswordSerializer
+
     def patch(self, request):
         serializer = self.serializer_class(data=request.data)
         if serializer.is_valid():
-            return Response({'message': 'Contraseña restablecida exitosamente'}, status=status.HTTP_200_OK)
+            return Response(
+                {"message": "Contraseña restablecida exitosamente"},
+                status=status.HTTP_200_OK,
+            )
         # serializer.is_valid(raise_exception=True)
-        return Response({
-            'error': serializer.errors,
-            'message': 'Ha ocurrido un error para restablecer la contraseña'}, 
-            status=status.HTTP_400_BAD_REQUEST)
-
+        return Response(
+            {
+                "error": serializer.errors,
+                "message": "Ha ocurrido un error para restablecer la contraseña",
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
 
 
 # def registro(request):
@@ -258,8 +314,14 @@ class CurrentUserView(generics.GenericAPIView):
 
     def get(self, request):
         user = request.user
-        return Response({'email': user.email, 'is_cliente': user.is_cliente, 'is_fundacion': user.is_fundacion})
-    
+        return Response(
+            {
+                "email": user.email,
+                "is_cliente": user.is_cliente,
+                "is_fundacion": user.is_fundacion,
+            }
+        )
+
 
 class MascotaCreateView(generics.ListCreateAPIView):
     queryset = Mascota.objects.all()
@@ -270,23 +332,28 @@ class MascotaCreateView(generics.ListCreateAPIView):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
-            return Response({
-                'message': 'Mascota creada exitosamente'
-            }, status=status.HTTP_201_CREATED)
-        return Response({
-            'error': serializer.errors,
-            'message': 'Ha ocurrido un error al crear la mascota'
-        }, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"message": "Mascota creada exitosamente"},
+                status=status.HTTP_201_CREATED,
+            )
+        return Response(
+            {
+                "error": serializer.errors,
+                "message": "Ha ocurrido un error al crear la mascota",
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
 
 class MascotasUserView(generics.ListAPIView):
     serializer_class = MascotaSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        email = self.kwargs.get('email')
+        email = self.kwargs.get("email")
         user = get_object_or_404(User, email=email)
         return Mascota.objects.filter(user=user)
-    
+
 
 # class ProductosView(generics.GenericAPIView):
 #     permission_classes = [permissions.IsAuthenticated]

@@ -7,54 +7,90 @@ from django.utils.encoding import smart_bytes, force_str
 from django.contrib.sites.shortcuts import get_current_site
 from rest_framework.exceptions import AuthenticationFailed
 from django.urls import reverse
+
 # from .utils import send_normal_email
 from .new_utils import send_normal_email
 from rest_framework_simplejwt.tokens import RefreshToken, TokenError
+
+
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['email', 'is_cliente', 'direccion', 'telefono', 'saldo', 'is_verified']
+        fields = [
+            "email",
+            "is_cliente",
+            "direccion",
+            "telefono",
+            "saldo",
+            "is_verified",
+        ]
+
 
 class ClienteSignupSerializer(serializers.ModelSerializer):
-    password2 = serializers.CharField(style={'input_type': 'password'}, write_only=True)
-    direccion = serializers.CharField(max_length=255, required=False, allow_blank=True, write_only=True)
-    telefono = serializers.CharField(max_length=10, required=False, allow_blank=True, write_only=True)
-    primer_nombre = serializers.CharField(max_length=255, required=True, allow_blank=True, write_only=True)
-    primer_apellido = serializers.CharField(max_length=255, required=True, allow_blank=True, write_only=True)
-    segundo_nombre = serializers.CharField(max_length=255, required=False, allow_blank=True, write_only=True)
-    cedula = serializers.CharField(max_length=10, required=True, allow_blank=True, write_only=True)
-    segundo_apellido = serializers.CharField(max_length=255, required=False, allow_blank=True, write_only=True)
+    password2 = serializers.CharField(style={"input_type": "password"}, write_only=True)
+    direccion = serializers.CharField(
+        max_length=255, required=False, allow_blank=True, write_only=True
+    )
+    telefono = serializers.CharField(
+        max_length=10, required=False, allow_blank=True, write_only=True
+    )
+    primer_nombre = serializers.CharField(
+        max_length=255, required=True, allow_blank=True, write_only=True
+    )
+    primer_apellido = serializers.CharField(
+        max_length=255, required=True, allow_blank=True, write_only=True
+    )
+    segundo_nombre = serializers.CharField(
+        max_length=255, required=False, allow_blank=True, write_only=True
+    )
+    cedula = serializers.CharField(
+        max_length=10, required=True, allow_blank=True, write_only=True
+    )
+    segundo_apellido = serializers.CharField(
+        max_length=255, required=False, allow_blank=True, write_only=True
+    )
+
     class Meta:
         model = User
-        fields = ['email', 'password', 'password2', 'direccion', 'telefono', 'cedula', 'primer_nombre', 'primer_apellido', 'segundo_nombre', 'segundo_apellido']
-        extra_kwargs = {
-            'password': {'write_only': True}
-        }
+        fields = [
+            "email",
+            "password",
+            "password2",
+            "direccion",
+            "telefono",
+            "cedula",
+            "primer_nombre",
+            "primer_apellido",
+            "segundo_nombre",
+            "segundo_apellido",
+        ]
+        extra_kwargs = {"password": {"write_only": True}}
 
     def save(self, **kwargs):
         user = User(
-            email=self.validated_data['email'],
+            email=self.validated_data["email"],
         )
-        password = self.validated_data['password']
-        password2 = self.validated_data['password2']
-        direccion = self.validated_data.get('direccion', '')
-        telefono = self.validated_data.get('telefono', '')
-        
+        password = self.validated_data["password"]
+        password2 = self.validated_data["password2"]
+        direccion = self.validated_data.get("direccion", "")
+        telefono = self.validated_data.get("telefono", "")
 
         if password != password2:
-            raise serializers.ValidationError({'password': 'Las contraseñas no coinciden'})
+            raise serializers.ValidationError(
+                {"password": "Las contraseñas no coinciden"}
+            )
         user.set_password(password)
         user.direccion = direccion
         user.telefono = telefono
-        
+
         user.is_cliente = True
         user.is_verified = False  # Set is_verified to False
         user.save()
-        cedula = self.validated_data.get('cedula', '')
-        primer_nombre = self.validated_data.get('primer_nombre', '')
-        primer_apellido = self.validated_data.get('primer_apellido', '')
-        segundo_nombre = self.validated_data.get('segundo_nombre', '')
-        segundo_apellido = self.validated_data.get('segundo_apellido', '')
+        cedula = self.validated_data.get("cedula", "")
+        primer_nombre = self.validated_data.get("primer_nombre", "")
+        primer_apellido = self.validated_data.get("primer_apellido", "")
+        segundo_nombre = self.validated_data.get("segundo_nombre", "")
+        segundo_apellido = self.validated_data.get("segundo_apellido", "")
 
         Cliente.objects.create(
             user=user,
@@ -66,33 +102,53 @@ class ClienteSignupSerializer(serializers.ModelSerializer):
         )
         return user
 
+
 class FundacionSignupSerializer(serializers.ModelSerializer):
-    password2 = serializers.CharField(style={'input_type': 'password'}, write_only=True)
-    direccion = serializers.CharField(max_length=255, required=False, allow_blank=True, write_only=True)
-    telefono = serializers.CharField(max_length=10, required=False, allow_blank=True, write_only=True)
-    nombre = serializers.CharField(max_length=255, required=True, allow_blank=True, write_only=True)
-    nit = serializers.CharField(max_length=255, required=True, allow_blank=True, write_only=True)
-    descripcion = serializers.CharField(max_length=255, required=True, allow_blank=True, write_only=True)
+    password2 = serializers.CharField(style={"input_type": "password"}, write_only=True)
+    direccion = serializers.CharField(
+        max_length=255, required=False, allow_blank=True, write_only=True
+    )
+    telefono = serializers.CharField(
+        max_length=10, required=False, allow_blank=True, write_only=True
+    )
+    nombre = serializers.CharField(
+        max_length=255, required=True, allow_blank=True, write_only=True
+    )
+    nit = serializers.CharField(
+        max_length=255, required=True, allow_blank=True, write_only=True
+    )
+    descripcion = serializers.CharField(
+        max_length=255, required=True, allow_blank=True, write_only=True
+    )
     # premium = serializers.BooleanField(required=False, write_only=True)
 
     class Meta:
         model = User
-        fields = ['email', 'password', 'password2', 'direccion', 'telefono','nombre', 'nit', 'descripcion']
-        extra_kwargs = {
-            'password': {'write_only': True}
-        }
+        fields = [
+            "email",
+            "password",
+            "password2",
+            "direccion",
+            "telefono",
+            "nombre",
+            "nit",
+            "descripcion",
+        ]
+        extra_kwargs = {"password": {"write_only": True}}
 
     def save(self, **kwargs):
         user = User(
-            email=self.validated_data['email'],
+            email=self.validated_data["email"],
         )
-        password = self.validated_data['password']
-        password2 = self.validated_data['password2']
-        direccion = self.validated_data.get('direccion', '')
-        telefono = self.validated_data.get('telefono', '')
+        password = self.validated_data["password"]
+        password2 = self.validated_data["password2"]
+        direccion = self.validated_data.get("direccion", "")
+        telefono = self.validated_data.get("telefono", "")
 
         if password != password2:
-            raise serializers.ValidationError({'password': 'Las contraseñas no coinciden'})
+            raise serializers.ValidationError(
+                {"password": "Las contraseñas no coinciden"}
+            )
         user.set_password(password)
         user.direccion = direccion
         user.telefono = telefono
@@ -100,92 +156,96 @@ class FundacionSignupSerializer(serializers.ModelSerializer):
         user.is_verified = False  # Set is_verified to False
         user.save()
 
-        nombre = self.validated_data.get('nombre', '')
-        nit = self.validated_data.get('nit', '')
-        descripcion = self.validated_data.get('descripcion', '')
+        nombre = self.validated_data.get("nombre", "")
+        nit = self.validated_data.get("nit", "")
+        descripcion = self.validated_data.get("descripcion", "")
         # premium = self.validated_data.get('premium', False)
         Fundacion.objects.create(
-            user=user,
-            nombre=nombre,
-            nit=nit,
-            descripcion=descripcion
+            user=user, nombre=nombre, nit=nit, descripcion=descripcion
         )
         return user
-    
+
+
 class PasswordResetRequestSerializer(serializers.Serializer):
     email = serializers.EmailField(max_length=255, required=True, allow_blank=False)
+
     class Meta:
-        fields = ['email']
+        fields = ["email"]
 
     def validate(self, attrs):
-        email = attrs.get('email')
+        email = attrs.get("email")
         if User.objects.filter(email=email).exists():
             user = User.objects.get(email=email)
             uidb64 = urlsafe_base64_encode(smart_bytes(user.pk))
             token = PasswordResetTokenGenerator().make_token(user)
-            request = self.context.get('request')
+            request = self.context.get("request")
             # site_domain = get_current_site(request).domain
-            site_domain = 'localhost:3000'
-            relative_link = reverse('password-reset-confirm', kwargs={'uidb64': uidb64, 'token': token})
+            site_domain = "localhost:3000"
+            relative_link = reverse(
+                "password-reset-confirm", kwargs={"uidb64": uidb64, "token": token}
+            )
             abslink = f"http://{site_domain}{relative_link}"
             # email_body = f"¡Hola! Usa el siguiente enlace para restablecer tu contraseña: \n {abslink}"
             data = {
-                'email': email,
-                'link': abslink,
-                'to_email': user.email,
-                'email_subject': 'Restablecer contraseña'
+                "email": email,
+                "link": abslink,
+                "to_email": user.email,
+                "email_subject": "Restablecer contraseña",
             }
 
             send_normal_email(data)
         return super().validate(attrs)
 
+
 class SetNewPasswordSerializer(serializers.Serializer):
     password = serializers.CharField(min_length=6, max_length=100, write_only=True)
-    confirm_password = serializers.CharField(min_length=6, max_length=100, write_only=True)
+    confirm_password = serializers.CharField(
+        min_length=6, max_length=100, write_only=True
+    )
     uidb64 = serializers.CharField(write_only=True)
     token = serializers.CharField(write_only=True)
 
     class Meta:
-        fields = ['password', 'confirm_password', 'uidb64', 'token']
+        fields = ["password", "confirm_password", "uidb64", "token"]
 
     def validate(self, attrs):
 
         try:
-            token = attrs.get('token')
-            uidb64 = attrs.get('uidb64')
-            password = attrs.get('password')
-            confirm_password = attrs.get('confirm_password')
+            token = attrs.get("token")
+            uidb64 = attrs.get("uidb64")
+            password = attrs.get("password")
+            confirm_password = attrs.get("confirm_password")
             user_id = force_str(urlsafe_base64_decode(uidb64))
             user = User.objects.get(id=user_id)
             if not PasswordResetTokenGenerator().check_token(user, token):
-                raise AuthenticationFailed('El enlace no es válido o ha expirado', 401)
-            
+                raise AuthenticationFailed("El enlace no es válido o ha expirado", 401)
+
             if password != confirm_password:
-                raise AuthenticationFailed('Las contraseñas no coinciden', 401)
+                raise AuthenticationFailed("Las contraseñas no coinciden", 401)
             user.set_password(password)
             user.save()
 
             return user
         except Exception as e:
-            raise AuthenticationFailed('El enlace no es válido o ha expirado', 401)
-        
+            raise AuthenticationFailed("El enlace no es válido o ha expirado", 401)
+
 
 class LogoutSerializer(serializers.Serializer):
     refresh = serializers.CharField()
 
-    default_error_messages = {
-        'bad_token': ('Token no es válido o ha expirado')
-    }
+    default_error_messages = {"bad_token": ("Token no es válido o ha expirado")}
+
     def validate(self, attrs):
-        self.token = attrs.get('refresh_token')
+        self.token = attrs.get("refresh_token")
         return attrs
-    
+
     def save(self, **kwargs):
         try:
             token = RefreshToken(self.token)
             token.blacklist()
         except TokenError:
-            return self.fail('bad_token')
+            return self.fail("bad_token")
+
 
 # class EmailAuthSerializer(serializers.Serializer):
 #     email = serializers.EmailField()
@@ -207,31 +267,46 @@ class LogoutSerializer(serializers.Serializer):
 #         attrs['user'] = user
 #         return attrs
 
+
 class MascotaSerializer(serializers.ModelSerializer):
-    email = serializers.EmailField(max_length=255, required=True, allow_blank=False, write_only=True)
+    email = serializers.EmailField(
+        max_length=255, required=True, allow_blank=False, write_only=True
+    )
     nombre = serializers.CharField(max_length=255, required=True, allow_blank=True)
     tipo = serializers.CharField(max_length=255, required=True, allow_blank=True)
     raza = serializers.CharField(max_length=255, required=True, allow_blank=True)
     edad = serializers.IntegerField(required=True)
-    estado_salud = serializers.CharField(max_length=255, required=True, allow_blank=True)
+    estado_salud = serializers.CharField(
+        max_length=255, required=True, allow_blank=True
+    )
     tamano = serializers.CharField(max_length=1, required=True, allow_blank=True)
     peso = serializers.DecimalField(max_digits=3, decimal_places=2, required=True)
     imagen = serializers.ImageField(required=False)
-    
+
     class Meta:
         model = Mascota
-        fields = ['email', 'nombre', 'tipo', 'raza', 'edad', 'estado_salud', 'tamano', 'peso', 'imagen']
+        fields = [
+            "email",
+            "nombre",
+            "tipo",
+            "raza",
+            "edad",
+            "estado_salud",
+            "tamano",
+            "peso",
+            "imagen",
+        ]
 
     def save(self, **kwargs):
-        user = User.objects.get(email=self.validated_data['email'])
-        nombre = self.validated_data['nombre']
-        tipo = self.validated_data['tipo']
-        raza = self.validated_data['raza']
-        edad = self.validated_data['edad']
-        estado_salud = self.validated_data['estado_salud']
-        tamano = self.validated_data['tamano']
-        peso = self.validated_data['peso']
-        imagen = self.validated_data.get('imagen', None)
+        user = User.objects.get(email=self.validated_data["email"])
+        nombre = self.validated_data["nombre"]
+        tipo = self.validated_data["tipo"]
+        raza = self.validated_data["raza"]
+        edad = self.validated_data["edad"]
+        estado_salud = self.validated_data["estado_salud"]
+        tamano = self.validated_data["tamano"]
+        peso = self.validated_data["peso"]
+        imagen = self.validated_data.get("imagen", None)
         mascota = Mascota.objects.create(
             user=user,
             nombre=nombre,
@@ -241,17 +316,18 @@ class MascotaSerializer(serializers.ModelSerializer):
             estado_salud=estado_salud,
             tamano=tamano,
             peso=peso,
-            imagen=imagen
+            imagen=imagen,
         )
         return mascota
+
 
 class ProductoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Producto
-        fields = ['nombre', 'descripcion', 'precio', 'stock', 'categoria', 'imagen']
+        fields = ["nombre", "descripcion", "precio", "stock", "categoria", "imagen"]
+
 
 class DescuentoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Descuento
-        fields = ['descripcion', 'porcentaje']
-
+        fields = ["descripcion", "porcentaje"]

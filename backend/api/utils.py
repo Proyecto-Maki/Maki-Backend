@@ -45,7 +45,7 @@
 #         "email": email,
 #         "otp_code": otp_code
 #     }
-    
+
 #     html_message = render_to_string('email-otp.html', context=context)
 
 #     plain_message = strip_tags(html_message)
@@ -78,7 +78,6 @@
 #         message = None
 #         return {'error': error,
 #                 'message': 'Ocurrio un error'}
-    
 
 
 # def send_normal_email(data):
