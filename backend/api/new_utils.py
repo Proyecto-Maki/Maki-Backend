@@ -120,7 +120,8 @@ def send_test_email():
     if (not os.environ.get('PYTHONHTTPSVERIFY', '') and getattr(ssl, '_create_unverified_context', None)):
         ssl._create_default_https_context = ssl._create_unverified_context
     try:
-        sg = SendGridAPIClient(api_key=settings.SENDGRID_API_KEY)
+        api_key = settings.SENDGRID_API_KEY
+        sg = SendGridAPIClient(api_key=api_key)
         response = sg.send(message)
         return {
             "message": "Correo electrónico enviado con éxito",
