@@ -110,8 +110,9 @@ def send_normal_email(data):
     
 
 def send_test_email():
-    Subject = "Test 3 email"
-    email = "kelly.solano.1403@gmail.com"
+    Subject = "Test 5 email"
+    # email = "kelly.solano.1403@gmail.com"
+    email = "apineross@unal.edu.co"
     message = Mail(
         from_email= settings.DEFAULT_FROM_EMAIL,
         to_emails=email,
