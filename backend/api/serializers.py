@@ -16,9 +16,15 @@ class UserSerializer(serializers.ModelSerializer):
         fields = ['email', 'is_cliente', 'direccion', 'telefono', 'saldo', 'is_verified']
 
 class ClienteSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(source='user.email', read_only=True)
+    direccion = serializers.CharField(source='user.direccion', read_only=True)
+    telefono = serializers.CharField(source='user.telefono', read_only=True)
+    saldo = serializers.DecimalField(source='user.saldo', max_digits=7, decimal_places=2, read_only=True)
+    is_verified = serializers.BooleanField(source='user.is_verified', read_only=True)
+
     class Meta:
         model = Cliente
-        fields = '__all__'  # O especifica los campos que deseas incluir, por ejemplo: ['id', 'user', 'telefono']
+        fields = ['email', 'direccion', 'telefono', 'saldo', 'is_verified', 'cedula', 'primer_nombre', 'primer_apellido', 'segundo_nombre', 'segundo_apellido']  
 
 class FundacionSerializer(serializers.ModelSerializer):
     class Meta:
