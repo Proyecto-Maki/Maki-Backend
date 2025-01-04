@@ -26,6 +26,18 @@ class ClienteSerializer(serializers.ModelSerializer):
         model = Cliente
         fields = ['email', 'direccion', 'telefono', 'saldo', 'is_verified', 'cedula', 'primer_nombre', 'primer_apellido', 'segundo_nombre', 'segundo_apellido']  
 
+    def update(self, instance, validated_data):
+        user_data = validated_data
+        for attr, value in validated_data.items():
+            setattr(instance.user, attr, value)
+        instance.user.save()
+
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        return instance
+
 class FundacionSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(source='user.email', read_only=True)
     direccion = serializers.CharField(source='user.direccion', read_only=True)

@@ -17,7 +17,14 @@ urlpatterns = [
     path('password-reset-confirm/<uidb64>/<token>/', PasswordResetConfirm.as_view(), name='password-reset-confirm'),
     path('set-new-password/', SetNewPassword.as_view(), name='password-reset-complete'),
     path('current-user/', CurrentUserView.as_view(), name='current-user'),
+
+
+    ## Cliente
     path('cliente-profile/', ClienteDetailView.as_view(), name='cliente-profile'),
+    path('cliente-profile-update/', ClienteUpdateView.as_view(), name='cliente-profile-update'),
+    path('cliente-profile-delete/', ClienteDeleteView.as_view(), name='cliente-profile-delete'),
+
+    ## Fundacion
     path('fundacion-profile/', FundacionDetailView.as_view(), name='fundacion-profile'),
 
     ## Mascota

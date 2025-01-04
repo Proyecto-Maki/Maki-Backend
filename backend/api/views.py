@@ -279,6 +279,28 @@ class ClienteDetailView(generics.RetrieveUpdateDestroyAPIView):
 
         return cliente
     
+
+class ClienteUpdateView(generics.RetrieveUpdateAPIView):
+    permission_classes = [permissions.IsAuthenticated & IsClienteUser]
+    serializer_class = ClienteSerializer
+    def get_object(self):
+        cliente = get_object_or_404(Cliente, user=self.request.user)
+        return cliente
+    
+class ClienteDeleteView(generics.DestroyAPIView):
+    permission_classes = [permissions.IsAuthenticated & IsClienteUser]
+    serializer_class = ClienteSerializer
+    queryset = Cliente.objects.all()
+
+    def get_object(self):
+        cliente = get_object_or_404(Cliente, user=self.request.user)
+        return cliente
+    
+    def perform_destroy(self, instance):
+        user = instance.user
+        instance.delete()
+        user.delete()
+    
 class FundacionDetailView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [permissions.IsAuthenticated & IsFundacionUser]
     serializer_class = FundacionSerializer
