@@ -334,14 +334,14 @@ class FundacionUpdateView(generics.RetrieveUpdateAPIView):
         fundacion = get_object_or_404(Fundacion, user=self.request.user)
         return fundacion
     
-class ClienteDeleteView(generics.DestroyAPIView):
-    permission_classes = [permissions.IsAuthenticated & IsClienteUser]
-    serializer_class = ClienteSerializer
-    queryset = Cliente.objects.all()
+class FundacionDeleteView(generics.DestroyAPIView):
+    permission_classes = [permissions.IsAuthenticated & IsFundacionUser]
+    serializer_class = FundacionSerializer
+    queryset = Fundacion.objects.all()
 
     def get_object(self):
-        cliente = get_object_or_404(Cliente, user=self.request.user)
-        return cliente
+        fundacion = get_object_or_404(Fundacion, user=self.request.user)
+        return fundacion
     
     def perform_destroy(self, instance):
         user = instance.user

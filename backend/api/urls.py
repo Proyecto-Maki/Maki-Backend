@@ -26,6 +26,9 @@ urlpatterns = [
 
     ## Fundacion
     path('fundacion-profile/', FundacionDetailView.as_view(), name='fundacion-profile'),
+    path('fundacion-profile-update/', FundacionUpdateView.as_view(), name='fundacion-profile-update'),
+    path('fundacion-profile-delete/', FundacionDeleteView.as_view(), name='fundacion-profile-delete'),
+
 
     ## Mascota
 
