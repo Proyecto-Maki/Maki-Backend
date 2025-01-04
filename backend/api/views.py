@@ -8,6 +8,7 @@ from .permissions import IsClienteUser, IsFundacionUser
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework import exceptions
+from rest_framework.exceptions import PermissionDenied
 
 # from .forms import RegistroForm, ClienteCreationForm, FundacionCreationForm
 from .models import *
@@ -323,6 +324,98 @@ class CurrentUserView(generics.GenericAPIView):
         )
 
 
+class ClienteDetailView(generics.RetrieveUpdateDestroyAPIView):
+    permission_classes = [permissions.IsAuthenticated & IsClienteUser]
+    serializer_class = ClienteSerializer
+    queryset = Cliente.objects.all()
+
+    def get_object(self):
+        email = self.request.query_params.get("email")
+        if not email:
+            raise ValueError("Debes proporcionar un parámetro 'email' en la consulta.")
+
+        # Busca el usuario con el email proporcionado
+        user = get_object_or_404(User, email=email)
+
+        # Busca el cliente asociado al usuario encontrado
+        cliente = get_object_or_404(self.queryset, user=user)
+
+        return cliente
+
+
+class ClienteUpdateView(generics.RetrieveUpdateAPIView):
+    permission_classes = [permissions.IsAuthenticated & IsClienteUser]
+    serializer_class = ClienteSerializer
+
+    def get_object(self):
+        cliente = get_object_or_404(Cliente, user=self.request.user)
+        return cliente
+
+    def put(self, request, id, *args, **kwargs):
+        cliente = self.get_object()
+        serializer = ClienteSerializer(cliente, data=self.request.data)
+        if serializer.is_valid():
+            serializer.update(cliente, serializer.validated_data)
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class ClienteDeleteView(generics.DestroyAPIView):
+    permission_classes = [permissions.IsAuthenticated & IsClienteUser]
+    serializer_class = ClienteSerializer
+    queryset = Cliente.objects.all()
+
+    def get_object(self):
+        cliente = get_object_or_404(Cliente, user=self.request.user)
+        return cliente
+
+    def perform_destroy(self, instance):
+        user = instance.user
+        instance.delete()
+        user.delete()
+
+
+class FundacionDetailView(generics.RetrieveUpdateDestroyAPIView):
+    permission_classes = [permissions.IsAuthenticated & IsFundacionUser]
+    serializer_class = FundacionSerializer
+    queryset = Fundacion.objects.all()
+
+    def get_object(self):
+        email = self.request.query_params.get("email")
+        if not email:
+            raise ValueError("Debes proporcionar un parámetro 'email' en la consulta.")
+
+        user = get_object_or_404(User, email=email)
+
+        fundacion = get_object_or_404(self.queryset, user=user)
+
+        return fundacion
+
+
+class FundacionUpdateView(generics.RetrieveUpdateAPIView):
+    permission_classes = [permissions.IsAuthenticated & IsFundacionUser]
+    serializer_class = FundacionSerializer
+
+    def get_object(self):
+        fundacion = get_object_or_404(Fundacion, user=self.request.user)
+        return fundacion
+
+
+class ClienteDeleteView(generics.DestroyAPIView):
+    permission_classes = [permissions.IsAuthenticated & IsClienteUser]
+    serializer_class = ClienteSerializer
+    queryset = Cliente.objects.all()
+
+    def get_object(self):
+        cliente = get_object_or_404(Cliente, user=self.request.user)
+        return cliente
+
+    def perform_destroy(self, instance):
+        user = instance.user
+        instance.delete()
+        user.delete()
+
+
 class MascotaCreateView(generics.ListCreateAPIView):
     queryset = Mascota.objects.all()
     permissions_classes = [permissions.AllowAny]
@@ -353,6 +446,59 @@ class MascotasUserView(generics.ListAPIView):
         email = self.kwargs.get("email")
         user = get_object_or_404(User, email=email)
         return Mascota.objects.filter(user=user)
+
+
+class MascotaDetailView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = MascotaSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_object(self):
+        id = self.kwargs.get("id")
+        return get_object_or_404(Mascota, id=id)
+
+
+class MascotaUpdateView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_object(self, id):
+        try:
+            return Mascota.objects.get(id=id)
+        except Mascota.DoesNotExist:
+            return None
+
+    def put(self, request, id, *args, **kwargs):
+        mascota = self.get_object(id)
+        if not mascota:
+            return Response(
+                {"detail": "Mascota no encontrada"}, status=status.HTTP_404_NOT_FOUND
+            )
+
+        if mascota.user != request.user:
+            raise PermissionDenied("No tienes permisos para editar esta mascota")
+
+        serializer = MascotaSerializer(mascota, data=request.data)
+
+        if serializer.is_valid():
+            serializer.update(mascota, serializer.validated_data)
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class MascotaDeleteView(generics.DestroyAPIView):
+    serializer_class = MascotaSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_object(self):
+        id = self.kwargs.get("id")
+        mascota = get_object_or_404(Mascota, id=id)
+        if mascota.user != self.request.user:
+            raise exceptions.PermissionDenied(
+                "No tienes permisos para eliminar esta mascota"
+            )
+        return mascota
+
+    def perform_destroy(self, instance):
+        instance.delete()
 
 
 # class ProductosView(generics.GenericAPIView):

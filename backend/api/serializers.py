@@ -26,6 +26,66 @@ class UserSerializer(serializers.ModelSerializer):
         ]
 
 
+class ClienteSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(source="user.email", read_only=True)
+    direccion = serializers.CharField(source="user.direccion", read_only=True)
+    telefono = serializers.CharField(source="user.telefono", read_only=True)
+    saldo = serializers.DecimalField(
+        source="user.saldo", max_digits=7, decimal_places=2, read_only=True
+    )
+    is_verified = serializers.BooleanField(source="user.is_verified", read_only=True)
+
+    class Meta:
+        model = Cliente
+        fields = [
+            "email",
+            "direccion",
+            "telefono",
+            "saldo",
+            "is_verified",
+            "cedula",
+            "primer_nombre",
+            "primer_apellido",
+            "segundo_nombre",
+            "segundo_apellido",
+        ]
+
+    def update(self, instance, validated_data):
+        user_data = validated_data
+        for attr, value in validated_data.items():
+            setattr(instance.user, attr, value)
+        instance.user.save()
+
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        return instance
+
+
+class FundacionSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(source="user.email", read_only=True)
+    direccion = serializers.CharField(source="user.direccion", read_only=True)
+    telefono = serializers.CharField(source="user.telefono", read_only=True)
+    saldo = serializers.DecimalField(
+        source="user.saldo", max_digits=7, decimal_places=2, read_only=True
+    )
+    is_verified = serializers.BooleanField(source="user.is_verified", read_only=True)
+
+    class Meta:
+        model = Fundacion
+        fields = [
+            "email",
+            "direccion",
+            "telefono",
+            "saldo",
+            "is_verified",
+            "nombre",
+            "nit",
+            "descripcion",
+        ]
+
+
 class ClienteSignupSerializer(serializers.ModelSerializer):
     password2 = serializers.CharField(style={"input_type": "password"}, write_only=True)
     direccion = serializers.CharField(
@@ -286,6 +346,7 @@ class MascotaSerializer(serializers.ModelSerializer):
     class Meta:
         model = Mascota
         fields = [
+            "id",
             "email",
             "nombre",
             "tipo",
@@ -319,6 +380,15 @@ class MascotaSerializer(serializers.ModelSerializer):
             imagen=imagen,
         )
         return mascota
+
+    def update(self, instance, validated_data):
+        """
+        Actualiza los datos de la mascota si es necesario.
+        Este método será invocado solo si el serializador es válido.
+        """
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
 
 
 class ProductoSerializer(serializers.ModelSerializer):

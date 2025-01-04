@@ -24,7 +24,30 @@ urlpatterns = [
     ),
     path("set-new-password/", SetNewPassword.as_view(), name="password-reset-complete"),
     path("current-user/", CurrentUserView.as_view(), name="current-user"),
+    ## Cliente
+    path("cliente-profile/", ClienteDetailView.as_view(), name="cliente-profile"),
+    path(
+        "cliente-profile-update/",
+        ClienteUpdateView.as_view(),
+        name="cliente-profile-update",
+    ),
+    path(
+        "cliente-profile-delete/",
+        ClienteDeleteView.as_view(),
+        name="cliente-profile-delete",
+    ),
+    ## Fundacion
+    path("fundacion-profile/", FundacionDetailView.as_view(), name="fundacion-profile"),
     ## Mascota
     path("registro/mascota/", MascotaCreateView.as_view(), name="register_mascota"),
     path("mascotas/<email>/", MascotasUserView.as_view(), name="mascotas_user"),
+    path(
+        "mascotas/update/<int:id>/", MascotaUpdateView.as_view(), name="mascota_update"
+    ),
+    path(
+        "mascotas/delete/<int:id>/", MascotaDeleteView.as_view(), name="mascota_delete"
+    ),
+    path(
+        "mascotas/detalle/<int:id>/", MascotaDetailView.as_view(), name="mascota_detail"
+    ),
 ]
