@@ -134,6 +134,5 @@ def send_test_email():
         print(settings.SENDGRID_API_KEY)
         print(f"Este es el error {str(e)}")
         return {
-            "message": "Error al enviar el correo electrónico",
-            "error": str(e)  # Convert the exception to a string
+            "message": f"Error al enviar el correo electrónico {str(e)}"  # Convert the exception to a string
         }
