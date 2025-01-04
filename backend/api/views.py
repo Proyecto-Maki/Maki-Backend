@@ -23,7 +23,7 @@ from rest_framework.decorators import api_view
 def SendTestEmail(request):
     try: 
         response = send_test_email()
-        return Response({response['message']})
+        return Response({'message': response['message']})
     except Exception as e:
         return Response({
             'error': e,
