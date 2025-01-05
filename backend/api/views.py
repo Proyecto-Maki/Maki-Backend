@@ -501,6 +501,32 @@ class MascotaDeleteView(generics.DestroyAPIView):
         instance.delete()
 
 
+@api_view(["GET"])
+def productos(request):
+    productos = Producto.objects.all()
+    serializer = ProductoSerializer(productos, many=True)
+    return Response(serializer.data)
+
+
+productos
+
+
+class ProductoDetailView(generics.RetrieveAPIView):
+    queryset = Producto.objects.all()
+    serializer_class = ProductoSerializer
+    permission_classes = [permissions.AllowAny]
+
+    def get_object(self):
+        id = self.kwargs.get("id")
+        return get_object_or_404(Producto, id=id)
+
+
+class ProductoListView(generics.ListAPIView):
+    queryset = Producto.objects.all()
+    serializer_class = ProductoSerializer
+    permission_classes = [permissions.AllowAny]
+
+
 # class ProductosView(generics.GenericAPIView):
 #     permission_classes = [permissions.IsAuthenticated]
 #     queryset = Producto.objects.all()

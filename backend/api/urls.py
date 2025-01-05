@@ -33,8 +33,7 @@ urlpatterns = [
     ),
     path(
         "cliente-profile-delete/",
-        ClienteDeleteView.as_view(),
-        name="cliente-profile-delete",
+        ClienteDeleteView.as_view(), name="cliente-profile-delete"
     ),
     ## Fundacion
     path("fundacion-profile/", FundacionDetailView.as_view(), name="fundacion-profile"),
@@ -50,4 +49,8 @@ urlpatterns = [
     path(
         "mascotas/detalle/<int:id>/", MascotaDetailView.as_view(), name="mascota_detail"
     ),
+    ## Productos
+    path("productos/", ProductoListView.as_view(), name="productos_list"),
+    path("producto/<int:id>/", ProductoDetailView.as_view(), name="producto_detail"),
+    ##path("producto/", productos, name="register_producto"),
 ]

@@ -394,7 +394,15 @@ class MascotaSerializer(serializers.ModelSerializer):
 class ProductoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Producto
-        fields = ["nombre", "descripcion", "precio", "stock", "categoria", "imagen"]
+        fields = [
+            "id",
+            "nombre",
+            "slug",
+            "imagen",
+            "descripcion",
+            "categoria",
+            "precio",
+        ]
 
 
 class DescuentoSerializer(serializers.ModelSerializer):

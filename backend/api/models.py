@@ -9,6 +9,7 @@ from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from rest_framework.authtoken.models import Token
+from django.utils.text import slugify
 
 
 class UserManager(BaseUserManager):
@@ -157,15 +158,20 @@ class Padecimiento(models.Model):
 
 class Producto(models.Model):
     nombre = models.CharField(max_length=255, null=False, blank=False)
+    slug = models.SlugField(max_length=255, unique=True, null=True, blank=True)
+    imagen = models.ImageField(upload_to="productos/", null=True, blank=True)
     descripcion = models.TextField(null=False, blank=False)
     precio = models.DecimalField(
         max_digits=10, decimal_places=2, default=0.00, null=False, blank=False
     )
     stock = models.IntegerField(default=0)
     categoria = models.CharField(max_length=255, null=False, blank=False)
-    imagen = models.ImageField(
-        upload_to="productos/", null=True, blank=True
-    )  # Esta es de prueba
+
+    def save(self, *args, **kwargs):
+        # Generar el slug automáticamente si no está definido
+        if not self.slug:
+            self.slug = slugify(self.nombre)
+        super(Producto, self).save(*args, **kwargs)
 
     def __str__(self):
         return self.nombre
