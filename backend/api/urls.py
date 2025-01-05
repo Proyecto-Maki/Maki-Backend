@@ -37,4 +37,5 @@ urlpatterns = [
     path('mascotas/update/<int:id>/', MascotaUpdateView.as_view(), name='mascota_update'),
     path('mascotas/delete/<int:id>/', MascotaDeleteView.as_view(), name='mascota_delete'),
     path('mascotas/detalle/<int:id>/', MascotaDetailView.as_view(), name='mascota_detail'),
+    path('registro/mascota/padecimiento/', PadecimientoCreateView.as_view(), name='register_padecimiento'),
 ]

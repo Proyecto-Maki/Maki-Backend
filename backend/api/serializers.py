@@ -311,3 +311,24 @@ class DescuentoSerializer(serializers.ModelSerializer):
         model = Descuento
         fields = ['descripcion', 'porcentaje']
 
+class PadecimientoSerializer(serializers.ModelSerializer):
+    id_mascota = serializers.IntegerField()
+    padecimiento = serializers.CharField(max_length=255)
+    class Meta:
+        model = Padecimiento
+        fields = ['id_mascota', 'padecimiento']
+    
+    def save(self, **kwargs):
+        id_mascota = self.validated_data['id_mascota']
+        try: 
+            mascota = Mascota.objects.get(id=id_mascota)
+        except Mascota.DoesNotExist:
+            raise serializers.ValidationError('Mascota no encontrada')
+
+        padecimiento = self.validated_data['padecimiento']
+
+        padecimiento_obj = Padecimiento.objects.create(
+            mascota=mascota,
+            padecimiento=padecimiento
+        )
+        return padecimiento_obj

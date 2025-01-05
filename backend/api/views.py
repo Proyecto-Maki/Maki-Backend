@@ -18,6 +18,7 @@ from django.utils.encoding import smart_str, DjangoUnicodeDecodeError
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.shortcuts import get_object_or_404
 from rest_framework.decorators import api_view
+from rest_framework.parsers import MultiPartParser, FormParser
 
 
 @api_view(['GET'])
@@ -374,14 +375,16 @@ class FundacionDeleteView(generics.DestroyAPIView):
 
 class MascotaCreateView(generics.ListCreateAPIView):
     queryset = Mascota.objects.all()
-    permissions_classes = [permissions.AllowAny]
+    permissions_classes = [permissions.IsAuthenticated]
     serializer_class = MascotaSerializer
+    parser_classes = (MultiPartParser, FormParser)
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            mascota = serializer.save()
             return Response({
+                'id': mascota.id,
                 'message': 'Mascota creada exitosamente'
             }, status=status.HTTP_201_CREATED)
         return Response({
@@ -448,3 +451,21 @@ class MascotaDeleteView(generics.DestroyAPIView):
 #     permission_classes = [permissions.IsAuthenticated]
 #     queryset = Producto.objects.all()
 #     serializer_class = ProductoSerializer
+
+
+class PadecimientoCreateView(generics.ListCreateAPIView):
+    queryset = Padecimiento.objects.all()
+    permissions_classes = [permissions.IsAuthenticated]
+    serializer_class = PadecimientoSerializer
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({
+                'message': 'Padecimiento creado exitosamente'
+            }, status=status.HTTP_201_CREATED)
+        return Response({
+            'error': serializer.errors,
+            'message': 'Ha ocurrido un error al crear el padecimiento'
+        }, status=status.HTTP_400_BAD_REQUEST)
