@@ -325,19 +325,28 @@ class FundacionDetailView(generics.RetrieveUpdateDestroyAPIView):
         email = self.request.query_params.get('email')
         if not email:
             raise ValueError("Debes proporcionar un parámetro 'email' en la consulta.")
-        
         user = get_object_or_404(User, email=email)
-
         fundacion = get_object_or_404(self.queryset, user=user)
-
         return fundacion
     
 class FundacionUpdateView(generics.RetrieveUpdateAPIView):
     permission_classes = [permissions.IsAuthenticated & IsFundacionUser]
     serializer_class = FundacionSerializer
     def get_object(self):
-        fundacion = get_object_or_404(Fundacion, user=self.request.user)
+        email = self.request.query_params.get('email')
+        if not email:
+            raise serializers.ValidationError({"error": "Se debe proporcionar un parámetro 'email'."})
+        user = get_object_or_404(User, email=email)
+        fundacion = get_object_or_404(Fundacion, user=user)
         return fundacion
+    
+    def put(self, request, *args, **kwargs):
+        fundacion = self.get_object()
+        serializer = self.get_serializer(fundacion, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
 class FundacionDeleteView(generics.DestroyAPIView):
     permission_classes = [permissions.IsAuthenticated & IsFundacionUser]

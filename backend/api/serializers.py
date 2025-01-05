@@ -27,20 +27,16 @@ class ClienteSerializer(serializers.ModelSerializer):
         fields = ['email', 'direccion', 'telefono', 'saldo', 'is_verified', 'cedula', 'primer_nombre', 'primer_apellido', 'segundo_nombre', 'segundo_apellido']  
 
     def update(self, instance_cliente, validated_data):
-        # Extraer datos relacionados con el usuario
         user_data = validated_data.pop('user', {})
         
-        # Actualizar el usuario relacionado
         instance_user = instance_cliente.user
         for attr, value in user_data.items():
             setattr(instance_user, attr, value)
         instance_user.save()
 
-        # Actualizar los datos del cliente
         for attr, value in validated_data.items():
             setattr(instance_cliente, attr, value)
         instance_cliente.save()
-
         return instance_cliente
 
 class FundacionSerializer(serializers.ModelSerializer):
@@ -52,6 +48,19 @@ class FundacionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Fundacion
         fields = ['email', 'direccion', 'telefono', 'saldo', 'is_verified', 'nombre', 'nit', 'descripcion']
+
+    def update(self, instance_fundacion, validated_data):
+        user_data = validated_data.pop('user', {})
+        
+        instance_user = instance_fundacion.user
+        for attr, value in user_data.items():
+            setattr(instance_user, attr, value)
+        instance_user.save()
+
+        for attr, value in validated_data.items():
+            setattr(instance_fundacion, attr, value)
+        instance_fundacion.save()
+        return instance_fundacion
 
 class ClienteSignupSerializer(serializers.ModelSerializer):
     password2 = serializers.CharField(style={'input_type': 'password'}, write_only=True)
