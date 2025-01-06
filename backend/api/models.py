@@ -108,8 +108,10 @@ class OneTimePassword(models.Model):
 
 # MODELO DE MASCOTA
 
+
 def upload_to(instance, filename):
-    return 'images/{filename}'.format(filename=filename)
+    return "images/{filename}".format(filename=filename)
+
 
 class Mascota(models.Model):
     # la mascota tiene su primaty key autoincremental
@@ -121,7 +123,7 @@ class Mascota(models.Model):
     }
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=False, blank=False)
-    id = models.AutoField(primary_key=True) # Lo pogo pa que abajo me deje poner el id
+    id = models.AutoField(primary_key=True)  # Lo pogo pa que abajo me deje poner el id
     nombre = models.CharField(max_length=255, null=False, blank=False)
     tipo = models.CharField(max_length=255, null=False, blank=False)
     raza = models.CharField(max_length=255, null=False, blank=False)
@@ -137,8 +139,9 @@ class Mascota(models.Model):
     }
     tamano = models.CharField(max_length=1, null=False, blank=False, choices=TAMANOS)
     peso = models.DecimalField(max_digits=5, decimal_places=2, null=False, blank=False)
-    imagen = models.ImageField(upload_to=upload_to, null=True, blank=True) # Esta es de prueba
-
+    imagen = models.ImageField(
+        upload_to=upload_to, null=True, blank=True
+    )  # Esta es de prueba
 
     def __str__(self):
         return f"{self.id} {self.nombre}"
@@ -168,6 +171,7 @@ class Producto(models.Model):
     )
     stock = models.IntegerField(default=0)
     categoria = models.CharField(max_length=255, null=False, blank=False)
+    ingredientes = models.TextField(null=True, blank=True)
 
     def save(self, *args, **kwargs):
         # Generar el slug automáticamente si no está definido
