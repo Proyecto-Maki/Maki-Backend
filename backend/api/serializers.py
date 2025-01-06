@@ -262,7 +262,7 @@ class MascotaSerializer(serializers.ModelSerializer):
     edad = serializers.IntegerField(required=True)
     estado_salud = serializers.CharField(max_length=255, required=True, allow_blank=True)
     tamano = serializers.CharField(max_length=1, required=True, allow_blank=True)
-    peso = serializers.DecimalField(max_digits=3, decimal_places=2, required=True)
+    peso = serializers.DecimalField(max_digits=5, decimal_places=2, required=True)
     imagen = serializers.ImageField(required=False)
     
     class Meta:
