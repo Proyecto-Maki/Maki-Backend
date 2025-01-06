@@ -7,9 +7,7 @@ urlpatterns = [
     path("test-email/", SendTestEmail, name="test-email"),
     # path('registro/cliente/', register_cliente, name='register_cliente'),
     # path('registro/fundacion/', register_fundacion, name='register_fundacion'),
-    path(
-        "registro/fundacion/", FundacionSignupView.as_view(), name="register_fundacion"
-    ),
+    path("registro/fundacion/", FundacionSignupView.as_view(), name="register_fundacion"),
     path("registro/cliente/", ClienteSignupView.as_view(), name="register_cliente"),
     path("login/", CustomTokenObtainPairView.as_view(), name="auth-token"),
     path("logout/", LogoutView.as_view(), name="logout"),
@@ -25,7 +23,7 @@ urlpatterns = [
     path("cliente-profile/", ClienteDetailView.as_view(), name="cliente-profile"),
     path("cliente-profile-update/", ClienteUpdateView.as_view(), name="cliente-profile-update"),
     path("cliente-profile-delete/", ClienteDeleteView.as_view(), name="cliente-profile-delete"),
-    
+
     ## Fundacion
     path('fundacion-profile/', FundacionDetailView.as_view(), name='fundacion-profile'),
     path('fundacion-profile-update/', FundacionUpdateView.as_view(), name='fundacion-profile-update'),
