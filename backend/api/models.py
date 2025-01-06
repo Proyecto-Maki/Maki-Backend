@@ -177,7 +177,8 @@ class Producto(models.Model):
         # Generar el slug automáticamente si no está definido
         if not self.slug:
             self.slug = slugify(self.nombre)
-        super(Producto, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
+        # super(Producto, self).save(*args, **kwargs)
 
     def __str__(self):
         return self.nombre
