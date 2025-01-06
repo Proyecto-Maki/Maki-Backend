@@ -24,3 +24,5 @@ google-api-python-client
 pip-system-certs
 python-certifi-win32
 sendgrid
+django-cloudinary-storage
+tox
