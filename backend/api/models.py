@@ -10,6 +10,7 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from rest_framework.authtoken.models import Token
 from django.utils.text import slugify
+from cloudinary.models import CloudinaryField
 
 
 class UserManager(BaseUserManager):
@@ -137,8 +138,8 @@ class Mascota(models.Model):
     }
     tamano = models.CharField(max_length=1, null=False, blank=False, choices=TAMANOS)
     peso = models.DecimalField(max_digits=5, decimal_places=2, null=False, blank=False)
-    imagen = models.ImageField(upload_to=upload_to, null=True, blank=True) # Esta es de prueba
-
+    # imagen = models.ImageField(upload_to='mascotas/', null=True, blank=True) # Esta es de prueba
+    imagen = CloudinaryField('image', null=True, blank=True)
 
     def __str__(self):
         return f"{self.id} {self.nombre}"
@@ -161,7 +162,7 @@ class Padecimiento(models.Model):
 class Producto(models.Model):
     nombre = models.CharField(max_length=255, null=False, blank=False)
     slug = models.SlugField(max_length=255, unique=True, null=True, blank=True)
-    imagen = models.ImageField(upload_to="productos/", null=True, blank=True)
+    imagen = CloudinaryField('image', null=True, blank=True)
     descripcion = models.TextField(null=False, blank=False)
     precio = models.DecimalField(
         max_digits=10, decimal_places=2, default=0.00, null=False, blank=False

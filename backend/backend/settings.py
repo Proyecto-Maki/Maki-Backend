@@ -18,6 +18,10 @@ import os
 import json
 import tempfile
 from pathlib import Path
+import cloudinary
+import cloudinary.uploader
+import cloudinary.api
+import cloudinary_storage
 
 load_dotenv()
 
@@ -53,7 +57,9 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "whitenoise.runserver_nostatic",
+    'cloudinary_storage',
     "django.contrib.staticfiles",
+    'cloudinary',
     "api",
     "backend",
     "rest_framework",
@@ -169,8 +175,21 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 
-MEDIA_ROOT = os.path.join(os.path.dirname(BASE_DIR), 'mediafiles')
-MEDIA_URL = '/media/'
+# MEDIA_ROOT = os.path.join(os.path.dirname(BASE_DIR), 'mediafiles')
+MEDIA_URL = '/media/'  # or any prefix you choose
+# DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+
+# CLOUDINARY_STORAGE = {
+#     'CLOUD_NAME': os.getenv("CLOUD_NAME"),
+#     'API_KEY': os.getenv("CLOUD_API_KEY"),
+#     'API_SECRET':  os.getenv("CLOUD_API_SECRET"),
+# }
+
+cloudinary.config(
+    cloud_name=os.getenv("CLOUD_NAME"),
+    api_key=os.getenv("CLOUD_API_KEY"),
+    api_secret=os.getenv("CLOUD_API_SECRET"),
+)
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
