@@ -77,7 +77,7 @@ def send_normal_email(data):
 
     message = Mail(
         from_email=settings.DEFAULT_FROM_EMAIL,
-        to_email=to_email,
+        to_emails=to_email,
         subject=Subject,
         html_content=html_message,
     )

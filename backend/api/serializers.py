@@ -255,7 +255,7 @@ class PasswordResetRequestSerializer(serializers.Serializer):
             token = PasswordResetTokenGenerator().make_token(user)
             request = self.context.get("request")
             # site_domain = get_current_site(request).domain
-            site_domain = "https://www.makishop.live"
+            site_domain = "http://localhost:3000"
             relative_link = reverse(
                 "password-reset-confirm", kwargs={"uidb64": uidb64, "token": token}
             )
