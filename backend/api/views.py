@@ -21,6 +21,9 @@ from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.shortcuts import get_object_or_404
 from rest_framework.decorators import api_view
 from rest_framework.parsers import MultiPartParser, FormParser
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
 
 
 @api_view(["GET"])
@@ -347,10 +350,13 @@ class ClienteDetailView(generics.RetrieveUpdateDestroyAPIView):
 class ClienteUpdateView(generics.RetrieveUpdateAPIView):
     permission_classes = [permissions.IsAuthenticated & IsClienteUser]
     serializer_class = ClienteSerializer
+
     def get_object(self):
-        email = self.request.query_params.get('email')
+        email = self.request.query_params.get("email")
         if not email:
-            raise serializers.ValidationError({"error": "Se debe proporcionar un parámetro 'email'."})
+            raise serializers.ValidationError(
+                {"error": "Se debe proporcionar un parámetro 'email'."}
+            )
         user = get_object_or_404(User, email=email)
         cliente = get_object_or_404(Cliente, user=user)
         return cliente
@@ -391,7 +397,7 @@ class FundacionDetailView(generics.RetrieveUpdateDestroyAPIView):
         user = get_object_or_404(User, email=email)
         fundacion = get_object_or_404(self.queryset, user=user)
         return fundacion
-    
+
     def put(self, request, *args, **kwargs):
         fundacion = self.get_object()
         serializer = self.get_serializer(fundacion, data=request.data, partial=True)
@@ -399,18 +405,22 @@ class FundacionDetailView(generics.RetrieveUpdateDestroyAPIView):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+
+
 class FundacionUpdateView(generics.RetrieveUpdateAPIView):
     permission_classes = [permissions.IsAuthenticated & IsFundacionUser]
     serializer_class = FundacionSerializer
 
     def get_object(self):
-        email = self.request.query_params.get('email')
+        email = self.request.query_params.get("email")
         if not email:
-            raise serializers.ValidationError({"error": "Se debe proporcionar un parámetro 'email'."})
+            raise serializers.ValidationError(
+                {"error": "Se debe proporcionar un parámetro 'email'."}
+            )
         user = get_object_or_404(User, email=email)
         fundacion = get_object_or_404(Fundacion, user=user)
         return fundacion
+
     def put(self, request, *args, **kwargs):
         fundacion = self.get_object()
         serializer = self.get_serializer(fundacion, data=request.data, partial=True)
@@ -418,7 +428,8 @@ class FundacionUpdateView(generics.RetrieveUpdateAPIView):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+
+
 class FundacionDeleteView(generics.DestroyAPIView):
     permission_classes = [permissions.IsAuthenticated & IsFundacionUser]
     serializer_class = FundacionSerializer
@@ -427,7 +438,7 @@ class FundacionDeleteView(generics.DestroyAPIView):
     def get_object(self):
         fundacion = get_object_or_404(Fundacion, user=self.request.user)
         return fundacion
-    
+
     def perform_destroy(self, instance):
         user = instance.user
         instance.delete()
@@ -444,14 +455,18 @@ class MascotaCreateView(generics.ListCreateAPIView):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
             mascota = serializer.save()
-            return Response({
-                'id': mascota.id,
-                'message': 'Mascota creada exitosamente'
-            }, status=status.HTTP_201_CREATED)
-        return Response({
-            'error': serializer.errors,
-            'message': 'Ha ocurrido un error al crear la mascota'
-        }, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"id": mascota.id, "message": "Mascota creada exitosamente"},
+                status=status.HTTP_201_CREATED,
+            )
+        return Response(
+            {
+                "error": serializer.errors,
+                "message": "Ha ocurrido un error al crear la mascota",
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
 
 class MascotasUserView(generics.ListAPIView):
     serializer_class = MascotaSerializer
@@ -520,10 +535,50 @@ class MascotaDeleteView(generics.DestroyAPIView):
 def productos(request):
     productos = Producto.objects.all()
     serializer = ProductoSerializer(productos, many=True)
-    return Response(serializer.data)
+    response = Response(serializer.data)
+    response["Access-Control-Allow-Origin"] = "*"
+    return response
 
 
-productos
+# productos
+
+
+@api_view(["POST"])
+def agregar_producto(request):
+    try:
+        print(
+            "Datos recibidos en el backend:", request.data
+        )  # Imprime los datos recibidos
+        codigo = request.data.get("codigo")
+        id_producto = request.data.get("id_producto")
+
+        # Verifica si los datos son válidos
+        if not codigo or not id_producto:
+            return Response(
+                {"error": "Faltan datos obligatorios: 'codigo' o 'id_producto'"},
+                status=400,
+            )
+
+        carrito, creado = Carrito.objects.get_or_create(codigo=codigo)
+        producto = get_object_or_404(Producto, id=id_producto)
+
+        item_carrito, creado = ItemCarrito.objects.get_or_create(
+            carrito=carrito, producto=producto
+        )
+        item_carrito.cantidad += 1
+        item_carrito.save()
+
+        serializer = ItemCarritoSerializer(item_carrito)
+        return Response(
+            {
+                "data": serializer.data,
+                "message": "Producto agregado al carrito exitosamente",
+            },
+            status=201,
+        )
+    except Exception as e:
+        print("Error en el servidor:", str(e))  # Log para depuración
+        return Response({"error": str(e)}, status=400)
 
 
 class ProductoDetailView(generics.RetrieveAPIView):
@@ -532,8 +587,8 @@ class ProductoDetailView(generics.RetrieveAPIView):
     permission_classes = [permissions.AllowAny]
 
     def get_object(self):
-        id = self.kwargs.get("id")
-        return get_object_or_404(Producto, id=id)
+        slug = self.kwargs.get("slug")
+        return get_object_or_404(Producto, slug=slug)
 
 
 class ProductoListView(generics.ListAPIView):
@@ -557,10 +612,26 @@ class PadecimientoCreateView(generics.ListCreateAPIView):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
-            return Response({
-                'message': 'Padecimiento creado exitosamente'
-            }, status=status.HTTP_201_CREATED)
-        return Response({
-            'error': serializer.errors,
-            'message': 'Ha ocurrido un error al crear el padecimiento'
-        }, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"message": "Padecimiento creado exitosamente"},
+                status=status.HTTP_201_CREATED,
+            )
+        return Response(
+            {
+                "error": serializer.errors,
+                "message": "Ha ocurrido un error al crear el padecimiento",
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+
+@api_view(["GET"])
+def producto_en_carrito(request):
+    try:
+        codigo = request.query_params.get("codigo")
+        carrito = get_object_or_404(Carrito, codigo=codigo)
+        items = ItemCarrito.objects.filter(carrito=carrito)
+        serializer = ItemCarritoSerializer(items, many=True)
+        return Response(serializer.data)
+    except Exception as e:
+        return Response({"error": str(e)}, status=400)

@@ -51,8 +51,8 @@ class ClienteSerializer(serializers.ModelSerializer):
         ]
 
     def update(self, instance_cliente, validated_data):
-        user_data = validated_data.pop('user', {})
-        
+        user_data = validated_data.pop("user", {})
+
         instance_user = instance_cliente.user
         for attr, value in user_data.items():
             setattr(instance_user, attr, value)
@@ -63,6 +63,7 @@ class ClienteSerializer(serializers.ModelSerializer):
         instance_cliente.save()
 
         return instance_cliente
+
 
 class FundacionSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(source="user.email", read_only=True)
@@ -86,10 +87,9 @@ class FundacionSerializer(serializers.ModelSerializer):
             "descripcion",
         ]
 
-
     def update(self, instance_fundacion, validated_data):
-        user_data = validated_data.pop('user', {})
-        
+        user_data = validated_data.pop("user", {})
+
         instance_user = instance_fundacion.user
         for attr, value in user_data.items():
             setattr(instance_user, attr, value)
@@ -255,8 +255,8 @@ class PasswordResetRequestSerializer(serializers.Serializer):
             token = PasswordResetTokenGenerator().make_token(user)
             request = self.context.get("request")
             # site_domain = get_current_site(request).domain
+            # site_domain = "localhost:3000"
             site_domain = "https://makishop.live"
-            # site_domain = "http://localhost:3000"
             relative_link = reverse(
                 "password-reset-confirm", kwargs={"uidb64": uidb64, "token": token}
             )
@@ -426,24 +426,40 @@ class DescuentoSerializer(serializers.ModelSerializer):
         model = Descuento
         fields = ["descripcion", "porcentaje"]
 
+
+class CarritoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Carrito
+        fields = ["id", "codigo", "creado", "modificado"]
+
+
+class ItemCarritoSerializer(serializers.ModelSerializer):
+    producto = ProductoSerializer(read_only=True)
+    carrito = CarritoSerializer(read_only=True)
+
+    class Meta:
+        model = ItemCarrito
+        fields = ["id", "cantidad", "producto", "carrito"]
+
+
 class PadecimientoSerializer(serializers.ModelSerializer):
     id_mascota = serializers.IntegerField()
     padecimiento = serializers.CharField(max_length=255)
+
     class Meta:
         model = Padecimiento
-        fields = ['id_mascota', 'padecimiento']
-    
+        fields = ["id_mascota", "padecimiento"]
+
     def save(self, **kwargs):
-        id_mascota = self.validated_data['id_mascota']
-        try: 
+        id_mascota = self.validated_data["id_mascota"]
+        try:
             mascota = Mascota.objects.get(id=id_mascota)
         except Mascota.DoesNotExist:
-            raise serializers.ValidationError('Mascota no encontrada')
+            raise serializers.ValidationError("Mascota no encontrada")
 
-        padecimiento = self.validated_data['padecimiento']
+        padecimiento = self.validated_data["padecimiento"]
 
         padecimiento_obj = Padecimiento.objects.create(
-            mascota=mascota,
-            padecimiento=padecimiento
+            mascota=mascota, padecimiento=padecimiento
         )
         return padecimiento_obj

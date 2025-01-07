@@ -109,8 +109,10 @@ class OneTimePassword(models.Model):
 
 # MODELO DE MASCOTA
 
+
 def upload_to(instance, filename):
-    return 'images/{filename}'.format(filename=filename)
+    return "images/{filename}".format(filename=filename)
+
 
 class Mascota(models.Model):
     # la mascota tiene su primaty key autoincremental
@@ -122,7 +124,7 @@ class Mascota(models.Model):
     }
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=False, blank=False)
-    id = models.AutoField(primary_key=True) # Lo pogo pa que abajo me deje poner el id
+    id = models.AutoField(primary_key=True)  # Lo pogo pa que abajo me deje poner el id
     nombre = models.CharField(max_length=255, null=False, blank=False)
     tipo = models.CharField(max_length=255, null=False, blank=False)
     raza = models.CharField(max_length=255, null=False, blank=False)
@@ -139,7 +141,7 @@ class Mascota(models.Model):
     tamano = models.CharField(max_length=1, null=False, blank=False, choices=TAMANOS)
     peso = models.DecimalField(max_digits=5, decimal_places=2, null=False, blank=False)
     # imagen = models.ImageField(upload_to='mascotas/', null=True, blank=True) # Esta es de prueba
-    imagen = CloudinaryField('image', null=True, blank=True)
+    imagen = CloudinaryField("image", null=True, blank=True)
 
     def __str__(self):
         return f"{self.id} {self.nombre}"
@@ -162,22 +164,48 @@ class Padecimiento(models.Model):
 class Producto(models.Model):
     nombre = models.CharField(max_length=255, null=False, blank=False)
     slug = models.SlugField(max_length=255, unique=True, null=True, blank=True)
-    imagen = CloudinaryField('image', null=True, blank=True)
+    imagen = CloudinaryField("image", null=True, blank=True)
     descripcion = models.TextField(null=False, blank=False)
     precio = models.DecimalField(
         max_digits=10, decimal_places=2, default=0.00, null=False, blank=False
     )
     stock = models.IntegerField(default=0)
     categoria = models.CharField(max_length=255, null=False, blank=False)
+    ingredientes = models.TextField(null=True, blank=True)
 
     def save(self, *args, **kwargs):
         # Generar el slug automáticamente si no está definido
         if not self.slug:
             self.slug = slugify(self.nombre)
-        super(Producto, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
+        # super(Producto, self).save(*args, **kwargs)
 
     def __str__(self):
         return self.nombre
+
+
+class Carrito(models.Model):
+    codigo = models.CharField(max_length=11, unique=True)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, blank=True, null=True
+    )
+    pagado = models.BooleanField(default=False)
+    creado = models.DateTimeField(auto_now_add=True, blank=True, null=True)
+    modificado = models.DateTimeField(auto_now=True, blank=True, null=True)
+
+    def __str__(self):
+        return self.codigo
+
+
+class ItemCarrito(models.Model):
+    carrito = models.ForeignKey(Carrito, related_name="items", on_delete=models.CASCADE)
+    producto = models.ForeignKey(Producto, on_delete=models.CASCADE)
+    cantidad = models.IntegerField(default=1)
+
+    def __str__(self):
+        return (
+            f"{self.cantidad} x {self.producto.nombre} en carrito {self.carrito.codigo}"
+        )
 
 
 ## MODELO DE PEDIDO
