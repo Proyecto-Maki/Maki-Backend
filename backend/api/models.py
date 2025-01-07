@@ -184,6 +184,30 @@ class Producto(models.Model):
         return self.nombre
 
 
+class Carrito(models.Model):
+    codigo = models.CharField(max_length=11, unique=True)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, blank=True, null=True
+    )
+    pagado = models.BooleanField(default=False)
+    creado = models.DateTimeField(auto_now_add=True, blank=True, null=True)
+    modificado = models.DateTimeField(auto_now=True, blank=True, null=True)
+
+    def __str__(self):
+        return self.codigo
+
+
+class ItemCarrito(models.Model):
+    carrito = models.ForeignKey(Carrito, related_name="items", on_delete=models.CASCADE)
+    producto = models.ForeignKey(Producto, on_delete=models.CASCADE)
+    cantidad = models.IntegerField(default=1)
+
+    def __str__(self):
+        return (
+            f"{self.cantidad} x {self.producto.nombre} en carrito {self.carrito.codigo}"
+        )
+
+
 ## MODELO DE PEDIDO
 
 

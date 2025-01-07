@@ -21,6 +21,9 @@ from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.shortcuts import get_object_or_404
 from rest_framework.decorators import api_view
 from rest_framework.parsers import MultiPartParser, FormParser
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
 
 
 @api_view(["GET"])
@@ -532,10 +535,50 @@ class MascotaDeleteView(generics.DestroyAPIView):
 def productos(request):
     productos = Producto.objects.all()
     serializer = ProductoSerializer(productos, many=True)
-    return Response(serializer.data)
+    response = Response(serializer.data)
+    response["Access-Control-Allow-Origin"] = "*"
+    return response
 
 
-productos
+# productos
+
+
+@api_view(["POST"])
+def agregar_producto(request):
+    try:
+        print(
+            "Datos recibidos en el backend:", request.data
+        )  # Imprime los datos recibidos
+        codigo = request.data.get("codigo")
+        id_producto = request.data.get("id_producto")
+
+        # Verifica si los datos son válidos
+        if not codigo or not id_producto:
+            return Response(
+                {"error": "Faltan datos obligatorios: 'codigo' o 'id_producto'"},
+                status=400,
+            )
+
+        carrito, creado = Carrito.objects.get_or_create(codigo=codigo)
+        producto = get_object_or_404(Producto, id=id_producto)
+
+        item_carrito, creado = ItemCarrito.objects.get_or_create(
+            carrito=carrito, producto=producto
+        )
+        item_carrito.cantidad += 1
+        item_carrito.save()
+
+        serializer = ItemCarritoSerializer(item_carrito)
+        return Response(
+            {
+                "data": serializer.data,
+                "message": "Producto agregado al carrito exitosamente",
+            },
+            status=201,
+        )
+    except Exception as e:
+        print("Error en el servidor:", str(e))  # Log para depuración
+        return Response({"error": str(e)}, status=400)
 
 
 class ProductoDetailView(generics.RetrieveAPIView):
@@ -580,3 +623,15 @@ class PadecimientoCreateView(generics.ListCreateAPIView):
             },
             status=status.HTTP_400_BAD_REQUEST,
         )
+
+
+@api_view(["GET"])
+def producto_en_carrito(request):
+    try:
+        codigo = request.query_params.get("codigo")
+        carrito = get_object_or_404(Carrito, codigo=codigo)
+        items = ItemCarrito.objects.filter(carrito=carrito)
+        serializer = ItemCarritoSerializer(items, many=True)
+        return Response(serializer.data)
+    except Exception as e:
+        return Response({"error": str(e)}, status=400)
