@@ -349,6 +349,7 @@ class MascotaSerializer(serializers.ModelSerializer):
         max_length=255, required=True, allow_blank=False, write_only=True
     )
     nombre = serializers.CharField(max_length=255, required=True, allow_blank=True)
+    sexo = serializers.CharField(max_length=1, required=True, allow_blank=True)
     tipo = serializers.CharField(max_length=255, required=True, allow_blank=True)
     raza = serializers.CharField(max_length=255, required=True, allow_blank=True)
     edad = serializers.IntegerField(required=True)
@@ -365,6 +366,7 @@ class MascotaSerializer(serializers.ModelSerializer):
             "id",
             "email",
             "nombre",
+            "sexo",
             "tipo",
             "raza",
             "edad",
@@ -377,6 +379,7 @@ class MascotaSerializer(serializers.ModelSerializer):
     def save(self, **kwargs):
         user = User.objects.get(email=self.validated_data["email"])
         nombre = self.validated_data["nombre"]
+        sexo = self.validated_data["sexo"]
         tipo = self.validated_data["tipo"]
         raza = self.validated_data["raza"]
         edad = self.validated_data["edad"]
@@ -387,6 +390,7 @@ class MascotaSerializer(serializers.ModelSerializer):
         mascota = Mascota.objects.create(
             user=user,
             nombre=nombre,
+            sexo=sexo,
             tipo=tipo,
             raza=raza,
             edad=edad,
@@ -443,12 +447,12 @@ class ItemCarritoSerializer(serializers.ModelSerializer):
 
 
 class PadecimientoSerializer(serializers.ModelSerializer):
-    id_mascota = serializers.IntegerField()
+    id_mascota = serializers.IntegerField(write_only=True)
     padecimiento = serializers.CharField(max_length=255)
 
     class Meta:
         model = Padecimiento
-        fields = ["id_mascota", "padecimiento"]
+        fields = ["id", "id_mascota", "padecimiento"]
 
     def save(self, **kwargs):
         id_mascota = self.validated_data["id_mascota"]

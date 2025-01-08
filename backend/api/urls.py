@@ -65,6 +65,21 @@ urlpatterns = [
         PadecimientoCreateView.as_view(),
         name="register_padecimiento",
     ),
+    path(
+        "padecimientos/mascota/<int:id>/",
+        PadecimientoDetailView.as_view(),
+        name="padecimientos_mascota",
+    ),
+    path(
+        "padecimientos/update/<int:id>/",
+        PadecimientoUpdateView.as_view(),
+        name="padecimiento_update",
+    ),
+    path(
+        "padecimientos/delete/<int:id>/",
+        PadecimientoDeleteView.as_view(),
+        name="padecimiento_delete",
+    ),
     ## Productos
     path("productos/", ProductoListView.as_view(), name="productos_list"),
     path(
