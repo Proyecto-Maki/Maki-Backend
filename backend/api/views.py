@@ -500,7 +500,7 @@ class MascotaUpdateView(APIView):
         mascota = self.get_object(id)
         if not mascota:
             return Response(
-                {"detail": "Mascota no encontrada"}, status=status.HTTP_404_NOT_FOUND
+                {"message": "Mascota no encontrada"}, status=status.HTTP_404_NOT_FOUND
             )
 
         if mascota.user != request.user:
@@ -624,6 +624,57 @@ class PadecimientoCreateView(generics.ListCreateAPIView):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
+
+class PadecimientoDetailView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = PadecimientoSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_object(self):
+        id_mascota = self.kwargs.get("id")
+        mascota = get_object_or_404(Mascota, id=id_mascota)
+        return get_object_or_404(Padecimiento, mascota=mascota)
+    
+
+class PadecimientoUpdateView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_object(self, id):
+        try:
+            return Padecimiento.objects.get(id=id)
+        except Padecimiento.DoesNotExist:
+            return None
+        
+    def put(self, request, id, *args, **kwargs):
+        id_mascota = self.kwargs.get("id")
+        mascota = get_object_or_404(Mascota, id=id_mascota)
+        padecimiento = Padecimiento.objects.get(mascota=mascota)
+        if not padecimiento:
+            return Response(
+                {"message": "Padecimiento no encontrado"}, status=status.HTTP_404_NOT_FOUND
+            )
+        if padecimiento.mascota.user != request.user:
+            raise PermissionDenied("No tienes permisos para editar este padecimiento")
+        serializer = PadecimientoSerializer(padecimiento, data=request.data)
+        if serializer.is_valid():
+            serializer.update(padecimiento, serializer.validated_data)
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+class PadecimientoDeleteView(generics.DestroyAPIView):
+    serializer_class = PadecimientoSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_object(self):
+        id = self.kwargs.get("id")
+        padecimiento = get_object_or_404(Padecimiento, id=id)
+        if padecimiento.mascota.user != self.request.user:
+            raise exceptions.PermissionDenied(
+                "No tienes permisos para eliminar este padecimiento"
+            )
+        return padecimiento
+    
+    def perform_destroy(self, instance):
+        instance.delete()
 
 @api_view(["GET"])
 def producto_en_carrito(request):

@@ -308,6 +308,9 @@ class SolicitudCuidado(models.Model):
 class Resena(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     producto = models.ForeignKey(Producto, on_delete=models.CASCADE)
+    titulo = models.CharField(
+        max_length=255, null=False, blank=False, default="Sin titulo"
+    )
     calificacion = models.IntegerField(null=False, blank=False)
     comentario = models.TextField(null=True, blank=True)
     fecha = models.DateField(auto_now_add=True)
