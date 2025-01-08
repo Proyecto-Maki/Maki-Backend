@@ -122,10 +122,17 @@ class Mascota(models.Model):
         "Enfermo": "Enfermo",
         "Recuperacion": "Recuperacion",
     }
+    SEXOS = {
+        "M": "Macho",
+        "H": "Hembra",
+    }
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=False, blank=False)
     id = models.AutoField(primary_key=True)  # Lo pogo pa que abajo me deje poner el id
     nombre = models.CharField(max_length=255, null=False, blank=False)
+    sexo = models.CharField(
+        max_length=1, null=False, blank=False, choices=SEXOS, default="M"
+    )
     tipo = models.CharField(max_length=255, null=False, blank=False)
     raza = models.CharField(max_length=255, null=False, blank=False)
     edad = models.IntegerField(null=False, blank=False)
