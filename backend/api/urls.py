@@ -86,5 +86,6 @@ urlpatterns = [
         "productos/<slug:slug>/", ProductoDetailView.as_view(), name="producto-detalle"
     ),
     path("agregar_producto/", agregar_producto, name="agregar_producto"),
+    path("producto_en_carrito/", producto_en_carrito, name="producto_en_carrito"),
     ##path("producto/", productos, name="register_producto"),
 ]

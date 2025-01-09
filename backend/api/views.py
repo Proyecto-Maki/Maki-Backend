@@ -633,7 +633,7 @@ class PadecimientoDetailView(generics.RetrieveUpdateDestroyAPIView):
         id_mascota = self.kwargs.get("id")
         mascota = get_object_or_404(Mascota, id=id_mascota)
         return get_object_or_404(Padecimiento, mascota=mascota)
-    
+
 
 class PadecimientoUpdateView(APIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -643,14 +643,15 @@ class PadecimientoUpdateView(APIView):
             return Padecimiento.objects.get(id=id)
         except Padecimiento.DoesNotExist:
             return None
-        
+
     def put(self, request, id, *args, **kwargs):
         id_mascota = self.kwargs.get("id")
         mascota = get_object_or_404(Mascota, id=id_mascota)
         padecimiento = Padecimiento.objects.get(mascota=mascota)
         if not padecimiento:
             return Response(
-                {"message": "Padecimiento no encontrado"}, status=status.HTTP_404_NOT_FOUND
+                {"message": "Padecimiento no encontrado"},
+                status=status.HTTP_404_NOT_FOUND,
             )
         if padecimiento.mascota.user != request.user:
             raise PermissionDenied("No tienes permisos para editar este padecimiento")
@@ -659,7 +660,8 @@ class PadecimientoUpdateView(APIView):
             serializer.update(padecimiento, serializer.validated_data)
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        
+
+
 class PadecimientoDeleteView(generics.DestroyAPIView):
     serializer_class = PadecimientoSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -672,17 +674,21 @@ class PadecimientoDeleteView(generics.DestroyAPIView):
                 "No tienes permisos para eliminar este padecimiento"
             )
         return padecimiento
-    
+
     def perform_destroy(self, instance):
         instance.delete()
 
+
 @api_view(["GET"])
 def producto_en_carrito(request):
-    try:
-        codigo = request.query_params.get("codigo")
-        carrito = get_object_or_404(Carrito, codigo=codigo)
-        items = ItemCarrito.objects.filter(carrito=carrito)
-        serializer = ItemCarritoSerializer(items, many=True)
-        return Response(serializer.data)
-    except Exception as e:
-        return Response({"error": str(e)}, status=400)
+    codigo = request.query_params.get("codigo")
+    id_producto = request.query_params.get("id_producto")
+
+    carrito = get_object_or_404(Carrito, codigo=codigo)
+    producto = Producto.objects.get(id=id_producto)
+
+    producto_existe_en_carro = ItemCarrito.objects.filter(
+        carrito=carrito, producto=producto
+    ).exists()
+
+    return Response({"producto_en_carrito": producto_existe_en_carro})
