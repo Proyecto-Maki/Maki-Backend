@@ -575,3 +575,41 @@ class DetallePedidoSerializer(serializers.ModelSerializer):
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
+
+
+class PublicacionAdopcionSerializer(serializers.ModelSerializer):
+    id_fundacion = serializers.IntegerField(write_only=True)
+    id_mascota = serializers.IntegerField(write_only=True)
+    titulo = serializers.CharField(max_length=255)
+    descripcion = serializers.CharField(max_length=500)
+    ubicacion = serializers.CharField(max_length=255)
+
+    class Meta:
+        model = PublicacionAdopcion
+        fields = ["id", "id_fundacion", "id_mascota", "titulo", "descripcion", "ubicacion", "fecha"]
+
+    def save(self, **kwargs):
+        id_fundacion = self.validated_data["id_fundacion"]
+        id_mascota = self.validated_data["id_mascota"]
+        titulo = self.validated_data["titulo"]
+        descripcion = self.validated_data["descripcion"]
+        ubicacion = self.validated_data["ubicacion"]
+
+        fundacion = Fundacion.objects.get(id = id_fundacion)
+        mascota = Mascota.objects.get(id = id_mascota)
+
+        publicacion = PublicacionAdopcion.objects.create(
+            fundacion = fundacion,
+            mascota = mascota,
+            titulo = titulo,
+            descripcion = descripcion,
+            ubicacion = ubicacion
+        )
+
+        return publicacion
+    
+    def update(self, instance, validated_data):
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+

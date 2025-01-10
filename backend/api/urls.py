@@ -113,6 +113,12 @@ urlpatterns = [
     path("detalle-pedidos/update/<int:id>/", DetallePedidoUpdateView.as_view(), name="detalle_pedido_update"),
     path("detalle-pedidos/delete/<int:id>/", DetallePedidoDeleteView.as_view(), name="detalle_pedido_delete"),
 
-
+    ## Publicaciones
+    path("publicaciones/", PublicacionAdopcionView.as_view(), name="publicaciones"),
+    path("publicaciones/fundacion/<email>/", PublicacionesAdopcionUserView.as_view(), name="publicaciones_fundacion"),
+    path("publicaciones/create/", PublicacionAdopcionCreateView.as_view(), name="publicacion_create"),
+    path("publicaciones/<int:id>/", PublicacionAdopcionDetailView.as_view(), name="publicacion_detail"),
+    path("publicaciones/update/<int:id>/", PublicacionAdopcionUpdateView.as_view(), name="publicacion_update"),
+    path("publicaciones/delete/<int:id>/", PublicacionAdopcionDeleteView.as_view(), name="publicacion_delete"),
 
 ]

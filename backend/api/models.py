@@ -355,7 +355,8 @@ class PublicacionAdopcion(models.Model):
     mascota = models.ForeignKey(Mascota, on_delete=models.CASCADE)
     titulo = models.CharField(max_length=255, null=False, blank=False)
     descripcion = models.TextField(null=False, blank=False)
-    fecha = models.DateField(auto_now_add=True)
+    ubicacion = models.CharField(max_length=255, null=True, blank=True)
+    fecha = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"{self.titulo} - {self.mascota.nombre}"

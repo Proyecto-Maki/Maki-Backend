@@ -910,3 +910,92 @@ class DetallePedidoDeleteView(generics.DestroyAPIView):
     def perform_destroy(self, instance):
         instance.delete()
 
+
+## PUBLICACION_ADOPCION
+
+class PublicacionAdopcionCreateView(generics.ListCreateAPIView):
+    queryset = PublicacionAdopcion.objects.all()
+    permissions_classes = [permissions.IsAuthenticated&IsFundacionUser]
+    serializer_class = PublicacionAdopcionSerializer
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(
+                {"message": "Publicación de adopción creada exitosamente"},
+                status=status.HTTP_201_CREATED,
+            )
+        return Response(
+            {
+                "error": serializer.errors,
+                "message": "Ha ocurrido un error al crear la publicación de adopción",
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    
+class PublicacionesAdopcionUserView(generics.ListAPIView):
+    serializer_class = PublicacionAdopcionSerializer
+    permission_classes = [permissions.IsAuthenticated&IsFundacionUser]
+
+    def get_queryset(self):
+        email = self.kwargs.get("email")
+        user = get_object_or_404(User, email=email)
+        return PublicacionAdopcion.objects.filter(user=user)
+
+class PublicacionAdopcionView(generics.ListAPIView):
+    serializer_class = PublicacionAdopcionSerializer
+    permission_classes = [permissions.AllowAny]
+
+    def get_queryset(self):
+        return PublicacionAdopcion.objects.all()
+    
+class PublicacionAdopcionDetailView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = PublicacionAdopcionSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_object(self):
+        id = self.kwargs.get("id")
+        return get_object_or_404(PublicacionAdopcion, id=id)
+    
+class PublicacionAdopcionUpdateView(APIView):
+    permission_classes = [permissions.IsAuthenticated&IsFundacionUser]
+
+    def get_object(self, id):
+        try:
+            return PublicacionAdopcion.objects.get(id=id)
+        except PublicacionAdopcion.DoesNotExist:
+            return None
+        
+    def put(self, request, id, *args, **kwargs):
+        publicacion_adopcion = self.get_object(id)
+        if not publicacion_adopcion:
+            return Response(
+                {"message": "Publicación de adopción no encontrada"}, status=status.HTTP_404_NOT_FOUND
+            )
+        if publicacion_adopcion.user != request.user:
+            raise PermissionDenied("No tienes permisos para editar esta publicación de adopción")
+        serializer = PublicacionAdopcionSerializer(publicacion_adopcion, data=request.data)
+        if serializer.is_valid():
+            serializer.update(publicacion_adopcion, serializer.validated_data)
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+
+class PublicacionAdopcionDeleteView(generics.DestroyAPIView):
+    serializer_class = PublicacionAdopcionSerializer
+    permission_classes = [permissions.IsAuthenticated&IsFundacionUser]
+
+    def get_object(self):
+        id = self.kwargs.get("id")
+        publicacion_adopcion = get_object_or_404(PublicacionAdopcion, id=id)
+        if publicacion_adopcion.user != self.request.user:
+            raise exceptions.PermissionDenied(
+                "No tienes permisos para eliminar esta publicación de adopción"
+            )
+        return publicacion_adopcion
+    
+    def perform_destroy(self, instance):
+        instance.delete()
+
+    
