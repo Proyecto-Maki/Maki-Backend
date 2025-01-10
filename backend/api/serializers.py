@@ -467,3 +467,39 @@ class PadecimientoSerializer(serializers.ModelSerializer):
             mascota=mascota, padecimiento=padecimiento
         )
         return padecimiento_obj
+
+
+
+class ResenaSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(write_only=True)
+    id_producto = serializers.IntegerField(write_only=True)
+    titulo = serializers.CharField(max_length=255)
+    calificacion = serializers.IntegerField()
+    comentario = serializers.CharField(max_length=500)
+
+    class Meta:
+        model = Resena
+        fields = ["id", "email", "id_producto", "titulo", "calificacion", "comentario", "fecha"]
+
+    def save(self, **kwargs):
+        user = User.objects.get(email = self.validated_data["email"])
+        producto = Producto.objects.get(id = self.validated_data["id_producto"])
+        titulo = self.validated_data["titulo"]
+        calificacion = self.validated_data["calificacion"]
+        comentario = self.validated_data["comentario"]
+
+        resena = Resena.objects.create(
+            user=user,
+            producto=producto,
+            titulo=titulo,
+            calificacion=calificacion,
+            comentario=comentario
+        )
+        return resena
+    
+    def update(self, instance, validated_data):
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+

@@ -87,4 +87,14 @@ urlpatterns = [
     ),
     path("agregar_producto/", agregar_producto, name="agregar_producto"),
     ##path("producto/", productos, name="register_producto"),
+
+
+
+    ## Reseñas
+    path("productos/resenas/<int:id>/", ResenasProductoView.as_view(), name="resenas_producto"),
+    path("resenas/user/<email>/", ResenasUserView.as_view(), name="resenas_user"),
+    path("resena/create/", ResenaCreateView.as_view(), name="resena_create"),
+    path("resena/update/<int:id>/", ResenaUpdateView.as_view(), name="resena_update"),
+    path("resena/delete/<int:id>/", ResenaDeleteView.as_view(), name="resena_delete"),
+
 ]

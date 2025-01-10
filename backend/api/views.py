@@ -2,6 +2,7 @@ from django.shortcuts import render, redirect
 from django.contrib.auth import login, authenticate
 from rest_framework import generics, status, permissions
 from rest_framework.response import Response
+from rest_framework.permissions import AllowAny
 from .serializers import *
 from rest_framework.views import APIView
 from .permissions import IsClienteUser, IsFundacionUser
@@ -686,3 +687,88 @@ def producto_en_carrito(request):
         return Response(serializer.data)
     except Exception as e:
         return Response({"error": str(e)}, status=400)
+
+
+
+### RESEÑAS
+
+class ResenaCreateView(generics.ListCreateAPIView):
+    queryset = Resena.objects.all()
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = ResenaSerializer
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(
+                {"message": "Reseña creada exitosamente"}, 
+                status=status.HTTP_201_CREATED,
+            )
+        
+        return Response(
+            {
+                "error": serializer.errors,
+                "message": "Ha ocurrido un error al crear la reseña",
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    
+class ResenasUserView(generics.ListAPIView):
+    serializer_class = ResenaSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        email = self.kwargs.get("email")
+        user = get_object_or_404(User, email=email)
+        return Resena.objects.filter(user=user)
+    
+class ResenasProductoView(generics.ListAPIView):
+    serializer_class = ResenaSerializer
+    permission_classes = [AllowAny]
+
+    def get_queryset(self):
+        id_producto = self.kwargs.get("id")
+        producto = get_object_or_404(Producto, id=id_producto)
+        return Resena.objects.filter(producto=producto)
+    
+class ResenaUpdateView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_object(self, id):
+        try:
+            return Resena.objects.get(id=id)
+        except Resena.DoesNotExist:
+            return None
+        
+    def put(self, request, id, *args, **kwargs):
+        resena = self.get_object(id)
+        if not resena:
+            return Response(
+                {"message": "Reseña no encontrada"}, status=status.HTTP_404_NOT_FOUND
+            )
+        if resena.user != request.user:
+            raise PermissionDenied("No tienes permisos para editar esta reseña")
+        serializer = ResenaSerializer(resena, data=request.data)
+        if serializer.is_valid():
+            serializer.update(resena, serializer.validated_data)
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+
+class ResenaDeleteView(generics.DestroyAPIView):
+    serializer_class = ResenaSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_object(self):
+        id = self.kwargs.get("id")
+        resena = get_object_or_404(Resena, id=id)
+        if resena.user != self.request.user:
+            raise exceptions.PermissionDenied(
+                "No tienes permisos para eliminar esta reseña"
+            )
+        return resena
+    
+    def perform_destroy(self, instance):
+        instance.delete()
+

@@ -309,7 +309,7 @@ class Resena(models.Model):
     titulo = models.CharField(max_length=255, null=False, blank=False, default="Sin titulo")
     calificacion = models.IntegerField(null=False, blank=False)
     comentario = models.TextField(null=True, blank=True)
-    fecha = models.DateField(auto_now_add=True)
+    fecha = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         constraints = [
