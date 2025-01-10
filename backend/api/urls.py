@@ -97,4 +97,22 @@ urlpatterns = [
     path("resena/update/<int:id>/", ResenaUpdateView.as_view(), name="resena_update"),
     path("resena/delete/<int:id>/", ResenaDeleteView.as_view(), name="resena_delete"),
 
+
+
+    ## Pedidos
+
+    path("pedidos/user/<email>/", PedidosUserView.as_view(), name="pedidos_user"),
+    path("pedidos/create/", PedidoCreateView.as_view(), name="pedido_create"),
+    path("pedidos/update/<int:id>/", PedidoUpdateView.as_view(), name="pedido_update"),
+    path("pedidos/delete/<int:id>/", PedidoDeleteView.as_view(), name="pedido_delete"),
+
+    ## Detalle de pedidos
+
+    path("detalle-pedidos/pedido/<int:id>/", DetallePedidoView.as_view(), name="detalle_pedidos"),
+    path("detalle-pedidos/create/", DetallePedidoCreateView.as_view(), name="detalle_pedido_create"),
+    path("detalle-pedidos/update/<int:id>/", DetallePedidoUpdateView.as_view(), name="detalle_pedido_update"),
+    path("detalle-pedidos/delete/<int:id>/", DetallePedidoDeleteView.as_view(), name="detalle_pedido_delete"),
+
+
+
 ]

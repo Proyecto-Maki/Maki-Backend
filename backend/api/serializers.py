@@ -503,3 +503,75 @@ class ResenaSerializer(serializers.ModelSerializer):
         instance.save()
 
 
+
+### PEDIDOS
+
+class PedidoSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(write_only=True)
+    estado = serializers.CharField(max_length=255)
+    total = serializers.DecimalField(max_digits=10, decimal_places=2)
+    id_descuento = serializers.IntegerField(write_only=True, required=False, allow_null=True)
+
+    class Meta:
+        model = Pedido
+        fields = ["id", "email", "fecha", "estado", "id_descuento", "total"]
+
+    def save(self, **kwargs):
+        user = User.objects.get(email = self.validated_data["email"])
+        total = self.validated_data["total"]
+        estado = self.validated_data["estado"]
+        id_descuento = self.validated_data["id_descuento"]
+
+        if id_descuento:
+            descuento = Descuento.objects.get(id = id_descuento)
+            pedido = Pedido.objects.create(
+                user = user,
+                estado = estado,
+                total = total,
+                descuento = descuento
+            )
+
+            return pedido
+        else:
+            pedido = Pedido.objects.create(
+                user = user,
+                estado = estado,
+                total = total
+            )
+
+        return pedido
+
+    def update(self, instance, validated_data):
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+class DetallePedidoSerializer(serializers.ModelSerializer):
+    id_pedido = serializers.IntegerField(write_only=True)
+    id_producto = serializers.IntegerField(write_only=True)
+    cantidad = serializers.IntegerField()
+
+    class Meta:
+        model = DetallePedido
+        fields = ["id", "id_pedido", "id_producto", "cantidad"]
+
+    def save(self, **kwargs):
+        id_pedido = self.validated_data["id_pedido"]
+        id_producto = self.validated_data["id_producto"]
+        cantidad = self.validated_data["cantidad"]
+
+        pedido = Pedido.objects.get(id = id_pedido)
+        producto = Producto.objects.get(id = id_producto)
+
+        detalle = DetallePedido.objects.create(
+            pedido = pedido,
+            producto = producto,
+            cantidad = cantidad
+        )
+
+        return detalle
+
+    def update(self, instance, validated_data):
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()

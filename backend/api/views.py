@@ -772,3 +772,141 @@ class ResenaDeleteView(generics.DestroyAPIView):
     def perform_destroy(self, instance):
         instance.delete()
 
+
+## PEDIDOS
+
+class PedidoCreateView(generics.ListCreateAPIView):
+    queryset = Pedido.objects.all()
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = PedidoSerializer
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(
+                {"message": "Pedido creado exitosamente"}, 
+                status=status.HTTP_201_CREATED,
+            )
+        
+        return Response({
+            "error": serializer.errors,
+            "message": "Ha ocurrido un error al crear el pedido",
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+
+class DetallePedidoCreateView(generics.ListCreateAPIView):
+    queryset = DetallePedido.objects.all()
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = DetallePedidoSerializer
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(
+                {"message": "Detalle de pedido creado exitosamente"}, 
+                status=status.HTTP_201_CREATED,
+            )
+        
+        return Response({
+            "error": serializer.errors,
+            "message": "Ha ocurrido un error al crear el detalle de pedido",
+        }, status=status.HTTP_400_BAD_REQUEST)
+    
+class PedidosUserView(generics.ListAPIView): 
+    serializer_class = PedidoSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        email = self.kwargs.get("email")
+        user = get_object_or_404(User, email=email)
+        return Pedido.objects.filter(user=user)
+    
+class DetallePedidoView(generics.ListAPIView):
+    serializer_class = DetallePedidoSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        id_pedido = self.kwargs.get("id")
+        pedido = get_object_or_404(Pedido, id=id_pedido)
+        return DetallePedido.objects.filter(pedido=pedido)
+    
+class PedidoUpdateView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_object(self, id):
+        try:
+            return Pedido.objects.get(id=id)
+        except Pedido.DoesNotExist:
+            return None
+        
+    def put(self, request, id, *args, **kwargs):
+        pedido = self.get_object(id)
+        if not pedido:
+            return Response(
+                {"message": "Pedido no encontrado"}, status=status.HTTP_404_NOT_FOUND
+            )
+        if pedido.user != request.user:
+            raise PermissionDenied("No tienes permisos para editar este pedido")
+        serializer = PedidoSerializer(pedido, data=request.data)
+        if serializer.is_valid():
+            serializer.update(pedido, serializer.validated_data)
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+class PedidoDeleteView(generics.DestroyAPIView):
+    serializer_class = PedidoSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_object(self):
+        id = self.kwargs.get("id")
+        pedido = get_object_or_404(Pedido, id=id)
+        if pedido.user != self.request.user:
+            raise exceptions.PermissionDenied(
+                "No tienes permisos para eliminar este pedido"
+            )
+        return pedido
+    
+    def perform_destroy(self, instance):
+        instance.delete()
+
+class DetallePedidoUpdateView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_object(self, id):
+        try:
+            return DetallePedido.objects.get(id=id)
+        except DetallePedido.DoesNotExist:
+            return None
+        
+    def put(self, request, id, *args, **kwargs):
+        detalle_pedido = self.get_object(id)
+        if not detalle_pedido:
+            return Response(
+                {"message": "Detalle de pedido no encontrado"}, status=status.HTTP_404_NOT_FOUND
+            )
+        if detalle_pedido.pedido.user != request.user:
+            raise PermissionDenied("No tienes permisos para editar este detalle de pedido")
+        serializer = DetallePedidoSerializer(detalle_pedido, data=request.data)
+        if serializer.is_valid():
+            serializer.update(detalle_pedido, serializer.validated_data)
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class DetallePedidoDeleteView(generics.DestroyAPIView):
+    serializer_class = DetallePedidoSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_object(self):
+        id = self.kwargs.get("id")
+        detalle_pedido = get_object_or_404(DetallePedido, id=id)
+        if detalle_pedido.pedido.user != self.request.user:
+            raise exceptions.PermissionDenied(
+                "No tienes permisos para eliminar este detalle de pedido"
+            )
+        return detalle_pedido
+    
+    def perform_destroy(self, instance):
+        instance.delete()
+

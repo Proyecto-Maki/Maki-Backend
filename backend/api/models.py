@@ -236,8 +236,8 @@ class Pedido(models.Model):
     }
     id = models.AutoField(primary_key=True)  # Lo pogo pa que abajo me deje poner el id
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    fecha = models.DateField(auto_now_add=True, null=False, blank=False)
-    estado = models.CharField(max_length=255, null=False, blank=False, choices=ESTADOS)
+    fecha = models.DateTimeField(auto_now_add=True, null=False, blank=False)
+    estado = models.CharField(max_length=255, null=False, blank=False, choices=ESTADOS, default="Preparación")
     descuento = models.ForeignKey(
         Descuento, on_delete=models.SET_NULL, null=True, blank=True
     )
