@@ -453,6 +453,15 @@ class FundacionView(generics.ListAPIView):
 
     def get_queryset(self):
         return Fundacion.objects.select_related('user').all()
+    
+class FundacionLocalidadView(generics.ListAPIView):
+    serializer_class = FundacionSerializer
+    permission_classes = [permissions.AllowAny]
+
+    def get_queryset(self):
+        id_localidad = self.kwargs.get("id")
+        localidad = get_object_or_404(Localidad, id=id_localidad)
+        return Fundacion.objects.select_related('user__direccion__localidad').filter(user__direccion__localidad=localidad)
 
 class MascotaCreateView(generics.ListCreateAPIView):
     queryset = Mascota.objects.all()

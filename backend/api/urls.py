@@ -17,6 +17,7 @@ urlpatterns = [
     path("fundacion/dashboard/", FundacionOnlyView.as_view(), name="fundacion_only"),
 
     path("fundaciones/", FundacionView.as_view(), name="fundaciones"),
+    path("fundaciones/localidad/<int:id>/", FundacionLocalidadView.as_view(), name="fundaciones_localidad"),
 
     path("verify-email/", VerificarCodigo.as_view(), name="verify-email"),
     path("password-reset/", PasswordResetRequestView.as_view(), name="password-reset"),
