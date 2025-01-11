@@ -193,7 +193,7 @@ class FundacionSignupSerializer(serializers.ModelSerializer):
         max_length=255, required=True, allow_blank=True, write_only=True
     )
     descripcion = serializers.CharField(
-        max_length=255, required=True, allow_blank=True, write_only=True
+        max_length=500, required=True, allow_blank=True, write_only=True
     )
     # premium = serializers.BooleanField(required=False, write_only=True)
 

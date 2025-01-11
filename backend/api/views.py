@@ -446,6 +446,15 @@ class FundacionDeleteView(generics.DestroyAPIView):
         user.delete()
 
 
+class FundacionView(generics.ListAPIView):
+    queryset = Fundacion.objects.all()
+    serializer_class = FundacionSerializer
+    permission_classes = [permissions.AllowAny]
+
+    def get_queryset(self):
+        return Fundacion.objects.select_related('user').all()
+
+
 class MascotaCreateView(generics.ListCreateAPIView):
     queryset = Mascota.objects.all()
     permissions_classes = [permissions.IsAuthenticated]
