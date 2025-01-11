@@ -454,7 +454,6 @@ class FundacionView(generics.ListAPIView):
     def get_queryset(self):
         return Fundacion.objects.select_related('user').all()
 
-
 class MascotaCreateView(generics.ListCreateAPIView):
     queryset = Mascota.objects.all()
     permissions_classes = [permissions.IsAuthenticated]

@@ -422,6 +422,7 @@ class ProductoSerializer(serializers.ModelSerializer):
             "descripcion",
             "categoria",
             "precio",
+            "ingredientes",
         ]
 
 
