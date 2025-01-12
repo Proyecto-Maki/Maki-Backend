@@ -2,6 +2,7 @@ from django.shortcuts import render, redirect
 from django.contrib.auth import login, authenticate
 from rest_framework import generics, status, permissions
 from rest_framework.response import Response
+from rest_framework.permissions import AllowAny
 from .serializers import *
 from rest_framework.views import APIView
 from .permissions import IsClienteUser, IsFundacionUser
@@ -445,6 +446,27 @@ class FundacionDeleteView(generics.DestroyAPIView):
         user.delete()
 
 
+class FundacionView(generics.ListAPIView):
+    queryset = Fundacion.objects.all()
+    serializer_class = FundacionSerializer
+    permission_classes = [permissions.AllowAny]
+
+    def get_queryset(self):
+        return Fundacion.objects.select_related("user").all()
+
+
+class FundacionLocalidadView(generics.ListAPIView):
+    serializer_class = FundacionSerializer
+    permission_classes = [permissions.AllowAny]
+
+    def get_queryset(self):
+        id_localidad = self.kwargs.get("id")
+        localidad = get_object_or_404(Localidad, id=id_localidad)
+        return Fundacion.objects.select_related("user__direccion__localidad").filter(
+            user__direccion__localidad=localidad
+        )
+
+
 class MascotaCreateView(generics.ListCreateAPIView):
     queryset = Mascota.objects.all()
     permissions_classes = [permissions.IsAuthenticated]
@@ -692,3 +714,342 @@ def producto_en_carrito(request):
     ).exists()
 
     return Response({"producto_en_carrito": producto_existe_en_carro})
+
+
+### RESEÑAS
+
+
+class ResenaCreateView(generics.ListCreateAPIView):
+    queryset = Resena.objects.all()
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = ResenaSerializer
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(
+                {"message": "Reseña creada exitosamente"},
+                status=status.HTTP_201_CREATED,
+            )
+
+        return Response(
+            {
+                "error": serializer.errors,
+                "message": "Ha ocurrido un error al crear la reseña",
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+
+class ResenasUserView(generics.ListAPIView):
+    serializer_class = ResenaSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        email = self.kwargs.get("email")
+        user = get_object_or_404(User, email=email)
+        return Resena.objects.filter(user=user)
+
+
+class ResenasProductoView(generics.ListAPIView):
+    serializer_class = ResenaSerializer
+    permission_classes = [AllowAny]
+
+    def get_queryset(self):
+        id_producto = self.kwargs.get("id")
+        producto = get_object_or_404(Producto, id=id_producto)
+        return Resena.objects.filter(producto=producto)
+
+
+class ResenaUpdateView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_object(self, id):
+        try:
+            return Resena.objects.get(id=id)
+        except Resena.DoesNotExist:
+            return None
+
+    def put(self, request, id, *args, **kwargs):
+        resena = self.get_object(id)
+        if not resena:
+            return Response(
+                {"message": "Reseña no encontrada"}, status=status.HTTP_404_NOT_FOUND
+            )
+        if resena.user != request.user:
+            raise PermissionDenied("No tienes permisos para editar esta reseña")
+        serializer = ResenaSerializer(resena, data=request.data)
+        if serializer.is_valid():
+            serializer.update(resena, serializer.validated_data)
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class ResenaDeleteView(generics.DestroyAPIView):
+    serializer_class = ResenaSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_object(self):
+        id = self.kwargs.get("id")
+        resena = get_object_or_404(Resena, id=id)
+        if resena.user != self.request.user:
+            raise exceptions.PermissionDenied(
+                "No tienes permisos para eliminar esta reseña"
+            )
+        return resena
+
+    def perform_destroy(self, instance):
+        instance.delete()
+
+
+## PEDIDOS
+
+
+class PedidoCreateView(generics.ListCreateAPIView):
+    queryset = Pedido.objects.all()
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = PedidoSerializer
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(
+                {"message": "Pedido creado exitosamente"},
+                status=status.HTTP_201_CREATED,
+            )
+
+        return Response(
+            {
+                "error": serializer.errors,
+                "message": "Ha ocurrido un error al crear el pedido",
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+
+class DetallePedidoCreateView(generics.ListCreateAPIView):
+    queryset = DetallePedido.objects.all()
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = DetallePedidoSerializer
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(
+                {"message": "Detalle de pedido creado exitosamente"},
+                status=status.HTTP_201_CREATED,
+            )
+
+        return Response(
+            {
+                "error": serializer.errors,
+                "message": "Ha ocurrido un error al crear el detalle de pedido",
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+
+class PedidosUserView(generics.ListAPIView):
+    serializer_class = PedidoSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        email = self.kwargs.get("email")
+        user = get_object_or_404(User, email=email)
+        return Pedido.objects.filter(user=user)
+
+
+class DetallePedidoView(generics.ListAPIView):
+    serializer_class = DetallePedidoSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        id_pedido = self.kwargs.get("id")
+        pedido = get_object_or_404(Pedido, id=id_pedido)
+        return DetallePedido.objects.filter(pedido=pedido)
+
+
+class PedidoUpdateView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_object(self, id):
+        try:
+            return Pedido.objects.get(id=id)
+        except Pedido.DoesNotExist:
+            return None
+
+    def put(self, request, id, *args, **kwargs):
+        pedido = self.get_object(id)
+        if not pedido:
+            return Response(
+                {"message": "Pedido no encontrado"}, status=status.HTTP_404_NOT_FOUND
+            )
+        if pedido.user != request.user:
+            raise PermissionDenied("No tienes permisos para editar este pedido")
+        serializer = PedidoSerializer(pedido, data=request.data)
+        if serializer.is_valid():
+            serializer.update(pedido, serializer.validated_data)
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class PedidoDeleteView(generics.DestroyAPIView):
+    serializer_class = PedidoSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_object(self):
+        id = self.kwargs.get("id")
+        pedido = get_object_or_404(Pedido, id=id)
+        if pedido.user != self.request.user:
+            raise exceptions.PermissionDenied(
+                "No tienes permisos para eliminar este pedido"
+            )
+        return pedido
+
+    def perform_destroy(self, instance):
+        instance.delete()
+
+
+class DetallePedidoUpdateView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_object(self, id):
+        try:
+            return DetallePedido.objects.get(id=id)
+        except DetallePedido.DoesNotExist:
+            return None
+
+    def put(self, request, id, *args, **kwargs):
+        detalle_pedido = self.get_object(id)
+        if not detalle_pedido:
+            return Response(
+                {"message": "Detalle de pedido no encontrado"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        if detalle_pedido.pedido.user != request.user:
+            raise PermissionDenied(
+                "No tienes permisos para editar este detalle de pedido"
+            )
+        serializer = DetallePedidoSerializer(detalle_pedido, data=request.data)
+        if serializer.is_valid():
+            serializer.update(detalle_pedido, serializer.validated_data)
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class DetallePedidoDeleteView(generics.DestroyAPIView):
+    serializer_class = DetallePedidoSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_object(self):
+        id = self.kwargs.get("id")
+        detalle_pedido = get_object_or_404(DetallePedido, id=id)
+        if detalle_pedido.pedido.user != self.request.user:
+            raise exceptions.PermissionDenied(
+                "No tienes permisos para eliminar este detalle de pedido"
+            )
+        return detalle_pedido
+
+    def perform_destroy(self, instance):
+        instance.delete()
+
+
+## PUBLICACION_ADOPCION
+
+
+class PublicacionAdopcionCreateView(generics.ListCreateAPIView):
+    queryset = PublicacionAdopcion.objects.all()
+    permissions_classes = [permissions.IsAuthenticated & IsFundacionUser]
+    serializer_class = PublicacionAdopcionSerializer
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(
+                {"message": "Publicación de adopción creada exitosamente"},
+                status=status.HTTP_201_CREATED,
+            )
+        return Response(
+            {
+                "error": serializer.errors,
+                "message": "Ha ocurrido un error al crear la publicación de adopción",
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+
+class PublicacionesAdopcionUserView(generics.ListAPIView):
+    serializer_class = PublicacionAdopcionSerializer
+    permission_classes = [permissions.IsAuthenticated & IsFundacionUser]
+
+    def get_queryset(self):
+        email = self.kwargs.get("email")
+        user = get_object_or_404(User, email=email)
+        return PublicacionAdopcion.objects.filter(user=user)
+
+
+class PublicacionAdopcionView(generics.ListAPIView):
+    serializer_class = PublicacionAdopcionSerializer
+    permission_classes = [permissions.AllowAny]
+
+    def get_queryset(self):
+        return PublicacionAdopcion.objects.all()
+
+
+class PublicacionAdopcionDetailView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = PublicacionAdopcionSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_object(self):
+        id = self.kwargs.get("id")
+        return get_object_or_404(PublicacionAdopcion, id=id)
+
+
+class PublicacionAdopcionUpdateView(APIView):
+    permission_classes = [permissions.IsAuthenticated & IsFundacionUser]
+
+    def get_object(self, id):
+        try:
+            return PublicacionAdopcion.objects.get(id=id)
+        except PublicacionAdopcion.DoesNotExist:
+            return None
+
+    def put(self, request, id, *args, **kwargs):
+        publicacion_adopcion = self.get_object(id)
+        if not publicacion_adopcion:
+            return Response(
+                {"message": "Publicación de adopción no encontrada"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        if publicacion_adopcion.user != request.user:
+            raise PermissionDenied(
+                "No tienes permisos para editar esta publicación de adopción"
+            )
+        serializer = PublicacionAdopcionSerializer(
+            publicacion_adopcion, data=request.data
+        )
+        if serializer.is_valid():
+            serializer.update(publicacion_adopcion, serializer.validated_data)
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class PublicacionAdopcionDeleteView(generics.DestroyAPIView):
+    serializer_class = PublicacionAdopcionSerializer
+    permission_classes = [permissions.IsAuthenticated & IsFundacionUser]
+
+    def get_object(self):
+        id = self.kwargs.get("id")
+        publicacion_adopcion = get_object_or_404(PublicacionAdopcion, id=id)
+        if publicacion_adopcion.user != self.request.user:
+            raise exceptions.PermissionDenied(
+                "No tienes permisos para eliminar esta publicación de adopción"
+            )
+        return publicacion_adopcion
+
+    def perform_destroy(self, instance):
+        instance.delete()

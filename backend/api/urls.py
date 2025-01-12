@@ -15,6 +15,10 @@ urlpatterns = [
     path("logout/", LogoutView.as_view(), name="logout"),
     path("cliente/dashboard/", ClienteOnlyView.as_view(), name="cliente_only"),
     path("fundacion/dashboard/", FundacionOnlyView.as_view(), name="fundacion_only"),
+
+    path("fundaciones/", FundacionView.as_view(), name="fundaciones"),
+    path("fundaciones/localidad/<int:id>/", FundacionLocalidadView.as_view(), name="fundaciones_localidad"),
+
     path("verify-email/", VerificarCodigo.as_view(), name="verify-email"),
     path("password-reset/", PasswordResetRequestView.as_view(), name="password-reset"),
     path(
@@ -88,4 +92,38 @@ urlpatterns = [
     path("agregar_producto/", agregar_producto, name="agregar_producto"),
     path("producto_en_carrito/", producto_en_carrito, name="producto_en_carrito"),
     ##path("producto/", productos, name="register_producto"),
+
+
+
+    ## Reseñas
+    path("productos/resenas/<int:id>/", ResenasProductoView.as_view(), name="resenas_producto"),
+    path("resenas/user/<email>/", ResenasUserView.as_view(), name="resenas_user"),
+    path("resena/create/", ResenaCreateView.as_view(), name="resena_create"),
+    path("resena/update/<int:id>/", ResenaUpdateView.as_view(), name="resena_update"),
+    path("resena/delete/<int:id>/", ResenaDeleteView.as_view(), name="resena_delete"),
+
+
+
+    ## Pedidos
+
+    path("pedidos/user/<email>/", PedidosUserView.as_view(), name="pedidos_user"),
+    path("pedidos/create/", PedidoCreateView.as_view(), name="pedido_create"),
+    path("pedidos/update/<int:id>/", PedidoUpdateView.as_view(), name="pedido_update"),
+    path("pedidos/delete/<int:id>/", PedidoDeleteView.as_view(), name="pedido_delete"),
+
+    ## Detalle de pedidos
+
+    path("detalle-pedidos/pedido/<int:id>/", DetallePedidoView.as_view(), name="detalle_pedidos"),
+    path("detalle-pedidos/create/", DetallePedidoCreateView.as_view(), name="detalle_pedido_create"),
+    path("detalle-pedidos/update/<int:id>/", DetallePedidoUpdateView.as_view(), name="detalle_pedido_update"),
+    path("detalle-pedidos/delete/<int:id>/", DetallePedidoDeleteView.as_view(), name="detalle_pedido_delete"),
+
+    ## Publicaciones
+    path("publicaciones/", PublicacionAdopcionView.as_view(), name="publicaciones"),
+    path("publicaciones/fundacion/<email>/", PublicacionesAdopcionUserView.as_view(), name="publicaciones_fundacion"),
+    path("publicaciones/create/", PublicacionAdopcionCreateView.as_view(), name="publicacion_create"),
+    path("publicaciones/<int:id>/", PublicacionAdopcionDetailView.as_view(), name="publicacion_detail"),
+    path("publicaciones/update/<int:id>/", PublicacionAdopcionUpdateView.as_view(), name="publicacion_update"),
+    path("publicaciones/delete/<int:id>/", PublicacionAdopcionDeleteView.as_view(), name="publicacion_delete"),
+
 ]

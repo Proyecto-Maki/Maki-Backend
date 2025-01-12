@@ -8,6 +8,12 @@ from .models import (
     Producto,
     ItemCarrito,
     Carrito,
+    Resena,
+    Pedido,
+    Descuento,
+    DetallePedido,
+    Localidad,
+    Direccion,
 )
 
 # Register your models here.
@@ -18,3 +24,10 @@ admin.site.register(Fundacion)
 admin.site.register(Mascota)
 admin.site.register(Padecimiento)
 admin.site.register([Producto, ItemCarrito, Carrito])
+admin.site.register(Resena)
+admin.site.register(Pedido)
+admin.site.register(Descuento)
+admin.site.register(DetallePedido)
+admin.site.register(Localidad)
+admin.site.register(Direccion)
+
