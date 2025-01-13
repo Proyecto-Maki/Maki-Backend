@@ -12,6 +12,8 @@ from .models import (
     Pedido,
     Descuento,
     DetallePedido,
+    Localidad,
+    Direccion,
 )
 
 # Register your models here.
@@ -26,3 +28,6 @@ admin.site.register(Resena)
 admin.site.register(Pedido)
 admin.site.register(Descuento)
 admin.site.register(DetallePedido)
+admin.site.register(Localidad)
+admin.site.register(Direccion)
+

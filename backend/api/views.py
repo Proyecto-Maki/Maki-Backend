@@ -446,6 +446,23 @@ class FundacionDeleteView(generics.DestroyAPIView):
         user.delete()
 
 
+class FundacionView(generics.ListAPIView):
+    queryset = Fundacion.objects.all()
+    serializer_class = FundacionSerializer
+    permission_classes = [permissions.AllowAny]
+
+    def get_queryset(self):
+        return Fundacion.objects.select_related('user').all()
+    
+class FundacionLocalidadView(generics.ListAPIView):
+    serializer_class = FundacionSerializer
+    permission_classes = [permissions.AllowAny]
+
+    def get_queryset(self):
+        id_localidad = self.kwargs.get("id")
+        localidad = get_object_or_404(Localidad, id=id_localidad)
+        return Fundacion.objects.select_related('user__direccion__localidad').filter(user__direccion__localidad=localidad)
+
 class MascotaCreateView(generics.ListCreateAPIView):
     queryset = Mascota.objects.all()
     permissions_classes = [permissions.IsAuthenticated]
@@ -831,6 +848,16 @@ class DetallePedidoView(generics.ListAPIView):
         id_pedido = self.kwargs.get("id")
         pedido = get_object_or_404(Pedido, id=id_pedido)
         return DetallePedido.objects.filter(pedido=pedido)
+    
+
+class DetallesPedidoView(generics.ListAPIView):
+    serializer_class = DetallePedidoConProductoSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        id_pedido = self.kwargs.get("id")
+        pedido = get_object_or_404(Pedido, id=id_pedido)
+        return DetallePedido.objects.filter(pedido=pedido).select_related('producto')
     
 class PedidoUpdateView(APIView):
     permission_classes = [permissions.IsAuthenticated]

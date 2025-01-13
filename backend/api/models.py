@@ -12,6 +12,21 @@ from rest_framework.authtoken.models import Token
 from django.utils.text import slugify
 from cloudinary.models import CloudinaryField
 
+class Localidad(models.Model):
+    id = models.AutoField(primary_key=True)
+    nombre = models.CharField(max_length=255, null=False, blank=False)
+
+    def __str__(self):
+        return f"{self.id} {self.nombre}"
+    
+
+class Direccion(models.Model):
+    direccion = models.CharField(max_length=255, null=False, blank=False)
+    codigo_postal = models.CharField(max_length=6, null=True, blank=True)
+    localidad = models.ForeignKey(Localidad, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f"{self.direccion} {self.localidad.nombre}"
 
 class UserManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
@@ -51,7 +66,8 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_verified = models.BooleanField(default=False)
     email = models.EmailField(unique=True)
     # username = models.CharField(max_length=255, unique=True, null=True, blank=True)
-    direccion = models.CharField(max_length=255, null=True, blank=True)
+    # direccion = models.CharField(max_length=255, null=True, blank=True)
+    direccion = models.ForeignKey(Direccion, on_delete=models.CASCADE, null=True, blank=True)
     telefono = models.CharField(max_length=10, null=True, blank=True)
     saldo = models.DecimalField(max_digits=7, decimal_places=2, default=0.00)
 
@@ -302,7 +318,6 @@ class SolicitudCuidado(models.Model):
 
 ## MODELO DE RESEÑA
 
-
 class Resena(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     producto = models.ForeignKey(Producto, on_delete=models.CASCADE)
@@ -355,7 +370,7 @@ class PublicacionAdopcion(models.Model):
     mascota = models.ForeignKey(Mascota, on_delete=models.CASCADE)
     titulo = models.CharField(max_length=255, null=False, blank=False)
     descripcion = models.TextField(null=False, blank=False)
-    ubicacion = models.CharField(max_length=255, null=True, blank=True)
+    direccion = models.ForeignKey(Direccion, on_delete=models.CASCADE, null=False, blank=False, default=None) 
     fecha = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -379,3 +394,6 @@ class SolicitudAdopcion(models.Model):
 
     def __str__(self):
         return f"{self.cliente.primer_nombre} {self.cliente.primer_apellido} - {self.publicacion.titulo}"
+
+
+

@@ -13,13 +13,46 @@ from .new_utils import send_normal_email
 from rest_framework_simplejwt.tokens import RefreshToken, TokenError
 
 
+class LocalidadSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Localidad
+        fields = ["id", "nombre"]
+
+class DireccionSerializer(serializers.ModelSerializer):
+    direccion = serializers.CharField(max_length=255)
+    codigo_postal = serializers.CharField(max_length=6, required=False, allow_blank=True)
+    id_localidad = serializers.IntegerField()
+
+    class Meta:
+        model = Direccion
+        fields = ["id", "direccion", "codigo_postal", "id_localidad"]
+
+    def save(self, **kwargs):
+        direccion = self.validated_data["direccion"]
+        codigo_postal = self.validated_data.get("codigo_postal", "")
+        id_localidad = self.validated_data["id_localidad"]
+
+        localidad = Localidad.objects.get(id=id_localidad)
+        direccion = Direccion.objects.create(
+            direccion=direccion, codigo_postal=codigo_postal, localidad=localidad
+        )
+        return direccion
+    
+    def update(self, instance, validated_data):
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = [
             "email",
             "is_cliente",
-            "direccion",
+            "direccion.direccion",
+            "direccion.codigo_postal",
+            "direccion.localidad.nombre",
             "telefono",
             "saldo",
             "is_verified",
@@ -28,7 +61,9 @@ class UserSerializer(serializers.ModelSerializer):
 
 class ClienteSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(source="user.email")
-    direccion = serializers.CharField(source="user.direccion")
+    direccion = serializers.CharField(source="user.direccion.direccion")
+    codigo_postal = serializers.CharField(source="user.direccion.codigo_postal")
+    localidad = serializers.CharField(source="user.direccion.localidad.nombre")
     telefono = serializers.CharField(source="user.telefono")
     saldo = serializers.DecimalField(
         source="user.saldo", max_digits=7, decimal_places=2
@@ -40,6 +75,8 @@ class ClienteSerializer(serializers.ModelSerializer):
         fields = [
             "email",
             "direccion",
+            "codigo_postal",
+            "localidad",
             "telefono",
             "saldo",
             "is_verified",
@@ -67,7 +104,9 @@ class ClienteSerializer(serializers.ModelSerializer):
 
 class FundacionSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(source="user.email", read_only=True)
-    direccion = serializers.CharField(source="user.direccion", read_only=True)
+    direccion = serializers.CharField(source="user.direccion.direccion")
+    codigo_postal = serializers.CharField(source="user.direccion.codigo_postal")
+    localidad = serializers.CharField(source="user.direccion.localidad.nombre")
     telefono = serializers.CharField(source="user.telefono", read_only=True)
     saldo = serializers.DecimalField(
         source="user.saldo", max_digits=7, decimal_places=2, read_only=True
@@ -79,6 +118,8 @@ class FundacionSerializer(serializers.ModelSerializer):
         fields = [
             "email",
             "direccion",
+            "codigo_postal",
+            "localidad",
             "telefono",
             "saldo",
             "is_verified",
@@ -103,9 +144,11 @@ class FundacionSerializer(serializers.ModelSerializer):
 
 class ClienteSignupSerializer(serializers.ModelSerializer):
     password2 = serializers.CharField(style={"input_type": "password"}, write_only=True)
-    direccion = serializers.CharField(
-        max_length=255, required=False, allow_blank=True, write_only=True
+    direccion = serializers.CharField(max_length=255, required=True, allow_blank=True)
+    codigo_postal = serializers.CharField(
+        max_length=6, required=False, allow_blank=True, write_only=True
     )
+    id_localidad = serializers.IntegerField(write_only=True)
     telefono = serializers.CharField(
         max_length=10, required=False, allow_blank=True, write_only=True
     )
@@ -132,6 +175,8 @@ class ClienteSignupSerializer(serializers.ModelSerializer):
             "password",
             "password2",
             "direccion",
+            "codigo_postal",
+            "id_localidad",
             "telefono",
             "cedula",
             "primer_nombre",
@@ -147,8 +192,16 @@ class ClienteSignupSerializer(serializers.ModelSerializer):
         )
         password = self.validated_data["password"]
         password2 = self.validated_data["password2"]
-        direccion = self.validated_data.get("direccion", "")
+        direccion_dir = self.validated_data.get("direccion", "")
+        codigo_postal = self.validated_data.get("codigo_postal", "")
+        id_localidad = self.validated_data.get("id_localidad", "")
         telefono = self.validated_data.get("telefono", "")
+
+        direccion = Direccion.objects.create(
+            direccion = direccion_dir,
+            codigo_postal = codigo_postal,
+            localidad = Localidad.objects.get(id=id_localidad)
+        )
 
         if password != password2:
             raise serializers.ValidationError(
@@ -180,9 +233,11 @@ class ClienteSignupSerializer(serializers.ModelSerializer):
 
 class FundacionSignupSerializer(serializers.ModelSerializer):
     password2 = serializers.CharField(style={"input_type": "password"}, write_only=True)
-    direccion = serializers.CharField(
-        max_length=255, required=False, allow_blank=True, write_only=True
+    direccion = serializers.CharField(max_length=255, required=True, allow_blank=True)
+    codigo_postal = serializers.CharField(
+        max_length=6, required=False, allow_blank=True, write_only=True
     )
+    id_localidad = serializers.IntegerField(write_only=True)
     telefono = serializers.CharField(
         max_length=10, required=False, allow_blank=True, write_only=True
     )
@@ -193,7 +248,7 @@ class FundacionSignupSerializer(serializers.ModelSerializer):
         max_length=255, required=True, allow_blank=True, write_only=True
     )
     descripcion = serializers.CharField(
-        max_length=255, required=True, allow_blank=True, write_only=True
+        max_length=500, required=True, allow_blank=True, write_only=True
     )
     # premium = serializers.BooleanField(required=False, write_only=True)
 
@@ -204,6 +259,8 @@ class FundacionSignupSerializer(serializers.ModelSerializer):
             "password",
             "password2",
             "direccion",
+            "codigo_postal",
+            "id_localidad",
             "telefono",
             "nombre",
             "nit",
@@ -217,7 +274,15 @@ class FundacionSignupSerializer(serializers.ModelSerializer):
         )
         password = self.validated_data["password"]
         password2 = self.validated_data["password2"]
-        direccion = self.validated_data.get("direccion", "")
+        direccion_dir = self.validated_data.get("direccion", "")
+        codigo_postal = self.validated_data.get("codigo_postal", "")
+        id_localidad = self.validated_data.get("id_localidad", "")
+
+        direccion = Direccion.objects.create(
+            direccion = direccion_dir,
+            codigo_postal = codigo_postal,
+            localidad = Localidad.objects.get(id=id_localidad)
+        )
         telefono = self.validated_data.get("telefono", "")
 
         if password != password2:
@@ -422,6 +487,7 @@ class ProductoSerializer(serializers.ModelSerializer):
             "descripcion",
             "categoria",
             "precio",
+            "ingredientes",
         ]
 
 
@@ -575,6 +641,13 @@ class DetallePedidoSerializer(serializers.ModelSerializer):
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
+
+class DetallePedidoConProductoSerializer(serializers.ModelSerializer):
+    producto = ProductoSerializer(read_only=True)
+
+    class Meta:
+        model = DetallePedido
+        fields = ["id", "producto", "cantidad"]
 
 
 class PublicacionAdopcionSerializer(serializers.ModelSerializer):
