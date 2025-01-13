@@ -318,7 +318,6 @@ class SolicitudCuidado(models.Model):
 
 ## MODELO DE RESEÑA
 
-
 class Resena(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     producto = models.ForeignKey(Producto, on_delete=models.CASCADE)

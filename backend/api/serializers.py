@@ -642,6 +642,13 @@ class DetallePedidoSerializer(serializers.ModelSerializer):
             setattr(instance, attr, value)
         instance.save()
 
+class DetallePedidoConProductoSerializer(serializers.ModelSerializer):
+    producto = ProductoSerializer(read_only=True)
+
+    class Meta:
+        model = DetallePedido
+        fields = ["id", "producto", "cantidad"]
+
 
 class PublicacionAdopcionSerializer(serializers.ModelSerializer):
     id_fundacion = serializers.IntegerField(write_only=True)
