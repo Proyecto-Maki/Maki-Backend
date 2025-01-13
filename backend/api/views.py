@@ -716,6 +716,33 @@ def producto_en_carrito(request):
     return Response({"producto_en_carrito": producto_existe_en_carro})
 
 
+@api_view(["GET"])
+def get_estado_carrito(request):
+    # Cambiar el nombre del parámetro a 'codigo_carrito'
+    codigo_carrito = request.query_params.get("codigo_carrito")
+    if not codigo_carrito:
+        return Response(
+            {"error": "El código del carrito no fue proporcionado."}, status=400
+        )
+
+    # Busca el carrito asociado
+    carrito = get_object_or_404(Carrito, codigo=codigo_carrito, pagado=False)
+
+    # Obtén los productos del carrito
+    items_carrito = ItemCarrito.objects.filter(carrito=carrito)
+
+    # Serializa los productos en el carrito
+    serializer = ItemCarritoSerializer(items_carrito, many=True)
+    return Response(
+        {
+            "codigo_carrito": carrito.codigo,
+            "user": carrito.user.id if carrito.user else None,
+            "pagado": carrito.pagado,
+            "productos": serializer.data,
+        }
+    )
+
+
 ### RESEÑAS
 
 

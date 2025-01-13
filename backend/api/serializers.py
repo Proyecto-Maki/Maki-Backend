@@ -18,9 +18,12 @@ class LocalidadSerializer(serializers.ModelSerializer):
         model = Localidad
         fields = ["id", "nombre"]
 
+
 class DireccionSerializer(serializers.ModelSerializer):
     direccion = serializers.CharField(max_length=255)
-    codigo_postal = serializers.CharField(max_length=6, required=False, allow_blank=True)
+    codigo_postal = serializers.CharField(
+        max_length=6, required=False, allow_blank=True
+    )
     id_localidad = serializers.IntegerField()
 
     class Meta:
@@ -37,7 +40,7 @@ class DireccionSerializer(serializers.ModelSerializer):
             direccion=direccion, codigo_postal=codigo_postal, localidad=localidad
         )
         return direccion
-    
+
     def update(self, instance, validated_data):
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
@@ -198,9 +201,9 @@ class ClienteSignupSerializer(serializers.ModelSerializer):
         telefono = self.validated_data.get("telefono", "")
 
         direccion = Direccion.objects.create(
-            direccion = direccion_dir,
-            codigo_postal = codigo_postal,
-            localidad = Localidad.objects.get(id=id_localidad)
+            direccion=direccion_dir,
+            codigo_postal=codigo_postal,
+            localidad=Localidad.objects.get(id=id_localidad),
         )
 
         if password != password2:
@@ -279,9 +282,9 @@ class FundacionSignupSerializer(serializers.ModelSerializer):
         id_localidad = self.validated_data.get("id_localidad", "")
 
         direccion = Direccion.objects.create(
-            direccion = direccion_dir,
-            codigo_postal = codigo_postal,
-            localidad = Localidad.objects.get(id=id_localidad)
+            direccion=direccion_dir,
+            codigo_postal=codigo_postal,
+            localidad=Localidad.objects.get(id=id_localidad),
         )
         telefono = self.validated_data.get("telefono", "")
 
@@ -503,6 +506,20 @@ class CarritoSerializer(serializers.ModelSerializer):
         fields = ["id", "codigo", "creado", "modificado"]
 
 
+class SimpleCarritoSerializer(serializers.ModelSerializer):
+    num_de_items = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Carrito
+        fields = ["id", "codigo", "num_items"]
+
+        def get_num_items(self, obj):
+            num_of_items = sum(
+                [ItemCarrito.cantidad for ItemCarrito in obj.items.all()]
+            )
+            return num_of_items
+
+
 class ItemCarritoSerializer(serializers.ModelSerializer):
     producto = ProductoSerializer(read_only=True)
     carrito = CarritoSerializer(read_only=True)
@@ -535,7 +552,6 @@ class PadecimientoSerializer(serializers.ModelSerializer):
         return padecimiento_obj
 
 
-
 class ResenaSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(write_only=True)
     id_producto = serializers.IntegerField(write_only=True)
@@ -545,11 +561,19 @@ class ResenaSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Resena
-        fields = ["id", "email", "id_producto", "titulo", "calificacion", "comentario", "fecha"]
+        fields = [
+            "id",
+            "email",
+            "id_producto",
+            "titulo",
+            "calificacion",
+            "comentario",
+            "fecha",
+        ]
 
     def save(self, **kwargs):
-        user = User.objects.get(email = self.validated_data["email"])
-        producto = Producto.objects.get(id = self.validated_data["id_producto"])
+        user = User.objects.get(email=self.validated_data["email"])
+        producto = Producto.objects.get(id=self.validated_data["id_producto"])
         titulo = self.validated_data["titulo"]
         calificacion = self.validated_data["calificacion"]
         comentario = self.validated_data["comentario"]
@@ -559,51 +583,46 @@ class ResenaSerializer(serializers.ModelSerializer):
             producto=producto,
             titulo=titulo,
             calificacion=calificacion,
-            comentario=comentario
+            comentario=comentario,
         )
         return resena
-    
+
     def update(self, instance, validated_data):
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
 
 
-
 ### PEDIDOS
+
 
 class PedidoSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(write_only=True)
     estado = serializers.CharField(max_length=255)
     total = serializers.DecimalField(max_digits=10, decimal_places=2)
-    id_descuento = serializers.IntegerField(write_only=True, required=False, allow_null=True)
+    id_descuento = serializers.IntegerField(
+        write_only=True, required=False, allow_null=True
+    )
 
     class Meta:
         model = Pedido
         fields = ["id", "email", "fecha", "estado", "id_descuento", "total"]
 
     def save(self, **kwargs):
-        user = User.objects.get(email = self.validated_data["email"])
+        user = User.objects.get(email=self.validated_data["email"])
         total = self.validated_data["total"]
         estado = self.validated_data["estado"]
         id_descuento = self.validated_data["id_descuento"]
 
         if id_descuento:
-            descuento = Descuento.objects.get(id = id_descuento)
+            descuento = Descuento.objects.get(id=id_descuento)
             pedido = Pedido.objects.create(
-                user = user,
-                estado = estado,
-                total = total,
-                descuento = descuento
+                user=user, estado=estado, total=total, descuento=descuento
             )
 
             return pedido
         else:
-            pedido = Pedido.objects.create(
-                user = user,
-                estado = estado,
-                total = total
-            )
+            pedido = Pedido.objects.create(user=user, estado=estado, total=total)
 
         return pedido
 
@@ -611,6 +630,7 @@ class PedidoSerializer(serializers.ModelSerializer):
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
+
 
 class DetallePedidoSerializer(serializers.ModelSerializer):
     id_pedido = serializers.IntegerField(write_only=True)
@@ -626,13 +646,11 @@ class DetallePedidoSerializer(serializers.ModelSerializer):
         id_producto = self.validated_data["id_producto"]
         cantidad = self.validated_data["cantidad"]
 
-        pedido = Pedido.objects.get(id = id_pedido)
-        producto = Producto.objects.get(id = id_producto)
+        pedido = Pedido.objects.get(id=id_pedido)
+        producto = Producto.objects.get(id=id_producto)
 
         detalle = DetallePedido.objects.create(
-            pedido = pedido,
-            producto = producto,
-            cantidad = cantidad
+            pedido=pedido, producto=producto, cantidad=cantidad
         )
 
         return detalle
@@ -652,7 +670,15 @@ class PublicacionAdopcionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = PublicacionAdopcion
-        fields = ["id", "id_fundacion", "id_mascota", "titulo", "descripcion", "ubicacion", "fecha"]
+        fields = [
+            "id",
+            "id_fundacion",
+            "id_mascota",
+            "titulo",
+            "descripcion",
+            "ubicacion",
+            "fecha",
+        ]
 
     def save(self, **kwargs):
         id_fundacion = self.validated_data["id_fundacion"]
@@ -661,21 +687,20 @@ class PublicacionAdopcionSerializer(serializers.ModelSerializer):
         descripcion = self.validated_data["descripcion"]
         ubicacion = self.validated_data["ubicacion"]
 
-        fundacion = Fundacion.objects.get(id = id_fundacion)
-        mascota = Mascota.objects.get(id = id_mascota)
+        fundacion = Fundacion.objects.get(id=id_fundacion)
+        mascota = Mascota.objects.get(id=id_mascota)
 
         publicacion = PublicacionAdopcion.objects.create(
-            fundacion = fundacion,
-            mascota = mascota,
-            titulo = titulo,
-            descripcion = descripcion,
-            ubicacion = ubicacion
+            fundacion=fundacion,
+            mascota=mascota,
+            titulo=titulo,
+            descripcion=descripcion,
+            ubicacion=ubicacion,
         )
 
         return publicacion
-    
+
     def update(self, instance, validated_data):
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
-
