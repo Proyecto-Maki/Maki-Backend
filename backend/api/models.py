@@ -33,7 +33,9 @@ class Localidad(models.Model):
 class Direccion(models.Model):
     direccion = models.CharField(max_length=255, null=False, blank=False)
     codigo_postal = models.CharField(max_length=6, null=True, blank=True)
-    localidad = models.ForeignKey(Localidad, on_delete=models.CASCADE)
+    localidad = models.ForeignKey(
+        Localidad, on_delete=models.CASCADE, null=True, blank=True
+    )
 
     def __str__(self):
         return f"{self.direccion} {self.localidad.nombre}"
@@ -237,6 +239,10 @@ class Carrito(models.Model):
     creado = models.DateTimeField(auto_now_add=True, blank=True, null=True)
     modificado = models.DateTimeField(auto_now=True, blank=True, null=True)
 
+    def clean(self):
+        if self.cantidad < 0:
+            raise ValidationError({"cantidad": "La cantidad no puede ser negativa."})
+
     def __str__(self):
         return self.codigo
 
@@ -245,6 +251,10 @@ class ItemCarrito(models.Model):
     carrito = models.ForeignKey(Carrito, related_name="items", on_delete=models.CASCADE)
     producto = models.ForeignKey(Producto, on_delete=models.CASCADE)
     cantidad = models.IntegerField(default=1)
+
+    def clean(self):
+        if self.cantidad < 0:
+            raise ValidationError({"cantidad": "La cantidad no puede ser negativa."})
 
     def __str__(self):
         return (
@@ -255,6 +265,7 @@ class ItemCarrito(models.Model):
 ## MODELO DE PEDIDO
 
 
+# Pendiente testing (cuando se implemente)
 class Descuento(models.Model):
     descripcion = models.CharField(max_length=255, null=False, blank=False)
     porcentaje = models.DecimalField(
@@ -286,14 +297,22 @@ class Pedido(models.Model):
         max_digits=10, decimal_places=2, default=0.00, null=False, blank=False
     )
 
+    def clean(self):
+        if self.estado not in self.ESTADOS.values():
+            raise ValidationError({"estado": "El estado no es válido."})
+
     def __str__(self):
-        return self.id
+        return str(self.id)
 
 
 class DetallePedido(models.Model):
     pedido = models.ForeignKey(Pedido, on_delete=models.CASCADE)
     producto = models.ForeignKey(Producto, on_delete=models.CASCADE)
     cantidad = models.IntegerField(null=False, blank=False)
+
+    def clean(self):
+        if self.cantidad < 0:
+            raise ValidationError({"cantidad": "La cantidad no puede ser negativa."})
 
     def __str__(self):
         return f"{self.producto.nombre} x {self.cantidad}"
@@ -343,6 +362,7 @@ class SolicitudCuidado(models.Model):
 
 ## MODELO DE RESEÑA
 
+
 class Resena(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     producto = models.ForeignKey(Producto, on_delete=models.CASCADE)
@@ -374,6 +394,10 @@ class Tarjeta(models.Model):
         max_digits=7, decimal_places=2, default=0.00, null=False, blank=False
     )
 
+    def clean(self):
+        if self.monto < 0:
+            raise ValidationError({"monto": "El monto no puede ser negativo."})
+
     def __str__(self):
         return self.tipo
 
@@ -397,7 +421,9 @@ class PublicacionAdopcion(models.Model):
     mascota = models.ForeignKey(Mascota, on_delete=models.CASCADE)
     titulo = models.CharField(max_length=255, null=False, blank=False)
     descripcion = models.TextField(null=False, blank=False)
-    direccion = models.ForeignKey(Direccion, on_delete=models.CASCADE, null=False, blank=False, default=None) 
+    direccion = models.ForeignKey(
+        Direccion, on_delete=models.CASCADE, null=False, blank=False, default=None
+    )
     fecha = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
