@@ -50,9 +50,7 @@ class UserSerializer(serializers.ModelSerializer):
         fields = [
             "email",
             "is_cliente",
-            "direccion.direccion",
-            "direccion.codigo_postal",
-            "direccion.localidad.nombre",
+            "direccion",
             "telefono",
             "saldo",
             "is_verified",
