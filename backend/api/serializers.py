@@ -53,9 +53,7 @@ class UserSerializer(serializers.ModelSerializer):
         fields = [
             "email",
             "is_cliente",
-            "direccion.direccion",
-            "direccion.codigo_postal",
-            "direccion.localidad.nombre",
+            "direccion",
             "telefono",
             "saldo",
             "is_verified",
@@ -659,6 +657,13 @@ class DetallePedidoSerializer(serializers.ModelSerializer):
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
+
+class DetallePedidoConProductoSerializer(serializers.ModelSerializer):
+    producto = ProductoSerializer(read_only=True)
+
+    class Meta:
+        model = DetallePedido
+        fields = ["id", "producto", "cantidad"]
 
 
 class PublicacionAdopcionSerializer(serializers.ModelSerializer):

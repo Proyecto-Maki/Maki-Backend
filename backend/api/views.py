@@ -899,6 +899,16 @@ class DetallePedidoView(generics.ListAPIView):
         return DetallePedido.objects.filter(pedido=pedido)
 
 
+class DetallesPedidoView(generics.ListAPIView):
+    serializer_class = DetallePedidoConProductoSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        id_pedido = self.kwargs.get("id")
+        pedido = get_object_or_404(Pedido, id=id_pedido)
+        return DetallePedido.objects.filter(pedido=pedido).select_related("producto")
+
+
 class PedidoUpdateView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 

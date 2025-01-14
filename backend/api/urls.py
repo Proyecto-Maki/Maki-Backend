@@ -118,6 +118,11 @@ urlpatterns = [
         name="detalle_pedidos",
     ),
     path(
+        "detalles-pedido/pedido/<int:id>/",
+        DetallesPedidoView.as_view(),
+        name="detalles_pedido",
+    ),
+    path(
         "detalle-pedidos/create/",
         DetallePedidoCreateView.as_view(),
         name="detalle_pedido_create",

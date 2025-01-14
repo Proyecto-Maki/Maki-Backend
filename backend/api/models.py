@@ -343,7 +343,6 @@ class SolicitudCuidado(models.Model):
 
 ## MODELO DE RESEÑA
 
-
 class Resena(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     producto = models.ForeignKey(Producto, on_delete=models.CASCADE)
@@ -398,7 +397,7 @@ class PublicacionAdopcion(models.Model):
     mascota = models.ForeignKey(Mascota, on_delete=models.CASCADE)
     titulo = models.CharField(max_length=255, null=False, blank=False)
     descripcion = models.TextField(null=False, blank=False)
-    ubicacion = models.CharField(max_length=255, null=True, blank=True)
+    direccion = models.ForeignKey(Direccion, on_delete=models.CASCADE, null=False, blank=False, default=None) 
     fecha = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
