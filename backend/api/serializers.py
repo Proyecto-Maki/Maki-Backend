@@ -667,32 +667,47 @@ class DetallePedidoConProductoSerializer(serializers.ModelSerializer):
 
 
 class PublicacionAdopcionSerializer(serializers.ModelSerializer):
-    id_fundacion = serializers.IntegerField(write_only=True)
+    email = serializers.EmailField(write_only=True)
     id_mascota = serializers.IntegerField(write_only=True)
     titulo = serializers.CharField(max_length=255)
     descripcion = serializers.CharField(max_length=500)
-    ubicacion = serializers.CharField(max_length=255)
+    direccion = serializers.CharField(max_length=255)
+    id_localidad = serializers.IntegerField(write_only=True)
 
     class Meta:
         model = PublicacionAdopcion
-        fields = ["id", "id_fundacion", "id_mascota", "titulo", "descripcion", "ubicacion", "fecha"]
+        fields = ["id", "email", "id_mascota", "titulo", "descripcion", "direccion", "id_localidad", "fecha"]
 
     def save(self, **kwargs):
-        id_fundacion = self.validated_data["id_fundacion"]
+        email = self.validated_data["email"]
         id_mascota = self.validated_data["id_mascota"]
         titulo = self.validated_data["titulo"]
         descripcion = self.validated_data["descripcion"]
-        ubicacion = self.validated_data["ubicacion"]
+        direccion_dir = self.validated_data["direccion"]
+        id_localidad = self.validated_data["id_localidad"]
 
-        fundacion = Fundacion.objects.get(id = id_fundacion)
+        user = User.objects.get(email = email)
+        fundacion = Fundacion.objects.get(user = user)
         mascota = Mascota.objects.get(id = id_mascota)
+        localidad = Localidad.objects.get(id = id_localidad)
+        direccion = Direccion.objects.create(
+            direccion = direccion_dir,
+            localidad = localidad,
+            codigo_postal = None
+        )
+
+        if PublicacionAdopcion.objects.filter(mascota=mascota).exists():
+            raise serializers.ValidationError({
+                "detail": "Ya existe una publicación con esta mascota.",
+                "code": "duplicate_publication"
+            })
 
         publicacion = PublicacionAdopcion.objects.create(
             fundacion = fundacion,
             mascota = mascota,
             titulo = titulo,
             descripcion = descripcion,
-            ubicacion = ubicacion
+            direccion = direccion
         )
 
         return publicacion
