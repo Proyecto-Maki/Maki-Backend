@@ -74,7 +74,7 @@ class ClienteSignupView(generics.ListCreateAPIView):
         return Response(
             {
                 "error": serializer.errors,
-                "message": mensaje,
+                "detail": mensaje,
             },
             status=status.HTTP_400_BAD_REQUEST,
         )
@@ -108,7 +108,7 @@ class FundacionSignupView(generics.ListCreateAPIView):
         return Response(
             {
                 "error": serializer.errors,
-                "message": mensaje,
+                "detail": mensaje,
             },
             status=status.HTTP_400_BAD_REQUEST,
         )

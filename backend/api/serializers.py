@@ -194,7 +194,7 @@ class ClienteSignupSerializer(serializers.ModelSerializer):
         age = today.year - value.year - ((today.month, today.day) < (value.month, value.day))
         if age < 18:
             raise serializers.ValidationError({
-                "fecha_nacimiento": "Debes ser mayor de edad para registrarte"
+                "detail": "Debes ser mayor de edad para registrarte"
             })
         return value
 
@@ -217,7 +217,7 @@ class ClienteSignupSerializer(serializers.ModelSerializer):
 
         if password != password2:
             raise serializers.ValidationError(
-                {"password": "Las contraseñas no coinciden"}
+                {"detail": "Las contraseñas no coinciden"}
             )
         user.set_password(password)
         user.direccion = direccion
@@ -303,7 +303,7 @@ class FundacionSignupSerializer(serializers.ModelSerializer):
 
         if password != password2:
             raise serializers.ValidationError(
-                {"password": "Las contraseñas no coinciden"}
+                {"detail": "Las contraseñas no coinciden"}
             )
         user.set_password(password)
         user.direccion = direccion
@@ -541,7 +541,9 @@ class PadecimientoSerializer(serializers.ModelSerializer):
         try:
             mascota = Mascota.objects.get(id=id_mascota)
         except Mascota.DoesNotExist:
-            raise serializers.ValidationError("Mascota no encontrada")
+            raise serializers.ValidationError({
+                "detail": "La mascota no existe."
+            })
 
         padecimiento = self.validated_data["padecimiento"]
 
