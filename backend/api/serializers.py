@@ -7,6 +7,7 @@ from django.utils.encoding import smart_bytes, force_str
 from django.contrib.sites.shortcuts import get_current_site
 from rest_framework.exceptions import AuthenticationFailed
 from django.urls import reverse
+from datetime import date
 
 # from .utils import send_normal_email
 from .new_utils import send_normal_email
@@ -50,9 +51,7 @@ class UserSerializer(serializers.ModelSerializer):
         fields = [
             "email",
             "is_cliente",
-            "direccion.direccion",
-            "direccion.codigo_postal",
-            "direccion.localidad.nombre",
+            "direccion",
             "telefono",
             "saldo",
             "is_verified",
@@ -85,6 +84,7 @@ class ClienteSerializer(serializers.ModelSerializer):
             "primer_apellido",
             "segundo_nombre",
             "segundo_apellido",
+            "fecha_nacimiento",
         ]
 
     def update(self, instance_cliente, validated_data):
@@ -168,6 +168,8 @@ class ClienteSignupSerializer(serializers.ModelSerializer):
         max_length=255, required=False, allow_blank=True, write_only=True
     )
 
+    fecha_nacimiento = serializers.DateField(required=False, write_only=True)
+
     class Meta:
         model = User
         fields = [
@@ -183,8 +185,18 @@ class ClienteSignupSerializer(serializers.ModelSerializer):
             "primer_apellido",
             "segundo_nombre",
             "segundo_apellido",
+            "fecha_nacimiento",
         ]
         extra_kwargs = {"password": {"write_only": True}}
+
+    def validate_fecha_nacimiento(self, value):
+        today = date.today()
+        age = today.year - value.year - ((today.month, today.day) < (value.month, value.day))
+        if age < 18:
+            raise serializers.ValidationError({
+                "fecha_nacimiento": "Debes ser mayor de edad para registrarte"
+            })
+        return value
 
     def save(self, **kwargs):
         user = User(
@@ -219,6 +231,9 @@ class ClienteSignupSerializer(serializers.ModelSerializer):
         primer_apellido = self.validated_data.get("primer_apellido", "")
         segundo_nombre = self.validated_data.get("segundo_nombre", "")
         segundo_apellido = self.validated_data.get("segundo_apellido", "")
+        fecha_nacimiento = self.validated_data.get("fecha_nacimiento", None)
+        self.validate_fecha_nacimiento(fecha_nacimiento)
+        
 
         Cliente.objects.create(
             user=user,
@@ -227,6 +242,7 @@ class ClienteSignupSerializer(serializers.ModelSerializer):
             primer_apellido=primer_apellido,
             segundo_nombre=segundo_nombre,
             segundo_apellido=segundo_apellido,
+            fecha_nacimiento=fecha_nacimiento
         )
         return user
 

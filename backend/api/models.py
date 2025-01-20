@@ -93,6 +93,7 @@ class Cliente(models.Model):
     segundo_nombre = models.CharField(max_length=255, null=True, blank=True)
     primer_apellido = models.CharField(max_length=255, null=True, blank=True)
     segundo_apellido = models.CharField(max_length=255, null=True, blank=True)
+    fecha_nacimiento = models.DateField(null=True, blank=True)
 
     # direccion = models.CharField(max_length=255, null=True, blank=True)
     # telefono = models.CharField(max_length=20, null=True, blank=True)
