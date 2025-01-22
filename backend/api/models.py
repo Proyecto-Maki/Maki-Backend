@@ -185,6 +185,7 @@ class DetalleMascota(models.Model):
     desparacitado = models.BooleanField(default=False)
     vacunado = models.BooleanField(default=False)
     esterilizado = models.BooleanField(default=False)
+    
 
     def __str__(self):
         return f"Detalles {self.mascota.nombre} - {self.mascota.tipo}"

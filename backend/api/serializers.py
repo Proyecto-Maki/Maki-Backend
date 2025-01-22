@@ -719,3 +719,51 @@ class PublicacionAdopcionSerializer(serializers.ModelSerializer):
             setattr(instance, attr, value)
         instance.save()
 
+class DetalleMascotaSerializer(serializers.ModelSerializer):
+    id_mascota = serializers.IntegerField(write_only=True)
+    apto_ninos = serializers.BooleanField(required=True)
+    espacio = serializers.CharField(max_length=255)
+    apto_otras_mascotas = serializers.BooleanField(required=True)
+    desparacitado = serializers.BooleanField(required=True)
+    vacunado = serializers.BooleanField(required=True)
+    esterilizado = serializers.BooleanField(required=True)
+
+
+    class Meta: 
+        model = DetalleMascota
+        fields = ['id', 'id_mascota', 'apto_ninos', 'espacio', 'apto_otras_mascotas','desparacitado', 'vacunado', 'esterilizado']
+    
+    def save(self, **kwargs):
+        id_mascota = self.validated_data["id_mascota"]
+        apto_ninos = self.validated_data["apto_ninos"]
+        espacio = self.validated_data["espacio"]
+        apto_otras_mascotas = self.validated_data["apto_otras_mascotas"]
+        desparacitado = self.validated_data["desparacitado"]
+        vacunado = self.validated_data["vacunado"]
+        esterilizado = self.validated_data["esterilizado"]
+
+        mascota = Mascota.objects.get(id = id_mascota)
+
+        if DetalleMascota.objects.filter(mascota = mascota).exists():
+            raise serializers.ValidationError({
+                "detail": "El detalle de la mascota ya existe",
+            })
+        
+        detalle_mascota = DetalleMascota.objects.create(
+            mascota = mascota,
+            apto_ninos = apto_ninos,
+            espacio = espacio,
+            apto_otras_mascotas = apto_otras_mascotas,
+            desparacitado = desparacitado,
+            vacunado = vacunado,
+            esterilizado = esterilizado
+        )
+
+        return detalle_mascota
+
+    def update(self, instance, validated_data):
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+
