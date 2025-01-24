@@ -9,3 +9,7 @@ class IsClienteUser(BasePermission):
 class IsFundacionUser(BasePermission):
     def has_permission(self, request, view):
         return bool(request.user and request.user.is_fundacion)
+
+class IsFundacionPremium(BasePermission):
+    def has_permission(self, request, view):
+        return bool(request.user and request.user.is_fundacion and request.user.fundacion.is_premium)

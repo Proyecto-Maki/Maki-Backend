@@ -329,7 +329,7 @@ class SolicitudCuidado(models.Model):
         "Completada": "Completada",
     }
 
-    id = models.AutoField(primary_key=True)  # Lo pogo pa que abajo me deje poner el id
+    id = models.AutoField(primary_key=True)  # Lo pongo pa que abajo me deje poner el id
     cuidador = models.ForeignKey(Cuidador, on_delete=models.CASCADE)
     cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE)
     mascota = models.ForeignKey(Mascota, on_delete=models.CASCADE)

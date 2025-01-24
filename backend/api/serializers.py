@@ -675,10 +675,19 @@ class PublicacionAdopcionSerializer(serializers.ModelSerializer):
     descripcion = serializers.CharField(max_length=500)
     direccion = serializers.CharField(max_length=255)
     id_localidad = serializers.IntegerField(write_only=True)
+    mascota = MascotaSerializer(read_only=True)
+    detalle_mascota = serializers.SerializerMethodField()
 
     class Meta:
         model = PublicacionAdopcion
-        fields = ["id", "email", "id_mascota", "titulo", "descripcion", "direccion", "id_localidad", "fecha"]
+        fields = ["id", "email", "id_mascota", "titulo", "descripcion", "direccion", "id_localidad", "fecha", "mascota", "detalle_mascota"]
+
+    def get_detalle_mascota(self, obj):
+        try:
+            detalle_mascota = DetalleMascota.objects.get(mascota = obj.mascota) 
+            return DetalleMascotaSerializer(detalle_mascota).data
+        except DetalleMascota.DoesNotExist:
+            return None
 
     def save(self, **kwargs):
         email = self.validated_data["email"]
