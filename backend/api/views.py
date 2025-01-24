@@ -1025,4 +1025,69 @@ class PublicacionAdopcionDeleteView(generics.DestroyAPIView):
     def perform_destroy(self, instance):
         instance.delete()
 
+
+# DETALLE MASCOTA - PARA PUBLICACIONES DE ADOPCION
     
+class DetalleMascotaCreateView(generics.ListCreateAPIView):
+    queryset = DetalleMascota.objects.all()
+    permission_classes = [permissions.IsAuthenticated&IsFundacionUser]
+    serializer_class = DetalleMascotaSerializer
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({
+                "message": "Detalle de mascota agregado correctamente"},
+                status = status.HTTP_201_CREATED,
+            )
+        return Response(
+            {
+                "error": serializer.errors,
+                "message": "Ha ocurrido un error en la crear el detalle de mascota",
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    
+class DetalleMascotaView(generics.ListAPIView):
+    serializer_class = DetalleMascotaSerializer
+    permission_classes = [permissions.IsAuthenticated&IsFundacionUser]
+
+    def get_queryset(self):
+        id_mascota = self.kwargs.get('id')
+        mascota = get_object_or_404(Mascota, id=id_mascota)
+        return DetalleMascota.objects.filter(mascota=mascota)
+    
+class DetalleMascotaUpdateView(APIView):
+    permission_classes = [permissions.IsAuthenticated&IsFundacionUser]
+
+    def get_object(self,id):
+        try:
+            return DetalleMascota.objects.get(id=id)
+        except DetalleMascota.DoesNotExist:
+            return None
+    
+    def put(self, request, id, *args, **kwargs):
+        detalle_mascota = self.get_object(id)
+        if not detalle_mascota:
+            return Response(
+                {"message": "Detalle de mascota no encontrado"}, status=status.HTTP_404_NOT_FOUND
+            )
+        serializer = DetalleMascotaSerializer(detalle_mascota, data=request.data)
+
+        if serializer.is_valid():
+            serializer.update(detalle_mascota, serializer.validated_data)
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class DetalleMascotaDeleteView(generics.DestroyAPIView):
+    serializer_class = DetalleMascotaSerializer
+    permission_classes = [permissions.IsAuthenticated&IsFundacionUser]
+
+    def get_object(self):
+        id = self.kwargs.get("id")
+        detalle_mascota = get_object_or_404(DetalleMascota, id=id)
+        return detalle_mascota
+    
+    def perform_destroy(self, instance):
+        instance.delete()

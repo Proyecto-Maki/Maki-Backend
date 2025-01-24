@@ -126,4 +126,11 @@ urlpatterns = [
     path("publicaciones/update/<int:id>/", PublicacionAdopcionUpdateView.as_view(), name="publicacion_update"),
     path("publicaciones/delete/<int:id>/", PublicacionAdopcionDeleteView.as_view(), name="publicacion_delete"),
 
+    ## Detalle de mascotas
+
+    path("detalle-mascota/create/", DetalleMascotaCreateView.as_view(), name="detalle_mascota_create"),
+    path("detalle-mascota/<int:id>/", DetalleMascotaView.as_view(), name="detalle_mascota"),
+    path("detalle-mascota/update/<int:id>/", DetalleMascotaUpdateView.as_view(), name="detalle_mascota_update"),
+    path("detalle-mascota/delete/<int:id>/", DetalleMascotaDeleteView.as_view(), name="detalle_mascota_delete"),
+
 ]
