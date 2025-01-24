@@ -1091,3 +1091,44 @@ class DetalleMascotaDeleteView(generics.DestroyAPIView):
     
     def perform_destroy(self, instance):
         instance.delete()
+
+
+## SOLICITUD DE ADOPCIÓN - DEL CLIENTE
+
+class SolicitudAdopcionCreateView(generics.ListCreateAPIView):
+    queryset = SolicitudAdopcion.objects.all()
+    permission_classes = [permissions.IsAuthenticated&IsClienteUser]
+    serializer_class = SolicitudAdopcionSerializer
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({
+                "message": "Solicitud de adopción enviada correctamente"},
+                status = status.HTTP_201_CREATED,
+            )
+        return Response({
+            "error": serializer.errors,
+            "message": "Ha ocurrido un error al enviar la solicitud de adopción",
+        }, status=status.HTTP_400_BAD_REQUEST)
+    
+class SolicitudesAdopcionUserView(generics.ListAPIView):
+    serializer_class = SolicitudAdopcionSerializer
+    permission_classes = [permissions.IsAuthenticated&IsClienteUser]
+
+    def get_queryset(self):
+        email = self.kwargs.get("email")
+        user = get_object_or_404(User, email=email)
+        return SolicitudAdopcion.objects.filter(user=user)
+    
+class SolicitudAdopcionDetailView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = SolicitudAdopcionSerializer
+    permission_classes = [permissions.IsAuthenticated&IsClienteUser]
+
+    def get_object(self):
+        id = self.kwargs.get("id")
+        return get_object_or_404(SolicitudAdopcion, id=id)
+    
+
+
