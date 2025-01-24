@@ -767,4 +767,45 @@ class DetalleMascotaSerializer(serializers.ModelSerializer):
         instance.save()
 
 
+## SOLICITUD DE ADOPCIÓN CLIENTES
+
+class SolicitudAdopcionSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(write_only=True)
+    id_publicacion = serializers.IntegerField(write_only=True)
+    motivo = serializers.CharField(max_length=500)
+
+    class Meta: 
+        model = SolicitudAdopcion
+        fields = ['id', 'email', 'id_publicacion', 'motivo', 'fecha', 'estado']
+
+    def save(self, **kwargs):
+        email = self.validated_data["email"]
+        id_publicacion = self.validated_data["id_publicacion"]
+
+        cliente = Cliente.objects.get(user__email = email)
+        publicacion = PublicacionAdopcion.objects.get(id = id_publicacion)
+
+        if SolicitudAdopcion.objects.filter(cliente = cliente, publicacion = publicacion).exists():
+            raise serializers.ValidationError({
+                "detail": "Ya has solicitado esta adopción",
+                "code": "duplicate_request"
+            })
+        
+        motivo = self.validated_data["motivo"]
+
+        solicitud_adopcion = SolicitudAdopcion.objects.create(
+            cliente = cliente,
+            publicacion = publicacion,
+            motivo = motivo,
+            estado = "Pendiente",
+        )
+
+        return solicitud_adopcion
+    
+    def update(self, instance, validated_data):
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+
 
