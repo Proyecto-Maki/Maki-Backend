@@ -14,6 +14,8 @@ from .models import (
     DetallePedido,
     Localidad,
     Direccion,
+    PublicacionAdopcion,
+    DetalleMascota,
 )
 
 # Register your models here.
@@ -30,4 +32,7 @@ admin.site.register(Descuento)
 admin.site.register(DetallePedido)
 admin.site.register(Localidad)
 admin.site.register(Direccion)
+admin.site.register(PublicacionAdopcion)
+admin.site.register(DetalleMascota)
+
 

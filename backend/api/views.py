@@ -74,7 +74,7 @@ class ClienteSignupView(generics.ListCreateAPIView):
         return Response(
             {
                 "error": serializer.errors,
-                "message": mensaje,
+                "detail": mensaje,
             },
             status=status.HTTP_400_BAD_REQUEST,
         )
@@ -108,7 +108,7 @@ class FundacionSignupView(generics.ListCreateAPIView):
         return Response(
             {
                 "error": serializer.errors,
-                "message": mensaje,
+                "detail": mensaje,
             },
             status=status.HTTP_400_BAD_REQUEST,
         )
@@ -123,22 +123,6 @@ class FundacionSignupView(generics.ListCreateAPIView):
     #             "token": Token.objects.get(user=user).key,
     #             "message": "Fundacion creada exitosamente",
     #         })
-
-
-# class CustomAuthToken(ObtainAuthToken):
-#     serializer_class = EmailAuthSerializer
-
-#     def post(self, request, *args, **kwargs):
-#         serializer = self.serializer_class(data=request.data, context={'request':request})
-#         serializer.is_valid(raise_exception=True)
-#         user = serializer.validated_data['user']
-#         token, created = Token.objects.get_or_create(user=user)
-#         return Response({
-#             'token': token.key,
-#             'user_id': user.pk,
-#             'is_cliente': user.is_cliente,
-#             'is_fundacion': user.is_fundacion,
-#         })
 
 
 class VerificarCodigo(generics.GenericAPIView):
@@ -284,35 +268,6 @@ class SetNewPassword(generics.GenericAPIView):
             },
             status=status.HTTP_400_BAD_REQUEST,
         )
-
-
-# def registro(request):
-#     return render(request, 'registro.html')
-
-# def register_cliente(request):
-#     if request.method == 'POST':
-#         form = ClienteCreationForm(request.POST)
-#         if form.is_valid():
-#             user = form.save()
-#             login(request, user)
-#             return redirect('home')  # Redirige a la página de inicio u otra página
-#     else:
-#         form = ClienteCreationForm()
-#     return render(request, 'registro_cliente.html', {'form': form})
-
-# def register_fundacion(request):
-#     if request.method == 'POST':
-#         form = FundacionCreationForm(request.POST)
-#         if form.is_valid():
-#             user = form.save()
-#             login(request, user)
-#             return redirect('home')  # Redirige a la página de inicio u otra página
-#     else:
-#         form = FundacionCreationForm()
-#     return render(request, 'registro_fundacion.html', {'form': form})
-
-
-### METODOS DE GETS, PUTS y DELETES
 
 
 class CurrentUserView(generics.GenericAPIView):
@@ -994,9 +949,10 @@ class DetallePedidoDeleteView(generics.DestroyAPIView):
         instance.delete()
 
 
-## PUBLICACION_ADOPCION
+## PUBLICACION_ADOPCION - PARA LA FUNDACIÓN
 
 
+## Esta vista es para la creación
 class PublicacionAdopcionCreateView(generics.ListCreateAPIView):
     queryset = PublicacionAdopcion.objects.all()
     permissions_classes = [permissions.IsAuthenticated & IsFundacionUser]
@@ -1019,6 +975,7 @@ class PublicacionAdopcionCreateView(generics.ListCreateAPIView):
         )
 
 
+## Esta vista es para listar las publicaciones de adopción de una fundación (para la misma fundación)
 class PublicacionesAdopcionUserView(generics.ListAPIView):
     serializer_class = PublicacionAdopcionSerializer
     permission_classes = [permissions.IsAuthenticated & IsFundacionUser]
@@ -1029,6 +986,7 @@ class PublicacionesAdopcionUserView(generics.ListAPIView):
         return PublicacionAdopcion.objects.filter(user=user)
 
 
+## Esta vista es para listar todas las publicaciones de adopción (sin importar la fundación)
 class PublicacionAdopcionView(generics.ListAPIView):
     serializer_class = PublicacionAdopcionSerializer
     permission_classes = [permissions.AllowAny]
@@ -1037,15 +995,17 @@ class PublicacionAdopcionView(generics.ListAPIView):
         return PublicacionAdopcion.objects.all()
 
 
+## Esta vista es para ver el detalle de una publicación de adopción
 class PublicacionAdopcionDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = PublicacionAdopcionSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated & IsFundacionUser]
 
     def get_object(self):
         id = self.kwargs.get("id")
         return get_object_or_404(PublicacionAdopcion, id=id)
 
 
+## Esta vista es para actualizar una publicación de adopción
 class PublicacionAdopcionUpdateView(APIView):
     permission_classes = [permissions.IsAuthenticated & IsFundacionUser]
 
@@ -1075,6 +1035,7 @@ class PublicacionAdopcionUpdateView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+## Esta vista es para eliminar una publicación de adopción
 class PublicacionAdopcionDeleteView(generics.DestroyAPIView):
     serializer_class = PublicacionAdopcionSerializer
     permission_classes = [permissions.IsAuthenticated & IsFundacionUser]
@@ -1090,3 +1051,137 @@ class PublicacionAdopcionDeleteView(generics.DestroyAPIView):
 
     def perform_destroy(self, instance):
         instance.delete()
+
+
+## PUBLICACION DE ADOPCION - PARA LOS CLIENTES
+
+
+class PublicacionAdopcionClienteView(generics.ListAPIView):
+    serializer_class = PublicacionAdopcionSerializer
+    permission_classes = [permissions.IsAuthenticated & IsClienteUser]
+
+    def get_queryset(self):
+        email_fundacion = self.request.query_params.get("email_fundacion")
+        user = get_object_or_404(User, email=email_fundacion)
+        fundacion = get_object_or_404(Fundacion, user=user)
+        return PublicacionAdopcion.objects.select_related("mascota").filter(
+            fundacion=fundacion
+        )
+
+
+# --------------------------------------------------------------------------
+
+# DETALLE MASCOTA - PARA PUBLICACIONES DE ADOPCION
+
+
+class DetalleMascotaCreateView(generics.ListCreateAPIView):
+    queryset = DetalleMascota.objects.all()
+    permission_classes = [permissions.IsAuthenticated & IsFundacionUser]
+    serializer_class = DetalleMascotaSerializer
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(
+                {"message": "Detalle de mascota agregado correctamente"},
+                status=status.HTTP_201_CREATED,
+            )
+        return Response(
+            {
+                "error": serializer.errors,
+                "message": "Ha ocurrido un error en la crear el detalle de mascota",
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+
+class DetalleMascotaView(generics.ListAPIView):
+    serializer_class = DetalleMascotaSerializer
+    permission_classes = [permissions.IsAuthenticated & IsFundacionUser]
+
+    def get_queryset(self):
+        id_mascota = self.kwargs.get("id")
+        mascota = get_object_or_404(Mascota, id=id_mascota)
+        return DetalleMascota.objects.filter(mascota=mascota)
+
+
+class DetalleMascotaUpdateView(APIView):
+    permission_classes = [permissions.IsAuthenticated & IsFundacionUser]
+
+    def get_object(self, id):
+        try:
+            return DetalleMascota.objects.get(id=id)
+        except DetalleMascota.DoesNotExist:
+            return None
+
+    def put(self, request, id, *args, **kwargs):
+        detalle_mascota = self.get_object(id)
+        if not detalle_mascota:
+            return Response(
+                {"message": "Detalle de mascota no encontrado"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        serializer = DetalleMascotaSerializer(detalle_mascota, data=request.data)
+
+        if serializer.is_valid():
+            serializer.update(detalle_mascota, serializer.validated_data)
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class DetalleMascotaDeleteView(generics.DestroyAPIView):
+    serializer_class = DetalleMascotaSerializer
+    permission_classes = [permissions.IsAuthenticated & IsFundacionUser]
+
+    def get_object(self):
+        id = self.kwargs.get("id")
+        detalle_mascota = get_object_or_404(DetalleMascota, id=id)
+        return detalle_mascota
+
+    def perform_destroy(self, instance):
+        instance.delete()
+
+
+## SOLICITUD DE ADOPCIÓN - DEL CLIENTE
+
+
+class SolicitudAdopcionCreateView(generics.ListCreateAPIView):
+    queryset = SolicitudAdopcion.objects.all()
+    permission_classes = [permissions.IsAuthenticated & IsClienteUser]
+    serializer_class = SolicitudAdopcionSerializer
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(
+                {"message": "Solicitud de adopción enviada correctamente"},
+                status=status.HTTP_201_CREATED,
+            )
+        return Response(
+            {
+                "error": serializer.errors,
+                "message": "Ha ocurrido un error al enviar la solicitud de adopción",
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+
+class SolicitudesAdopcionUserView(generics.ListAPIView):
+    serializer_class = SolicitudAdopcionSerializer
+    permission_classes = [permissions.IsAuthenticated & IsClienteUser]
+
+    def get_queryset(self):
+        email = self.kwargs.get("email")
+        user = get_object_or_404(User, email=email)
+        return SolicitudAdopcion.objects.filter(user=user)
+
+
+class SolicitudAdopcionDetailView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = SolicitudAdopcionSerializer
+    permission_classes = [permissions.IsAuthenticated & IsClienteUser]
+
+    def get_object(self):
+        id = self.kwargs.get("id")
+        return get_object_or_404(SolicitudAdopcion, id=id)

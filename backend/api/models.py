@@ -108,6 +108,7 @@ class Cliente(models.Model):
     segundo_nombre = models.CharField(max_length=255, null=True, blank=True)
     primer_apellido = models.CharField(max_length=255, null=True, blank=True)
     segundo_apellido = models.CharField(max_length=255, null=True, blank=True)
+    fecha_nacimiento = models.DateField(null=True, blank=True)
 
     # direccion = models.CharField(max_length=255, null=True, blank=True)
     # telefono = models.CharField(max_length=20, null=True, blank=True)
@@ -187,6 +188,28 @@ class Mascota(models.Model):
 
     def __str__(self):
         return f"{self.id} {self.nombre}"
+    
+
+## MODELO DE DETALLE DE MASCOTA - PARA PUBLICACION DE ADOPCION
+
+class DetalleMascota(models.Model):
+
+    ESPACIOS = {
+        "P": "Pequeño",
+        "G": "Grande",
+    }
+    mascota = models.OneToOneField(Mascota, on_delete=models.CASCADE)
+    apto_ninos = models.BooleanField(default=False)
+    apto_ruido = models.BooleanField(default=False)
+    espacio = models.CharField(max_length=255, null=False, blank=False, choices=ESPACIOS)
+    apto_otras_mascotas = models.BooleanField(default=False)
+    desparacitado = models.BooleanField(default=False)
+    vacunado = models.BooleanField(default=False)
+    esterilizado = models.BooleanField(default=False)
+    
+
+    def __str__(self):
+        return f"Detalles {self.mascota.nombre} - {self.mascota.tipo}"
 
 
 ## MODELO DE PADECIMIENTO
@@ -350,7 +373,7 @@ class SolicitudCuidado(models.Model):
         "Completada": "Completada",
     }
 
-    id = models.AutoField(primary_key=True)  # Lo pogo pa que abajo me deje poner el id
+    id = models.AutoField(primary_key=True)  # Lo pongo pa que abajo me deje poner el id
     cuidador = models.ForeignKey(Cuidador, on_delete=models.CASCADE)
     cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE)
     mascota = models.ForeignKey(Mascota, on_delete=models.CASCADE)
