@@ -186,4 +186,8 @@ urlpatterns = [
     ## Publicaciones de adopcion y detalles - cliente
 
     path("publicaciones-adopcion/", PublicacionAdopcionClienteView.as_view(), name="publicaciones_adopcion_cliente"),
+
+    ## Solicitudes de adopción - cliente
+    path("solicitud-adopcion/create/", SolicitudAdopcionCreateView.as_view(), name="solicitud_adopcion_create"),
+    
 ]
