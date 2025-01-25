@@ -93,6 +93,16 @@ urlpatterns = [
     ),
     path("agregar_producto/", agregar_producto, name="agregar_producto"),
     path("producto_en_carrito/", producto_en_carrito, name="producto_en_carrito"),
+    path(
+        "update_cantidad_producto/",
+        update_cantidad_producto,
+        name="update_cantidad_producto",
+    ),
+    path(
+        "remove_product_from_cart/",
+        remove_product_from_cart,
+        name="remove_product_from_cart",
+    ),
     ##path("producto/", productos, name="register_producto"),
     ## Carrito
     path("get_estado_carrito", get_estado_carrito, name="get_estado_carrito"),

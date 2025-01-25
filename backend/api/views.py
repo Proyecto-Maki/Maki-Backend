@@ -673,29 +673,103 @@ def producto_en_carrito(request):
 
 @api_view(["GET"])
 def get_estado_carrito(request):
-    # Cambiar el nombre del parámetro a 'codigo_carrito'
     codigo_carrito = request.query_params.get("codigo_carrito")
     if not codigo_carrito:
         return Response(
             {"error": "El código del carrito no fue proporcionado."}, status=400
         )
 
-    # Busca el carrito asociado
     carrito = get_object_or_404(Carrito, codigo=codigo_carrito, pagado=False)
-
-    # Obtén los productos del carrito
     items_carrito = ItemCarrito.objects.filter(carrito=carrito)
-
-    # Serializa los productos en el carrito
     serializer = ItemCarritoSerializer(items_carrito, many=True)
-    return Response(
-        {
-            "codigo_carrito": carrito.codigo,
-            "user": carrito.user.id if carrito.user else None,
-            "pagado": carrito.pagado,
-            "productos": serializer.data,
-        }
-    )
+
+    return Response({"codigo_carrito": carrito.codigo, "productos": serializer.data})
+
+
+@api_view(["POST"])
+def update_cantidad_producto(request):
+    try:
+        print("Datos recibidos:", request.data)
+
+        # Extraer datos
+        codigo_carrito = request.data.get("codigo_carrito")
+        id_producto = request.data.get("producto_id")
+        nueva_cantidad = request.data.get("cantidad")
+
+        # Validar datos
+        if not codigo_carrito or not id_producto or nueva_cantidad is None:
+            return JsonResponse(
+                {
+                    "error": "Datos incompletos. Se requieren 'codigo_carrito', 'producto_id' y 'cantidad'."
+                },
+                status=400,
+            )
+
+        if nueva_cantidad < 1:
+            return JsonResponse(
+                {"error": "La cantidad debe ser mayor o igual a 1."}, status=400
+            )
+
+        # Verificar que el carrito existe
+        carrito = get_object_or_404(Carrito, codigo=codigo_carrito)
+        print("Carrito encontrado:", carrito)
+
+        # Verificar que el producto está asociado al carrito
+        try:
+            item_carrito = ItemCarrito.objects.get(
+                carrito=carrito, producto_id=id_producto
+            )
+            print("Item encontrado en el carrito:", item_carrito)
+        except ItemCarrito.DoesNotExist:
+            return JsonResponse(
+                {"error": f"El producto con ID {id_producto} no está en el carrito."},
+                status=404,
+            )
+
+        # Actualizar la cantidad
+        item_carrito.cantidad = nueva_cantidad
+        item_carrito.full_clean()  # Validar modelo
+        item_carrito.save()
+        print("Cantidad actualizada:", item_carrito.cantidad)
+
+        return JsonResponse(
+            {"message": "Cantidad actualizada correctamente"}, status=200
+        )
+
+    except ValidationError as e:
+        return JsonResponse({"error": e.message_dict}, status=400)
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
+
+
+@api_view(["POST"])
+def remove_product_from_cart(request):
+    try:
+        print("Datos recibidos para eliminar producto:", request.data)
+
+        codigo_carrito = request.data.get("codigo_carrito")
+        producto_id = request.data.get("producto_id")
+
+        if not codigo_carrito or not producto_id:
+            return Response(
+                {
+                    "error": "Datos incompletos: se requiere 'codigo_carrito' y 'producto_id'."
+                },
+                status=400,
+            )
+
+        carrito = get_object_or_404(Carrito, codigo=codigo_carrito)
+        item_carrito = get_object_or_404(
+            ItemCarrito, carrito=carrito, producto_id=producto_id
+        )
+
+        item_carrito.delete()
+        return Response(
+            {"message": "Producto eliminado del carrito exitosamente."}, status=200
+        )
+    except Exception as e:
+        print(f"Error al eliminar producto: {str(e)}")
+        return Response({"error": str(e)}, status=500)
 
 
 ### RESEÑAS

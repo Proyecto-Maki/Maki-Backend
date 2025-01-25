@@ -540,12 +540,17 @@ class SimpleCarritoSerializer(serializers.ModelSerializer):
 
 
 class ItemCarritoSerializer(serializers.ModelSerializer):
-    producto = ProductoSerializer(read_only=True)
-    carrito = CarritoSerializer(read_only=True)
+    id = serializers.ReadOnlyField(source="producto.id")  # ID del producto
+    name = serializers.ReadOnlyField(source="producto.nombre")  # Nombre del producto
+    price = serializers.ReadOnlyField(source="producto.precio")  # Precio del producto
+    image = serializers.SerializerMethodField()  # URL de la imagen del producto
 
     class Meta:
         model = ItemCarrito
-        fields = ["id", "cantidad", "producto", "carrito"]
+        fields = ["id", "name", "price", "image", "cantidad"]
+
+    def get_image(self, obj):
+        return f"https://res.cloudinary.com/dlktjxg1a/{obj.producto.imagen}"
 
 
 class PadecimientoSerializer(serializers.ModelSerializer):

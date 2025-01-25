@@ -57,9 +57,9 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "whitenoise.runserver_nostatic",
-    'cloudinary_storage',
+    "cloudinary_storage",
     "django.contrib.staticfiles",
-    'cloudinary',
+    "cloudinary",
     "api",
     "backend",
     "rest_framework",
@@ -176,7 +176,7 @@ USE_TZ = True
 STATIC_URL = "static/"
 
 # MEDIA_ROOT = os.path.join(os.path.dirname(BASE_DIR), 'mediafiles')
-MEDIA_URL = '/media/'  # or any prefix you choose
+MEDIA_URL = "/media/"  # or any prefix you choose
 # DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 
 # CLOUDINARY_STORAGE = {
@@ -195,6 +195,11 @@ cloudinary.config(
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",  # Frontend
+    "http://127.0.0.1:3000",  # Alternativa
+]
 
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOWS_CREDENTIALS = True
