@@ -806,7 +806,6 @@ class SolicitudAdopcionSerializer(serializers.ModelSerializer):
             cliente = cliente,
             publicacion = publicacion,
             motivo = motivo,
-            estado = "Pendiente",
         )
 
         return solicitud_adopcion

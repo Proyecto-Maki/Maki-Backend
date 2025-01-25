@@ -16,6 +16,7 @@ from .models import (
     Direccion,
     PublicacionAdopcion,
     DetalleMascota,
+    SolicitudAdopcion
 )
 
 # Register your models here.
@@ -34,5 +35,7 @@ admin.site.register(Localidad)
 admin.site.register(Direccion)
 admin.site.register(PublicacionAdopcion)
 admin.site.register(DetalleMascota)
+admin.site.register(SolicitudAdopcion)
+
 
 

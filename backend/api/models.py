@@ -413,7 +413,7 @@ class SolicitudAdopcion(models.Model):
     publicacion = models.ForeignKey(PublicacionAdopcion, on_delete=models.CASCADE)
     fecha = models.DateField(auto_now_add=True)
     motivo = models.TextField(null=False, blank=False)
-    estado = models.CharField(max_length=255, null=False, blank=False, choices=ESTADOS)
+    estado = models.CharField(max_length=255, null=True, blank=True, choices=ESTADOS, default="Pendiente")
 
     def __str__(self):
         return f"{self.cliente.primer_nombre} {self.cliente.primer_apellido} - {self.publicacion.titulo}"
