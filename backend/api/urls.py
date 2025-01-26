@@ -4,6 +4,7 @@ from .views import *
 # from .views import register_cliente, register_fundacion
 
 urlpatterns = [
+    path("create_preference/", create_preference, name="create_preference"),
     path("test-email/", SendTestEmail, name="test-email"),
     # path('registro/cliente/', register_cliente, name='register_cliente'),
     # path('registro/fundacion/', register_fundacion, name='register_fundacion'),

@@ -25,6 +25,47 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
+from django.conf import settings
+
+import mercadopago
+import json
+
+
+@csrf_exempt
+def create_preference(request):
+    if request.method == "POST":
+        sdk = mercadopago.SDK(settings.MERCADO_PAGO_ACCESS_TOKEN)
+
+        try:
+            body = json.loads(
+                request.body
+            )  # Asegúrate de cargar correctamente los datos del cuerpo de la solicitud
+            preference_data = {
+                "items": body["items"],
+                "back_urls": {
+                    "success": "https://tusitio.com/success",
+                    "failure": "https://tusitio.com/failure",
+                    "pending": "https://tusitio.com/pending",
+                },
+                "auto_return": "approved",
+            }
+
+            preference_response = sdk.preference().create(preference_data)
+            preference = preference_response["response"]
+
+            # Devuelve el init_point junto con el ID de la preferencia
+            return JsonResponse(
+                {
+                    "id": preference.get("id"),
+                    "init_point": preference.get("init_point"),
+                }
+            )
+
+        except Exception as e:
+            print(f"Error al crear la preferencia: {e}")
+            return JsonResponse({"error": "Error al crear la preferencia"}, status=500)
+
+    return JsonResponse({"error": "Método no permitido"}, status=405)
 
 
 @api_view(["GET"])

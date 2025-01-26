@@ -210,6 +210,12 @@ STATICFILES_DIRS = [
 
 STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 
+# MERCADO_PAGO_ACCESS_TOKEN = os.getenv("MERCADO_PAGO_ACCESS_TOKEN")
+MERCADO_PAGO_ACCESS_TOKEN = (
+    "TEST-4763199278464528-012513-40fb4eff60dd346888c1b003f27412d2-199627328"
+)
+
+
 STATICFILES_STORAGE = "django.contrib.staticfiles.storage.ManifestStaticFilesStorage"
 
 ALLOWED_HOSTS = [
