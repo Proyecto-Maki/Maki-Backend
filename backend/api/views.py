@@ -975,6 +975,18 @@ class PublicacionAdopcionClienteView(generics.ListAPIView):
         fundacion = get_object_or_404(Fundacion, user=user)
         return PublicacionAdopcion.objects.select_related('mascota').filter(fundacion=fundacion)
 
+## PUBLICACION DE ADOPCION - PARA LAS FUNDACIONES
+class PublicacionAdopcionFundacionView(generics.ListAPIView):
+    serializer_class = PublicacionAdopcionSerializer
+    permission_classes = [permissions.IsAuthenticated&IsFundacionUser]
+
+    def get_queryset(self):
+        email = self.kwargs.get("email")
+        user = get_object_or_404(User, email=email)
+        fundacion = get_object_or_404(Fundacion, user=user)
+        return PublicacionAdopcion.objects.select_related('mascota').filter(fundacion=fundacion)
+        
+
 #--------------------------------------------------------------------------
 
 # DETALLE MASCOTA - PARA PUBLICACIONES DE ADOPCION
@@ -1043,6 +1055,7 @@ class DetalleMascotaDeleteView(generics.DestroyAPIView):
     def perform_destroy(self, instance):
         instance.delete()
 
+#--------------------------------------------------------------------------
 
 ## SOLICITUD DE ADOPCIÓN - DEL CLIENTE
 
