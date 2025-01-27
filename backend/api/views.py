@@ -1081,5 +1081,44 @@ class SolicitudAdopcionDetailView(generics.RetrieveUpdateDestroyAPIView):
         id = self.kwargs.get("id")
         return get_object_or_404(SolicitudAdopcion, id=id)
     
+## SOLICITUD DE ADOPCION - PARA LA FUNDACIÓN
+class SolicitudesAdopcionFundacionView(generics.ListAPIView):
+    serializer_class = SolicitudAdopcionSerializer
+    permission_classes = [permissions.IsAuthenticated&IsFundacionUser]
 
+    def get_queryset(self):
+        email = self.kwargs.get("email")
+        user = get_object_or_404(User, email=email)
+        return SolicitudAdopcion.objects.filter(publicacion__fundacion__user=user)
 
+class SolicitudAdopcionFunDetailView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = SolicitudAdopcionSerializer
+    permission_classes = [permissions.IsAuthenticated&IsFundacionUser]
+
+    def get_object(self):
+        id = self.kwargs.get("id")
+        return get_object_or_404(SolicitudAdopcion, id=id)
+    
+class SolicitudAdopcionUpdateView(APIView):
+    permission_classes = [permissions.IsAuthenticated&IsFundacionUser]
+
+    def get_object(self, id):
+        try:
+            return SolicitudAdopcion.objects.get(id=id)
+        except SolicitudAdopcion.DoesNotExist:
+            return None
+        
+    def put(self, request, id, *args, **kwargs):
+        solicitud_adopcion = self.get_object(id)
+        if not solicitud_adopcion:
+            return Response(
+                {"message": "Solicitud de adopción no encontrada"}, status=status.HTTP_404_NOT_FOUND
+            )
+        if solicitud_adopcion.publicacion.fundacion.user != request.user:
+            raise PermissionDenied("No tienes permisos para editar esta solicitud de adopción")
+        serializer = SolicitudAdopcionSerializer(solicitud_adopcion, data=request.data)
+        if serializer.is_valid():
+            serializer.update(solicitud_adopcion, serializer.validated_data)
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
