@@ -189,5 +189,11 @@ urlpatterns = [
 
     ## Solicitudes de adopción - cliente
     path("solicitud-adopcion/create/", SolicitudAdopcionCreateView.as_view(), name="solicitud_adopcion_create"),
-    
+    path("mis-solicitudes-adopcion/<email>/", SolicitudesAdopcionUserView.as_view(), name="mis_solicitudes_adopcion"),
+    path("mi-solicitud-adopcion/<int:id>/", SolicitudAdopcionDetailView.as_view(), name="mi_solicitud_adopcion"),
+
+    ## Solicitudes de adopción - fundacion
+    path("solicitudes-adopcion-fundacion/<email>/", SolicitudesAdopcionFundacionView.as_view(), name="solicitudes_adopcion_fundacion"),
+    path("solicitud-adopcion-fundacion/<int:id>/", SolicitudAdopcionFunDetailView.as_view(), name="solicitud_adopcion_fundacion"),
+    path("solicitud-adopcion-fundacion/update/<int:id>/", SolicitudAdopcionUpdateView.as_view(), name="solicitud_adopcion_fundacion_update"),
 ]
