@@ -20,6 +20,7 @@ from .models import (
     CategoriaPrincipal,
     Categoria,
     Subcategoria,
+    ProductoCategorias
 )
 
 # Register your models here.
@@ -42,6 +43,8 @@ admin.site.register(SolicitudAdopcion)
 admin.site.register(CategoriaPrincipal)
 admin.site.register(Categoria)
 admin.site.register(Subcategoria)
+admin.site.register(ProductoCategorias)
+
 
 
 

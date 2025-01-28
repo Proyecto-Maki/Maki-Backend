@@ -1135,3 +1135,48 @@ class SolicitudAdopcionUpdateView(APIView):
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
+
+
+## CATEGORIAS DE PRODUCTOS
+
+class SubcategoriasDeCategoriaView(generics.ListAPIView):
+    serializer_class = SubcategoriaSerializer
+    permission_classes = [permissions.AllowAny]
+
+    def get_queryset(self):
+        nombre_categoria = self.kwargs.get("nombre")
+        categoria = get_object_or_404(Categoria, nombre=nombre_categoria)
+        return Subcategoria.objects.filter(categoria=categoria)
+    
+class ProductosPorCategoriasView(generics.ListAPIView):
+    serializer_class = ProductoSerializer
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request, categoria_principal=None, categoria=None, sub_categoria=None):
+        productos = Producto.objects.all()
+        if categoria_principal:
+            productos = ProductoCategorias.objects.filter(sub_categoria__categoria__categoria_principal__nombre = categoria_principal).values_list('producto')
+        elif categoria: 
+            productos = ProductoCategorias.objects.filter(sub_categoria__categoria__nombre = categoria).values_list('producto')
+        elif sub_categoria:
+            productos = ProductoCategorias.objects.filter(sub_categoria__nombre = sub_categoria).values_list('producto')
+
+        return productos
+
+## ORDENAMIENTO DE PRODUCTOS POR PRECIO
+
+class OrdenarProductosPorPrecioAscView(generics.ListAPIView):
+    serializer_class = ProductoSerializer
+    permission_classes = [permissions.AllowAny]
+
+    def get_queryset(self):
+        return Producto.objects.all().order_by('precio')
+
+class OrdenarProductosPorPrecioDescView(generics.ListAPIView):
+    serializer_class = ProductoSerializer
+    permission_classes = [permissions.AllowAny]
+
+    def get_queryset(self):
+        return Producto.objects.all().order_by('-precio')
+
+

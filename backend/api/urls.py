@@ -196,4 +196,18 @@ urlpatterns = [
     path("solicitudes-adopcion-fundacion/<email>/", SolicitudesAdopcionFundacionView.as_view(), name="solicitudes_adopcion_fundacion"),
     path("solicitud-adopcion-fundacion/<int:id>/", SolicitudAdopcionFunDetailView.as_view(), name="solicitud_adopcion_fundacion"),
     path("solicitud-adopcion-fundacion/update/<int:id>/", SolicitudAdopcionUpdateView.as_view(), name="solicitud_adopcion_fundacion_update"),
+
+
+    ## Ordenamiento de productos por precio
+    path("productos/ordenar/precio-asc/", OrdenarProductosPorPrecioAscView.as_view(), name="productos_precio_asc"),
+
+    path("productos/ordenar/precio-desc/", OrdenarProductosPorPrecioDescView.as_view(), name="productos_precio_desc"),
+
+
+    ## Productos por categoría
+    path("productos/categoria_principal/<categoria_principal>/",
+         ProductosPorCategoriasView.as_view(), name="productos_categoria_principal"),
+    path("productos/categoria/<categoria>/", ProductosPorCategoriasView.as_view(), name="productos_categoria"),
+    path("productos/subcategoria/<sub_categoria>/", ProductosPorCategoriasView.as_view(), name="productos_subcategoria"),
+
 ]

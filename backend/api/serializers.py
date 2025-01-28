@@ -834,13 +834,13 @@ class SubcategoriaSerializer(serializers.ModelSerializer):
         model = Subcategoria
         fields = ["id", "nombre", "categoria", "categoria_principal"]
 
-class ProductoCategorias(models.Model):
+class ProductoCategorias(serializers.ModelSerializer):
     producto = models.ForeignKey(Producto, on_delete=models.CASCADE)
-    subcategoria = models.ForeignKey(Subcategoria, on_delete=models.CASCADE)
+    sub_categoria = models.ForeignKey(Subcategoria, on_delete=models.CASCADE)
 
     class Meta:
         model = ProductoCategorias
-        fields = ["producto", "subcategoria"]
+        fields = ["id", "producto", "sub_categoria"]
 
 
 
