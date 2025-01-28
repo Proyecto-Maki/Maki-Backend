@@ -43,9 +43,9 @@ def create_preference(request):
             preference_data = {
                 "items": body["items"],
                 "back_urls": {
-                    "success": "https://tusitio.com/success",
-                    "failure": "https://tusitio.com/failure",
-                    "pending": "https://tusitio.com/pending",
+                    "success": "https://makishop.live/pending",
+                    "failure": "https://makishop.live/pending",
+                    "pending": "https://makishop.live/pending",
                 },
                 "auto_return": "approved",
             }
