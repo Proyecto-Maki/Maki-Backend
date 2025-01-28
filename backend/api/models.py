@@ -419,4 +419,29 @@ class SolicitudAdopcion(models.Model):
         return f"{self.cliente.primer_nombre} {self.cliente.primer_apellido} - {self.publicacion.titulo}"
 
 
+class CategoriaPrincipal(models.Model):
+    nombre = models.CharField(max_length=255, null=False, blank=False)
 
+    def __str__(self):
+        return f"Categoría principal - {self.nombre}"
+
+class Categoria(models.Model):
+    nombre = models.CharField(max_length=255, null=False, blank=False)
+    categoria_principal = models.ForeignKey(CategoriaPrincipal, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f"Categoría principal - {self.categoria_principal.nombre} | Categoría - {self.nombre}"
+    
+class Subcategoria(models.Model):
+    nombre = models.CharField(max_length=255, null=False, blank=False)
+    categoria = models.ForeignKey(Categoria, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f"Categoría principal - {self.categoria.categoria_principal.nombre} | Categoría - {self.categoria.nombre} | Subcategoría - {self.nombre}"
+    
+class ProductoCategorias(models.Model):
+    producto = models.ForeignKey(Producto, on_delete=models.CASCADE)
+    sub_categoria = models.ForeignKey(Subcategoria, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f"Producto - {self.producto.nombre} | Categoría principal {self.sub_categoria.categoria.categoria_principal.nombre} | Categoría - {self.sub_categoria.categoria.nombre} | Subcategoría - {self.sub_categoria.nombre}"
