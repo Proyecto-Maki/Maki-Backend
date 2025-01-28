@@ -834,7 +834,7 @@ class SubcategoriaSerializer(serializers.ModelSerializer):
         model = Subcategoria
         fields = ["id", "nombre", "categoria", "categoria_principal"]
 
-class ProductoCategorias(serializers.ModelSerializer):
+class ProductoCategoriasSerializer(serializers.ModelSerializer):
     producto = models.ForeignKey(Producto, on_delete=models.CASCADE)
     sub_categoria = models.ForeignKey(Subcategoria, on_delete=models.CASCADE)
 

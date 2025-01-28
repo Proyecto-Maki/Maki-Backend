@@ -205,9 +205,11 @@ urlpatterns = [
 
 
     ## Productos por categoría
-    path("productos/categoria_principal/<categoria_principal>/",
-         ProductosPorCategoriasView.as_view(), name="productos_categoria_principal"),
-    path("productos/categoria/<categoria>/", ProductosPorCategoriasView.as_view(), name="productos_categoria"),
-    path("productos/subcategoria/<sub_categoria>/", ProductosPorCategoriasView.as_view(), name="productos_subcategoria"),
+    
+    path('productos/clasificar/', ProductosPorCategoriasView.as_view(), name='productos_todos'),
+
+    # path('productos/clasificar/categoria_principal/<str:categoria_principal>/', ProductosPorCategoriasView.as_view(), name='productos_por_categoria_principal'),
+    # path('productos/clasificar/categoria/<str:categoria>/', ProductosPorCategoriasView.as_view(), name='productos_por_categoria'),
+    # path('productos/clasificar/sub_categoria/<str:sub_categoria>/', ProductosPorCategoriasView.as_view(), name='productos_por_sub_categoria'),
 
 ]

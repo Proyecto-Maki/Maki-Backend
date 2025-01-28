@@ -1152,16 +1152,26 @@ class ProductosPorCategoriasView(generics.ListAPIView):
     serializer_class = ProductoSerializer
     permission_classes = [permissions.AllowAny]
 
-    def get(self, request, categoria_principal=None, categoria=None, sub_categoria=None):
+    def get_queryset(self, request):
         productos = Producto.objects.all()
-        if categoria_principal:
-            productos = ProductoCategorias.objects.filter(sub_categoria__categoria__categoria_principal__nombre = categoria_principal).values_list('producto')
-        elif categoria: 
-            productos = ProductoCategorias.objects.filter(sub_categoria__categoria__nombre = categoria).values_list('producto')
-        elif sub_categoria:
-            productos = ProductoCategorias.objects.filter(sub_categoria__nombre = sub_categoria).values_list('producto')
+        # if categoria_principal:
+        #     productos_ids = ProductoCategorias.objects.filter(
+        #         sub_categoria__categoria__categoria_principal__nombre=categoria_principal
+        #     ).values_list('producto', flat=True)
+        #     productos = Producto.objects.filter(id__in=productos_ids)
+        # elif categoria:
+        #     productos_ids = ProductoCategorias.objects.filter(
+        #         sub_categoria__categoria__nombre=categoria
+        #     ).values_list('producto', flat=True)
+        #     productos = Producto.objects.filter(id__in=productos_ids)
+        # elif sub_categoria:
+        #     productos_ids = ProductoCategorias.objects.filter(
+        #         sub_categoria__nombre=sub_categoria
+        #     ).values_list('producto', flat=True)
+        #     productos = Producto.objects.filter(id__in=productos_ids)
 
-        return productos
+        serializer = self.serializer_class(productos, many=True)
+        return Response(serializer.data)
 
 ## ORDENAMIENTO DE PRODUCTOS POR PRECIO
 
