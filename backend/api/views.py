@@ -1152,26 +1152,33 @@ class ProductosPorCategoriasView(generics.ListAPIView):
     serializer_class = ProductoSerializer
     permission_classes = [permissions.AllowAny]
 
-    def get_queryset(self, request):
-        productos = Producto.objects.all()
-        # if categoria_principal:
-        #     productos_ids = ProductoCategorias.objects.filter(
-        #         sub_categoria__categoria__categoria_principal__nombre=categoria_principal
-        #     ).values_list('producto', flat=True)
-        #     productos = Producto.objects.filter(id__in=productos_ids)
-        # elif categoria:
-        #     productos_ids = ProductoCategorias.objects.filter(
-        #         sub_categoria__categoria__nombre=categoria
-        #     ).values_list('producto', flat=True)
-        #     productos = Producto.objects.filter(id__in=productos_ids)
-        # elif sub_categoria:
-        #     productos_ids = ProductoCategorias.objects.filter(
-        #         sub_categoria__nombre=sub_categoria
-        #     ).values_list('producto', flat=True)
-        #     productos = Producto.objects.filter(id__in=productos_ids)
+    def get_queryset(self):
+        categoria_principal = self.request.query_params.get('categoria_principal', None)
+        categoria = self.request.query_params.get('categoria', None)
+        sub_categoria = self.request.query_params.get('sub_categoria', None)
 
-        serializer = self.serializer_class(productos, many=True)
-        return Response(serializer.data)
+        productos = Producto.objects.all()
+        print(categoria_principal, categoria, sub_categoria)
+        if categoria_principal:
+            productos_ids = ProductoCategorias.objects.filter(
+                sub_categoria__categoria__categoria_principal__nombre=categoria_principal
+            ).values_list('producto', flat=True)
+            print(productos_ids)
+            productos = productos.filter(id__in=productos_ids)
+            print(productos)
+        elif categoria:
+            productos_ids = ProductoCategorias.objects.filter(
+                sub_categoria__categoria__nombre=categoria
+            ).values_list('producto', flat=True)
+            productos = productos.filter(id__in=productos_ids)
+        elif sub_categoria:
+            productos_ids = ProductoCategorias.objects.filter(
+                sub_categoria__nombre=sub_categoria
+            ).values_list('producto', flat=True)
+            productos = productos.filter(id__in=productos_ids)
+    
+        return productos
+    
 
 ## ORDENAMIENTO DE PRODUCTOS POR PRECIO
 
