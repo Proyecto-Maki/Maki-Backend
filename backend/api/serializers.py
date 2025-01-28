@@ -817,3 +817,30 @@ class SolicitudAdopcionSerializer(serializers.ModelSerializer):
 
 
 
+## CATEGORIAS
+
+class CategoriaPrincipalSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CategoriaPrincipal
+        fields = ["id", "nombre"]
+
+class CategoriaSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Categoria
+        fields = ["id", "nombre", "categoria_principal"]
+
+class SubcategoriaSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Subcategoria
+        fields = ["id", "nombre", "categoria", "categoria_principal"]
+
+class ProductoCategorias(models.Model):
+    producto = models.ForeignKey(Producto, on_delete=models.CASCADE)
+    subcategoria = models.ForeignKey(Subcategoria, on_delete=models.CASCADE)
+
+    class Meta:
+        model = ProductoCategorias
+        fields = ["producto", "subcategoria"]
+
+
+
