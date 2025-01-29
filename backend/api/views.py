@@ -882,15 +882,18 @@ class PublicacionAdopcionCreateView(generics.ListCreateAPIView):
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            publicacion = serializer.save()
+            publicacion_data = self.get_serializer(publicacion).data
             return Response(
-                {"message": "Publicación de adopción creada exitosamente"},
+                {
+                    "publicacion": publicacion_data,
+                    "message": "Publicación de adopción creada exitosamente"},
                 status=status.HTTP_201_CREATED,
             )
         return Response(
             {
                 "error": serializer.errors,
-                "message": "Ha ocurrido un error al crear la publicación de adopción",
+                "detail": "Ha ocurrido un error al crear la publicación de adopción",
             },
             status=status.HTTP_400_BAD_REQUEST,
         )
@@ -961,6 +964,9 @@ class PublicacionAdopcionDeleteView(generics.DestroyAPIView):
         return publicacion_adopcion
     
     def perform_destroy(self, instance):
+        detalle_asociado = DetalleMascota.objects.filter(mascota=instance.mascota)
+        if detalle_asociado:
+            detalle_asociado.delete()
         instance.delete()
 
 ## PUBLICACION DE ADOPCION - PARA LOS CLIENTES
@@ -1007,7 +1013,7 @@ class DetalleMascotaCreateView(generics.ListCreateAPIView):
         return Response(
             {
                 "error": serializer.errors,
-                "message": "Ha ocurrido un error en la crear el detalle de mascota",
+                "detail": "Ha ocurrido un error en la crear el detalle de mascota",
             },
             status=status.HTTP_400_BAD_REQUEST,
         )

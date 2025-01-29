@@ -389,6 +389,7 @@ class Donacion(models.Model):
 
 class PublicacionAdopcion(models.Model):
 
+    id = models.AutoField(primary_key=True)  # Lo pogo pa que abajo me deje poner el id
     fundacion = models.ForeignKey(Fundacion, on_delete=models.CASCADE)
     mascota = models.ForeignKey(Mascota, on_delete=models.CASCADE)
     titulo = models.CharField(max_length=255, null=False, blank=False)
@@ -397,7 +398,7 @@ class PublicacionAdopcion(models.Model):
     fecha = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.titulo} - {self.mascota.nombre}"
+        return f"{self.id} {self.titulo} - {self.mascota.nombre}"
 
 
 class SolicitudAdopcion(models.Model):
