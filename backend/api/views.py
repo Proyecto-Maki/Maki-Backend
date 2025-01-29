@@ -1159,19 +1159,32 @@ class ProductosPorCategoriasView(generics.ListAPIView):
 
         productos = Producto.objects.all()
         print(categoria_principal, categoria, sub_categoria)
-        if categoria_principal:
+        if (categoria_principal and categoria==None and sub_categoria==None):
             productos_ids = ProductoCategorias.objects.filter(
                 sub_categoria__categoria__categoria_principal__nombre=categoria_principal
             ).values_list('producto', flat=True)
             print(productos_ids)
             productos = productos.filter(id__in=productos_ids)
             print(productos)
-        elif categoria:
+        elif (categoria_principal and categoria and sub_categoria==None):
+            productos_ids = ProductoCategorias.objects.filter(
+                sub_categoria__categoria__nombre=categoria,
+                sub_categoria__categoria__categoria_principal__nombre=categoria_principal
+            ).values_list('producto', flat=True)
+            productos = productos.filter(id__in=productos_ids)
+        elif (categoria_principal and categoria and sub_categoria):
+            productos_ids = ProductoCategorias.objects.filter(
+                sub_categoria__nombre=sub_categoria,
+                sub_categoria__categoria__nombre=categoria,
+                sub_categoria__categoria__categoria_principal__nombre=categoria_principal
+            ).values_list('producto', flat=True)
+            productos = productos.filter(id__in=productos_ids)
+        elif categoria and sub_categoria==None and categoria_principal==None:
             productos_ids = ProductoCategorias.objects.filter(
                 sub_categoria__categoria__nombre=categoria
             ).values_list('producto', flat=True)
             productos = productos.filter(id__in=productos_ids)
-        elif sub_categoria:
+        elif sub_categoria and categoria==None and categoria_principal==None:
             productos_ids = ProductoCategorias.objects.filter(
                 sub_categoria__nombre=sub_categoria
             ).values_list('producto', flat=True)
