@@ -712,6 +712,12 @@ class PublicacionAdopcionSerializer(serializers.ModelSerializer):
                 "detail": "Ya existe una publicación con esta mascota.",
                 "code": "duplicate_publication"
             })
+        
+        if Mascota.objects.filter(id = id_mascota, user = user).exists():
+            raise serializers.ValidationError({
+                "detail": "No puedes publicar una mascota que no es tuya.",
+                "code": "invalid_mascota"
+            })
 
         publicacion = PublicacionAdopcion.objects.create(
             fundacion = fundacion,
