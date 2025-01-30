@@ -214,6 +214,10 @@ class ClienteSignupSerializer(serializers.ModelSerializer):
             codigo_postal = codigo_postal,
             localidad = Localidad.objects.get(id=id_localidad)
         )
+        if (User.objects.filter(email=user.email).exists()):
+            raise serializers.ValidationError({
+                "detail": "Ya existe un usuario con este correo"
+            })
 
         if password != password2:
             raise serializers.ValidationError(
@@ -234,6 +238,7 @@ class ClienteSignupSerializer(serializers.ModelSerializer):
         fecha_nacimiento = self.validated_data.get("fecha_nacimiento", None)
         self.validate_fecha_nacimiento(fecha_nacimiento)
         
+        if (User.)
 
         Cliente.objects.create(
             user=user,
@@ -300,6 +305,11 @@ class FundacionSignupSerializer(serializers.ModelSerializer):
             localidad = Localidad.objects.get(id=id_localidad)
         )
         telefono = self.validated_data.get("telefono", "")
+
+        if (User.objects.filter(email=user.email).exists()):
+            raise serializers.ValidationError({
+                "detail": "Ya existe un usuario con este correo"
+            })
 
         if password != password2:
             raise serializers.ValidationError(
