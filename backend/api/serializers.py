@@ -711,10 +711,11 @@ class PublicacionAdopcionSerializer(serializers.ModelSerializer):
     id_localidad = serializers.IntegerField(write_only=True)
     mascota = MascotaSerializer(read_only=True)
     detalle_mascota = serializers.SerializerMethodField()
+    detalle_direccion = serializers.SerializerMethodField()
 
     class Meta:
         model = PublicacionAdopcion
-        fields = ["id", "email", "id_mascota", "titulo", "descripcion", "direccion", "id_localidad", "fecha", "mascota", "detalle_mascota"]
+        fields = ["id", "email", "id_mascota", "titulo", "descripcion", "direccion", "id_localidad", "fecha", "mascota", "detalle_mascota", "detalle_direccion"]
 
     def get_detalle_mascota(self, obj):
         try:
@@ -722,6 +723,17 @@ class PublicacionAdopcionSerializer(serializers.ModelSerializer):
             return DetalleMascotaSerializer(detalle_mascota).data
         except DetalleMascota.DoesNotExist:
             return None
+    
+    def get_detalle_direccion(self, obj):
+        if obj.direccion:
+            return {
+                "direccion": obj.direccion.direccion,
+                "id_localidad": obj.direccion.localidad.id,
+                "localidad": obj.direccion.localidad.nombre,
+                "codigo_postal": obj.direccion.codigo_postal
+            }
+        return None
+    
 
     def save(self, **kwargs):
         email = self.validated_data["email"]
@@ -771,23 +783,25 @@ class PublicacionAdopcionSerializer(serializers.ModelSerializer):
 class DetalleMascotaSerializer(serializers.ModelSerializer):
     id_mascota = serializers.IntegerField(write_only=True)
     apto_ninos = serializers.BooleanField(required=True)
+    apto_ruido = serializers.BooleanField(required=True)
     espacio = serializers.CharField(max_length=255)
     apto_otras_mascotas = serializers.BooleanField(required=True)
-    desparacitado = serializers.BooleanField(required=True)
+    desparasitado = serializers.BooleanField(required=True)
     vacunado = serializers.BooleanField(required=True)
     esterilizado = serializers.BooleanField(required=True)
 
 
     class Meta: 
         model = DetalleMascota
-        fields = ['id', 'id_mascota', 'apto_ninos', 'espacio', 'apto_otras_mascotas','desparacitado', 'vacunado', 'esterilizado']
+        fields = ['id', 'id_mascota', 'apto_ninos', 'apto_ruido', 'espacio', 'apto_otras_mascotas','desparasitado', 'vacunado', 'esterilizado']
     
     def save(self, **kwargs):
         id_mascota = self.validated_data["id_mascota"]
         apto_ninos = self.validated_data["apto_ninos"]
+        apto_ruido = self.validated_data["apto_ruido"]
         espacio = self.validated_data["espacio"]
         apto_otras_mascotas = self.validated_data["apto_otras_mascotas"]
-        desparacitado = self.validated_data["desparacitado"]
+        desparasitado = self.validated_data["desparasitado"]
         vacunado = self.validated_data["vacunado"]
         esterilizado = self.validated_data["esterilizado"]
 
@@ -801,9 +815,10 @@ class DetalleMascotaSerializer(serializers.ModelSerializer):
         detalle_mascota = DetalleMascota.objects.create(
             mascota = mascota,
             apto_ninos = apto_ninos,
+            apto_ruido = apto_ruido,
             espacio = espacio,
             apto_otras_mascotas = apto_otras_mascotas,
-            desparacitado = desparacitado,
+            desparasitado = desparasitado,
             vacunado = vacunado,
             esterilizado = esterilizado
         )

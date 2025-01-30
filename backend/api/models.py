@@ -182,7 +182,7 @@ class DetalleMascota(models.Model):
     apto_ruido = models.BooleanField(default=False)
     espacio = models.CharField(max_length=255, null=False, blank=False, choices=ESPACIOS)
     apto_otras_mascotas = models.BooleanField(default=False)
-    desparacitado = models.BooleanField(default=False)
+    desparasitado = models.BooleanField(default=False)
     vacunado = models.BooleanField(default=False)
     esterilizado = models.BooleanField(default=False)
     
