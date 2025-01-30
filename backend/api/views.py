@@ -67,9 +67,10 @@ class ClienteSignupView(generics.ListCreateAPIView):
             )
 
         errores = {}
+        print(serializer.errors)
         for key, value in serializer.errors.items():
             errores[key] = ", ".join(value)
-
+        
         mensaje = " | ".join([f"{key}: {value}" for key, value in errores.items()])
         return Response(
             {

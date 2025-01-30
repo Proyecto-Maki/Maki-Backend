@@ -8,6 +8,7 @@ from django.contrib.sites.shortcuts import get_current_site
 from rest_framework.exceptions import AuthenticationFailed
 from django.urls import reverse
 from datetime import date
+from rest_framework.validators import UniqueValidator
 
 # from .utils import send_normal_email
 from .new_utils import send_normal_email
@@ -143,6 +144,14 @@ class FundacionSerializer(serializers.ModelSerializer):
 
 
 class ClienteSignupSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(
+        validators=[
+            UniqueValidator(
+                queryset=User.objects.all(),
+                message="Ya existe un usuario con este correo"
+            )
+        ]
+    )
     password2 = serializers.CharField(style={"input_type": "password"}, write_only=True)
     direccion = serializers.CharField(max_length=255, required=True, allow_blank=True)
     codigo_postal = serializers.CharField(
@@ -187,18 +196,25 @@ class ClienteSignupSerializer(serializers.ModelSerializer):
             "segundo_apellido",
             "fecha_nacimiento",
         ]
-        extra_kwargs = {"password": {"write_only": True}}
+        extra_kwargs = {
+            "password": {"write_only": True},
+        }
+
 
     def validate_fecha_nacimiento(self, value):
         today = date.today()
         age = today.year - value.year - ((today.month, today.day) < (value.month, value.day))
         if age < 18:
-            raise serializers.ValidationError({
-                "detail": "Debes ser mayor de edad para registrarte"
-            })
+            raise serializers.ValidationError("Debes ser mayor de edad para registrarte"
+            )
         return value
 
     def save(self, **kwargs):
+        email_cur = self.validated_data.get("email")
+        print(email_cur)
+        if not email_cur:
+            raise serializers.ValidationError("El correo electrónico es requerido")
+        
         user = User(
             email=self.validated_data["email"],
         )
@@ -214,10 +230,7 @@ class ClienteSignupSerializer(serializers.ModelSerializer):
             codigo_postal = codigo_postal,
             localidad = Localidad.objects.get(id=id_localidad)
         )
-        if (User.objects.filter(email=user.email).exists()):
-            raise serializers.ValidationError({
-                "detail": "Ya existe un usuario con este correo"
-            })
+        
 
         if password != password2:
             raise serializers.ValidationError(
@@ -256,6 +269,14 @@ class ClienteSignupSerializer(serializers.ModelSerializer):
 
 
 class FundacionSignupSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(
+        validators=[
+            UniqueValidator(
+                queryset=User.objects.all(),
+                message="Ya existe un usuario con este correo"
+            )
+        ]
+    )
     password2 = serializers.CharField(style={"input_type": "password"}, write_only=True)
     direccion = serializers.CharField(max_length=255, required=True, allow_blank=True)
     codigo_postal = serializers.CharField(
