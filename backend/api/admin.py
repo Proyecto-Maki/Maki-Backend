@@ -49,4 +49,3 @@ admin.site.register(ProductoCategorias)
 
 
 
-

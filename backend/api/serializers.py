@@ -722,6 +722,12 @@ class PublicacionAdopcionSerializer(serializers.ModelSerializer):
                 "detail": "Ya existe una publicación con esta mascota.",
                 "code": "duplicate_publication"
             })
+        
+        if not Mascota.objects.filter(id = id_mascota, user = user).exists():
+            raise serializers.ValidationError({
+                "detail": "No puedes publicar una mascota que no es tuya.",
+                "code": "invalid_mascota"
+            })
 
         publicacion = PublicacionAdopcion.objects.create(
             fundacion = fundacion,
@@ -824,6 +830,33 @@ class SolicitudAdopcionSerializer(serializers.ModelSerializer):
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
+
+
+
+## CATEGORIAS
+
+class CategoriaPrincipalSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CategoriaPrincipal
+        fields = ["id", "nombre"]
+
+class CategoriaSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Categoria
+        fields = ["id", "nombre", "categoria_principal"]
+
+class SubcategoriaSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Subcategoria
+        fields = ["id", "nombre", "categoria", "categoria_principal"]
+
+class ProductoCategoriasSerializer(serializers.ModelSerializer):
+    producto = models.ForeignKey(Producto, on_delete=models.CASCADE)
+    sub_categoria = models.ForeignKey(Subcategoria, on_delete=models.CASCADE)
+
+    class Meta:
+        model = ProductoCategorias
+        fields = ["id", "producto", "sub_categoria"]
 
 
 
