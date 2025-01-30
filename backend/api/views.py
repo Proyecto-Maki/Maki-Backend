@@ -912,7 +912,8 @@ class PublicacionesAdopcionUserView(generics.ListAPIView):
     def get_queryset(self):
         email = self.kwargs.get("email")
         user = get_object_or_404(User, email=email)
-        return PublicacionAdopcion.objects.filter(user=user)
+        fundacion = get_object_or_404(Fundacion, user=user)
+        return PublicacionAdopcion.objects.filter(fundacion=fundacion)
 
 ## Esta vista es para listar todas las publicaciones de adopción (sin importar la fundación)
 class PublicacionAdopcionView(generics.ListAPIView):
