@@ -238,7 +238,10 @@ class ClienteSignupSerializer(serializers.ModelSerializer):
         fecha_nacimiento = self.validated_data.get("fecha_nacimiento", None)
         self.validate_fecha_nacimiento(fecha_nacimiento)
         
-        if (User.)
+        if (User.objects.filter(email=user.email).exists()):
+            raise serializers.ValidationError({
+                "detail": "Ya existe un usuario con este correo"
+            })
 
         Cliente.objects.create(
             user=user,
