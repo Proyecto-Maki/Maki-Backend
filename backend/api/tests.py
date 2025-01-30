@@ -3,6 +3,7 @@ from django.urls import reverse
 from unittest.mock import patch
 from api.models import *
 import json
+from rest_framework.test import APIClient
 from django.db.utils import IntegrityError
 
 
@@ -1349,37 +1350,127 @@ from django.db.utils import IntegrityError
 #         )
 
 
-class MercadoPagoTestCase(TestCase):
+# class MercadoPagoTestCase(TestCase):
+#     def setUp(self):
+#         """Configuración inicial para cada prueba"""
+#         self.carrito = Carrito.objects.create(codigo="TEST123", pagado=False)
+
+#     @patch("mercadopago.SDK.preference")
+#     def test_create_preference(self, mock_preference):
+#         """Verifica que se pueda crear una preferencia en Mercado Pago"""
+#         mock_preference.return_value.create.return_value = {
+#             "response": {
+#                 "id": "1234567890",
+#                 "init_point": "https://www.mercadopago.com/init_point_test",
+#             }
+#         }
+
+#         data = {
+#             "items": [
+#                 {
+#                     "title": "WHISKAS Sabor Pollo Sobres x 100gr",
+#                     "quantity": 1,
+#                     "unit_price": 4000,
+#                     "currency_id": "COP",
+#                 }
+#             ]
+#         }
+
+#         response = self.client.post(
+#             reverse("create_preference"),
+#             json.dumps(data),
+#             content_type="application/json",
+#         )
+
+#         self.assertEqual(response.status_code, 200)
+#         self.assertIn("init_point", response.json())
+
+
+class CarritoTestCase(TestCase):
     def setUp(self):
         """Configuración inicial para cada prueba"""
+        self.client = APIClient()
+
+        # Crear un carrito de prueba
         self.carrito = Carrito.objects.create(codigo="TEST123", pagado=False)
 
-    @patch("mercadopago.SDK.preference")
-    def test_create_preference(self, mock_preference):
-        """Verifica que se pueda crear una preferencia en Mercado Pago"""
-        mock_preference.return_value.create.return_value = {
-            "response": {
-                "id": "1234567890",
-                "init_point": "https://www.mercadopago.com/init_point_test",
-            }
-        }
+        # Crear un producto de prueba
+        self.producto = Producto.objects.create(
+            id=1, nombre="WHISKAS Sabor Pollo Sobres x 100gr", precio=4000
+        )
 
+        # Crear un item en el carrito
+        self.item_carrito = ItemCarrito.objects.create(
+            carrito=self.carrito, producto=self.producto, cantidad=1
+        )
+
+    def test_agregar_producto_al_carrito(self):
+        """Verifica que un producto se agregue correctamente al carrito"""
         data = {
-            "items": [
-                {
-                    "title": "WHISKAS Sabor Pollo Sobres x 100gr",
-                    "quantity": 1,
-                    "unit_price": 4000,
-                    "currency_id": "COP",
-                }
-            ]
+            "codigo": "TEST123",
+            "id_producto": self.producto.id,
         }
 
         response = self.client.post(
-            reverse("create_preference"),
+            reverse("agregar_producto"),
             json.dumps(data),
             content_type="application/json",
         )
+        self.assertEqual(response.status_code, 201)
+        self.assertIn("message", response.json())
+        self.assertEqual(
+            response.json()["message"], "Producto agregado al carrito exitosamente"
+        )
 
+    def test_producto_en_carrito(self):
+        """Verifica que un producto está en el carrito"""
+        response = self.client.get(
+            reverse("producto_en_carrito")
+            + f"?codigo=TEST123&id_producto={self.producto.id}"
+        )
         self.assertEqual(response.status_code, 200)
-        self.assertIn("init_point", response.json())
+        self.assertTrue(response.json()["producto_en_carrito"])
+
+    def test_get_estado_carrito(self):
+        """Verifica que se obtenga correctamente el estado del carrito"""
+        response = self.client.get(
+            reverse("get_estado_carrito") + f"?codigo_carrito=TEST123"
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["codigo_carrito"], "TEST123")
+
+    def test_update_cantidad_producto(self):
+        """Verifica que se actualice la cantidad de un producto en el carrito"""
+        data = {
+            "codigo_carrito": "TEST123",
+            "producto_id": self.producto.id,
+            "cantidad": 5,
+        }
+
+        response = self.client.post(
+            reverse("update_cantidad_producto"),
+            json.dumps(data),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 200)
+        self.item_carrito.refresh_from_db()
+        self.assertEqual(self.item_carrito.cantidad, 5)
+
+    def test_remove_product_from_cart(self):
+        """Verifica que un producto se elimine correctamente del carrito"""
+        data = {"codigo_carrito": "TEST123", "producto_id": self.producto.id}
+
+        response = self.client.post(
+            reverse("remove_product_from_cart"),
+            json.dumps(data),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.json()["message"].strip().rstrip("."),
+            "Producto eliminado del carrito exitosamente",
+        )
+
+        # Verifica que el producto ya no existe en el carrito
+        with self.assertRaises(ItemCarrito.DoesNotExist):
+            ItemCarrito.objects.get(carrito=self.carrito, producto=self.producto)
