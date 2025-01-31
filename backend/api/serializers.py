@@ -826,9 +826,21 @@ class DetalleMascotaSerializer(serializers.ModelSerializer):
         return detalle_mascota
 
     def update(self, instance, validated_data):
+        data_direccion = {
+            "direccion": validated_data.pop("direccion", None),
+            "id_localidad": validated_data.pop("id_localidad", None)
+        }
+
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
+
+        if data_direccion["direccion"] and data_direccion["id_localidad"]:
+            localidad = Localidad.objects.get(id = data_direccion["id_localidad"])
+            instance.direccion.direccion = data_direccion["direccion"] 
+            instance.direccion.localidad = localidad
+        
         instance.save()
+        return instance
 
 
 ## SOLICITUD DE ADOPCIÓN CLIENTES

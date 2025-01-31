@@ -934,6 +934,7 @@ class PublicacionAdopcionDetailView(generics.RetrieveUpdateDestroyAPIView):
     
 ## Esta vista es para actualizar una publicación de adopción
 class PublicacionAdopcionUpdateView(APIView):
+    serializer_class = PublicacionAdopcionSerializer
     permission_classes = [permissions.IsAuthenticated&IsFundacionUser]
 
     def get_object(self, id):
