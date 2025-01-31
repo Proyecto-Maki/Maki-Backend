@@ -949,7 +949,7 @@ class PublicacionAdopcionUpdateView(APIView):
             return Response(
                 {"message": "Publicación de adopción no encontrada"}, status=status.HTTP_404_NOT_FOUND
             )
-        if publicacion_adopcion.user != request.user:
+        if publicacion_adopcion.fundacion.user != request.user:
             raise PermissionDenied("No tienes permisos para editar esta publicación de adopción")
         serializer = PublicacionAdopcionSerializer(publicacion_adopcion, data=request.data)
         if serializer.is_valid():

@@ -776,9 +776,25 @@ class PublicacionAdopcionSerializer(serializers.ModelSerializer):
         return publicacion
     
     def update(self, instance, validated_data):
+        # for attr, value in validated_data.items():
+        #     setattr(instance, attr, value)
+        # instance.save()
+
+        direccion_data = {
+            'direccion': validated_data.pop('direccion', instance.direccion.direccion),
+            'id_localidad': validated_data.pop('id_localidad', instance.direccion.localidad.id)
+        }
+
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
+
+        if direccion_data:
+            localidad = Localidad.objects.get(id = direccion_data["id_localidad"])
+            instance.direccion.direccion = direccion_data["direccion"]
+            instance.direccion.localidad = localidad
+            instance.direccion.save()
         instance.save()
+        return instance
 
 class DetalleMascotaSerializer(serializers.ModelSerializer):
     id_mascota = serializers.IntegerField(write_only=True)
