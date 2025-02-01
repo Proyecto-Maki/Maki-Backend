@@ -68,6 +68,69 @@ def create_preference(request):
     return JsonResponse({"error": "Método no permitido"}, status=405)
 
 
+@csrf_exempt
+def mercadopago_webhook(request):
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+            payment_id = data.get("data", {}).get("id", None)
+
+            if not payment_id:
+                return JsonResponse(
+                    {"error": "No se recibió un ID de pago"}, status=400
+                )
+
+            # Consultar el estado del pago
+            payment = sdk.payment().get(payment_id)
+            status = payment["response"]["status"]
+
+            print(f"Pago recibido. ID: {payment_id}, Estado: {status}")
+
+            if status == "approved":
+                # Obtener los datos adicionales (por ejemplo, el ID del usuario)
+                user_id = payment["response"].get("metadata", {}).get("user_id", None)
+
+                if not user_id:
+                    return JsonResponse({"error": "No se encontró user_id"}, status=400)
+
+                # Obtener el usuario
+                try:
+                    user = User.objects.get(id=user_id)
+                except User.DoesNotExist:
+                    return JsonResponse({"error": "Usuario no encontrado"}, status=400)
+
+                # Obtener el carrito del usuario
+                carrito = Carrito.objects.filter(user=user).first()
+
+                if not carrito:
+                    return JsonResponse({"error": "Carrito no encontrado"}, status=400)
+
+                # Crear un nuevo Pedido
+                nuevo_pedido = Pedido.objects.create(
+                    user=user, total=carrito.total, estado="Preparación"
+                )
+
+                # Agregar productos al Pedido
+                for item in carrito.carritoproducto_set.all():
+                    DetallePedido.objects.create(
+                        pedido=nuevo_pedido,
+                        producto=item.producto,
+                        cantidad=item.cantidad,
+                    )
+
+                # Vaciar el carrito después de procesar el pedido
+                carrito.carritoproducto_set.all().delete()
+
+                return JsonResponse({"message": "Pedido creado con éxito"}, status=201)
+
+            return JsonResponse({"message": "Pago no aprobado"}, status=200)
+
+        except json.JSONDecodeError:
+            return JsonResponse({"error": "JSON inválido"}, status=400)
+
+    return JsonResponse({"error": "Método no permitido"}, status=405)
+
+
 @api_view(["GET"])
 def SendTestEmail(request):
     try:
