@@ -43,11 +43,13 @@ def create_preference(request):
         try:
             body = json.loads(request.body)
 
-            # Verificar que el user_id esté en el request
+            # ✅ Verificar si `user_id` viene en la solicitud
             user_id = body.get("user_id")
             if not user_id:
                 print("❌ No se envió user_id en la solicitud")
                 return JsonResponse({"error": "user_id es obligatorio"}, status=400)
+
+            print(f"📌 User ID recibido: {user_id}")
 
             preference_data = {
                 "items": body["items"],
@@ -60,8 +62,8 @@ def create_preference(request):
                 "notification_url": "https://backend.makishop.live/api/mercadopago/webhook/",
                 "metadata": {
                     "user_id": str(
-                        request.user.id
-                    )  # Asegura que sea el ID real en Django
+                        user_id
+                    )  # 📌 Convertir `user_id` a string por compatibilidad
                 },
             }
 
@@ -314,7 +316,7 @@ class CustomAuthToken(TokenObtainPairSerializer):
 
             data = {}
             refresh = self.get_token(user)
-            data["user_id"] = user.id
+            data["id"] = user.id  # ✅ Enviar `user_id`
             data["email"] = user.email
             data["is_cliente"] = user.is_cliente
             data["is_fundacion"] = user.is_fundacion
