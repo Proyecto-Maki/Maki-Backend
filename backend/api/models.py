@@ -412,7 +412,7 @@ class SolicitudAdopcion(models.Model):
     }
     cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE)
     publicacion = models.ForeignKey(PublicacionAdopcion, on_delete=models.CASCADE)
-    fecha = models.DateField(auto_now_add=True)
+    fecha = models.DateTimeField(auto_now_add=True)
     motivo = models.TextField(null=False, blank=False)
     estado = models.CharField(max_length=255, null=True, blank=True, choices=ESTADOS, default="Pendiente")
 

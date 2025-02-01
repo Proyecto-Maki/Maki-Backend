@@ -1098,7 +1098,7 @@ class SolicitudesAdopcionUserView(generics.ListAPIView):
     def get_queryset(self):
         email = self.kwargs.get("email")
         user = get_object_or_404(User, email=email)
-        return SolicitudAdopcion.objects.filter(user=user)
+        return SolicitudAdopcion.objects.filter(cliente__user=user)
     
 class SolicitudAdopcionDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = SolicitudAdopcionSerializer

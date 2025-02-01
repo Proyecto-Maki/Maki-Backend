@@ -9,6 +9,7 @@ from rest_framework.exceptions import AuthenticationFailed
 from django.urls import reverse
 from datetime import date
 from rest_framework.validators import UniqueValidator
+from django.utils import timezone
 
 # from .utils import send_normal_email
 from .new_utils import send_normal_email
@@ -865,10 +866,14 @@ class SolicitudAdopcionSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(write_only=True)
     id_publicacion = serializers.IntegerField(write_only=True)
     motivo = serializers.CharField(max_length=500)
+    fecha = serializers.DateTimeField(read_only=True)
+    estado = serializers.CharField(max_length=255, read_only=True)
+    cliente = ClienteSerializer(read_only=True)
+    publicacion = PublicacionAdopcionSerializer(read_only=True)
 
     class Meta: 
         model = SolicitudAdopcion
-        fields = ['id', 'email', 'id_publicacion', 'motivo', 'fecha', 'estado']
+        fields = ['id', 'email', 'id_publicacion', 'motivo', 'fecha', 'estado', 'cliente', 'publicacion']
 
     def save(self, **kwargs):
         email = self.validated_data["email"]
@@ -889,6 +894,7 @@ class SolicitudAdopcionSerializer(serializers.ModelSerializer):
             cliente = cliente,
             publicacion = publicacion,
             motivo = motivo,
+            fecha = timezone.now(),
         )
 
         return solicitud_adopcion
