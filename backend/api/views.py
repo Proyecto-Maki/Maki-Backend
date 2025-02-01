@@ -1,3 +1,4 @@
+import os
 from django.shortcuts import render, redirect
 from django.contrib.auth import login, authenticate
 from rest_framework import generics, status, permissions
@@ -29,6 +30,9 @@ from django.conf import settings
 
 import mercadopago
 import json
+
+
+sdk = mercadopago.SDK(os.getenv("MERCADO_PAGO_ACCESS_TOKEN"))
 
 
 @csrf_exempt

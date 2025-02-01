@@ -24,6 +24,7 @@ import cloudinary.api
 import cloudinary_storage
 
 load_dotenv()
+MERCADO_PAGO_ACCESS_TOKEN = os.getenv("MERCADO_PAGO_ACCESS_TOKEN")
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
