@@ -41,7 +41,7 @@ def create_preference(request):
         sdk = mercadopago.SDK(settings.MERCADO_PAGO_ACCESS_TOKEN)
 
         try:
-            body = json.loads(request.body)  # Carga los datos de la solicitud
+            body = json.loads(request.body)
 
             preference_data = {
                 "items": body["items"],
@@ -51,18 +51,15 @@ def create_preference(request):
                     "pending": "https://makishop.live/pending",
                 },
                 "auto_return": "approved",
-                "notification_url": "https://backend.makishop.live/api/mercadopago/webhook/",  # 📌 ¡AQUÍ ESTÁ EL CAMBIO!
+                "notification_url": "https://backend.makishop.live/api/mercadopago/webhook/",
                 "metadata": {
-                    "user_id": body.get(
-                        "user_id"
-                    )  # 📌 Incluye el usuario que hace la compra
+                    "user_id": body.get("user_id")  # 📌 Asegura que se envía el user_id
                 },
             }
 
             preference_response = sdk.preference().create(preference_data)
             preference = preference_response["response"]
 
-            # Devuelve el init_point junto con el ID de la preferencia
             return JsonResponse(
                 {
                     "id": preference.get("id"),
@@ -85,26 +82,34 @@ def mercadopago_webhook(request):
             print(f"🔍 Webhook recibido: {raw_data}")
 
             data = json.loads(raw_data)
+
+            # Ignorar notificaciones de "merchant_order"
+            if data.get("topic") == "merchant_order":
+                print("ℹ️ Webhook de merchant_order recibido, ignorando...")
+                return JsonResponse(
+                    {"message": "Merchant order recibida, no procesada"}, status=200
+                )
+
             payment_id = data.get("data", {}).get("id", None)
 
             if not payment_id:
-                print(" No se recibió un ID de pago válido")
+                print("❌ No se recibió un ID de pago válido")
                 return JsonResponse(
                     {"error": "No se recibió un ID de pago"}, status=400
                 )
 
             print(f"✔ ID de pago recibido: {payment_id}")
 
-            # Consultar el estado del pago en Mercado Pago
+            # Consultar el pago en Mercado Pago
             payment = sdk.payment().get(payment_id)
             payment_status = payment["response"]["status"]
             user_id = payment["response"].get("metadata", {}).get("user_id", None)
 
-            print(f" Estado del pago: {payment_status}")
+            print(f"📌 Estado del pago: {payment_status}")
 
             if payment_status == "approved":
                 if not user_id:
-                    print(" No se encontró user_id en metadata")
+                    print("❌ No se encontró user_id en metadata")
                     return JsonResponse(
                         {"error": "Usuario no encontrado en metadata"}, status=400
                     )
@@ -113,14 +118,14 @@ def mercadopago_webhook(request):
                 try:
                     user = User.objects.get(id=user_id)
                 except User.DoesNotExist:
-                    print(" Usuario no encontrado en la base de datos")
+                    print("❌ Usuario no encontrado en la base de datos")
                     return JsonResponse({"error": "Usuario no encontrado"}, status=400)
 
                 # Obtener el carrito del usuario
                 carrito = Carrito.objects.filter(user=user).first()
 
                 if not carrito:
-                    print(" Carrito no encontrado para el usuario")
+                    print("❌ Carrito no encontrado para el usuario")
                     return JsonResponse({"error": "Carrito no encontrado"}, status=400)
 
                 # Crear un nuevo Pedido
@@ -139,18 +144,18 @@ def mercadopago_webhook(request):
                 # Vaciar el carrito después de procesar el pedido
                 carrito.carritoproducto_set.all().delete()
 
-                print(f" Pedido creado con éxito: {nuevo_pedido.id}")
+                print(f"✅ Pedido creado con éxito: {nuevo_pedido.id}")
 
                 return JsonResponse({"message": "Pedido creado con éxito"}, status=201)
 
             return JsonResponse({"message": "Pago no aprobado"}, status=200)
 
         except json.JSONDecodeError:
-            print(" Error al decodificar JSON")
+            print("❌ Error al decodificar JSON")
             return JsonResponse({"error": "JSON inválido"}, status=400)
 
         except Exception as e:
-            print(f" Error inesperado: {e}")
+            print(f"❌ Error inesperado: {e}")
             return JsonResponse({"error": str(e)}, status=500)
 
     return JsonResponse({"error": "Método no permitido"}, status=405)
