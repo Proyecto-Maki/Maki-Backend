@@ -196,7 +196,7 @@ urlpatterns = [
     path("solicitudes-adopcion-fundacion/<email>/", SolicitudesAdopcionFundacionView.as_view(), name="solicitudes_adopcion_fundacion"),
     path("solicitud-adopcion-fundacion/<int:id>/", SolicitudAdopcionFunDetailView.as_view(), name="solicitud_adopcion_fundacion"),
     path("solicitud-adopcion-fundacion/update/<int:id>/", SolicitudAdopcionUpdateView.as_view(), name="solicitud_adopcion_fundacion_update"),
-
+    path("solicitud-adopcion-fundacion/update-estado/<int:id>/", ActualizarEstadoSolicitudAdopcion.as_view(), name="solicitud_adopcion_fundacion_update_estado"),
 
     ## Ordenamiento de productos por precio
     path("productos/ordenar/precio-asc/", OrdenarProductosPorPrecioAscView.as_view(), name="productos_precio_asc"),

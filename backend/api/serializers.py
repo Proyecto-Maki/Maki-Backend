@@ -904,7 +904,17 @@ class SolicitudAdopcionSerializer(serializers.ModelSerializer):
             setattr(instance, attr, value)
         instance.save()
 
+class SetEstadoSolicitudAdopcionSerializer(serializers.ModelSerializer):
+    estado = serializers.CharField(max_length=255, required=True)
 
+    class Meta:
+        model = SolicitudAdopcion
+        fields = ["id", "estado"]
+
+    def update(self, instance, validated_data):
+        instance.estado = validated_data["estado"]
+        instance.save()
+        return instance
 
 ## CATEGORIAS
 

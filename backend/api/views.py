@@ -1128,6 +1128,7 @@ class SolicitudAdopcionFunDetailView(generics.RetrieveUpdateDestroyAPIView):
     
 class SolicitudAdopcionUpdateView(APIView):
     permission_classes = [permissions.IsAuthenticated&IsFundacionUser]
+    serializer_class = SolicitudAdopcionSerializer
 
     def get_object(self, id):
         try:
@@ -1149,7 +1150,32 @@ class SolicitudAdopcionUpdateView(APIView):
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
+class ActualizarEstadoSolicitudAdopcion(APIView):
+    permission_classes = [permissions.IsAuthenticated&IsFundacionUser]
+    serializer_class = SetEstadoSolicitudAdopcionSerializer
 
+    def get_object(self, id):
+        try:
+            return SolicitudAdopcion.objects.get(id=id)
+        except SolicitudAdopcion.DoesNotExist:
+            return None
+        
+    def patch(self, request, id, *args, **kwargs):
+        solicitud_adopcion = self.get_object(id)
+        if not solicitud_adopcion:
+            return Response(
+                {"message": "Solicitud de adopción no encontrada"}, status=status.HTTP_404_NOT_FOUND
+            )
+        if solicitud_adopcion.publicacion.fundacion.user != request.user:
+            raise PermissionDenied("No tienes permisos para editar esta solicitud de adopción")
+        serializer = SetEstadoSolicitudAdopcionSerializer(solicitud_adopcion, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.update(solicitud_adopcion, serializer.validated_data)
+            return Response(serializer.data)
+        return Response({
+            "error": serializer.errors,
+            "detail": "Ha ocurrido un error al actualizar el estado de la solicitud de adopción",
+        }, status=status.HTTP_400_BAD_REQUEST)
 
 ## CATEGORIAS DE PRODUCTOS
 
