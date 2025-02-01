@@ -965,7 +965,7 @@ class PublicacionAdopcionDeleteView(generics.DestroyAPIView):
     def get_object(self):
         id = self.kwargs.get("id")
         publicacion_adopcion = get_object_or_404(PublicacionAdopcion, id=id)
-        if publicacion_adopcion.user != self.request.user:
+        if publicacion_adopcion.fundacion.user != self.request.user:
             raise exceptions.PermissionDenied(
                 "No tienes permisos para eliminar esta publicación de adopción"
             )
