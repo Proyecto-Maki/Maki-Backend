@@ -35,13 +35,19 @@ import json
 sdk = mercadopago.SDK(os.getenv("MERCADO_PAGO_ACCESS_TOKEN"))
 
 
-@csrf_exempt
+@@csrf_exempt
 def create_preference(request):
     if request.method == "POST":
         sdk = mercadopago.SDK(settings.MERCADO_PAGO_ACCESS_TOKEN)
 
         try:
-            body = json.loads(request.body)
+            body = json.loads(request.body)  
+
+            # Verificar que el user_id esté en el request
+            user_id = body.get("user_id")
+            if not user_id:
+                print("❌ No se envió user_id en la solicitud")
+                return JsonResponse({"error": "user_id es obligatorio"}, status=400)
 
             preference_data = {
                 "items": body["items"],
@@ -53,19 +59,19 @@ def create_preference(request):
                 "auto_return": "approved",
                 "notification_url": "https://backend.makishop.live/api/mercadopago/webhook/",
                 "metadata": {
-                    "user_id": body.get("user_id")  # 📌 Asegura que se envía el user_id
+                    "user_id": str(user_id)  # 📌 Convertimos user_id a string por compatibilidad
                 },
             }
 
             preference_response = sdk.preference().create(preference_data)
             preference = preference_response["response"]
 
-            return JsonResponse(
-                {
-                    "id": preference.get("id"),
-                    "init_point": preference.get("init_point"),
-                }
-            )
+            print(f"📌 Preferencia creada con metadata: {preference_data['metadata']}")
+
+            return JsonResponse({
+                "id": preference.get("id"),
+                "init_point": preference.get("init_point"),
+            })
 
         except Exception as e:
             print(f"Error al crear la preferencia: {e}")
