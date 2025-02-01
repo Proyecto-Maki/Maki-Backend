@@ -100,8 +100,8 @@ def mercadopago_webhook(request):
                     {"message": "Merchant order recibida, no procesada"}, status=200
                 )
 
-            payment_id = data.get("data", {}).get("id")
-
+            # Obtener el ID del pago
+            payment_id = data.get("data", {}).get("id", None)
             if not payment_id:
                 print("❌ No se recibió un ID de pago válido")
                 return JsonResponse(
@@ -110,19 +110,19 @@ def mercadopago_webhook(request):
 
             print(f"✔ ID de pago recibido: {payment_id}")
 
-            # Consultar el pago en Mercado Pago
+            # Consultar los detalles del pago en Mercado Pago
             payment = sdk.payment().get(payment_id)
-            payment_response = payment.get("response", {})
-
-            if "status" not in payment_response:
-                print("❌ Error: No se encontró estado en la respuesta del pago")
-                return JsonResponse({"error": "Pago inválido"}, status=400)
-
-            payment_status = payment_response["status"]
-            user_id = payment_response.get("metadata", {}).get("user_id")
+            payment_status = payment["response"].get("status", "")
+            metadata = payment["response"].get("metadata", {})
+            user_id = metadata.get("user_id", None)
 
             print(f"📌 Estado del pago: {payment_status}")
             print(f"🔍 ID de usuario recibido en metadata: {user_id}")
+
+            # Validar que el pago está aprobado
+            if payment_status != "approved":
+                print("⚠️ El pago no está aprobado. No se crea el pedido.")
+                return JsonResponse({"message": "Pago no aprobado"}, status=200)
 
             if not user_id:
                 print("❌ No se encontró user_id en metadata")
@@ -130,56 +130,41 @@ def mercadopago_webhook(request):
                     {"error": "Usuario no encontrado en metadata"}, status=400
                 )
 
-            # Intentar convertir el user_id a entero (puede llegar como string)
-            try:
-                user_id = int(user_id)
-            except ValueError:
-                print(f"❌ Error: user_id '{user_id}' no es un número válido")
-                return JsonResponse({"error": "user_id inválido"}, status=400)
-
             # Buscar al usuario en la base de datos
             try:
                 user = User.objects.get(id=user_id)
                 print(f"✅ Usuario encontrado en la base de datos: {user.email}")
             except User.DoesNotExist:
-                print(f"❌ Usuario con ID {user_id} NO encontrado en la base de datos")
+                print(f"❌ No se encontró usuario con ID {user_id}")
                 return JsonResponse({"error": "Usuario no encontrado"}, status=400)
 
-            if payment_status == "approved":
-                # Buscar el carrito del usuario que NO haya sido pagado aún
-                carrito = Carrito.objects.filter(user=user, pagado=False).first()
+            # Buscar el carrito del usuario que no haya sido pagado
+            carrito = Carrito.objects.filter(user=user, pagado=False).first()
+            if not carrito:
+                print(f"❌ No se encontró carrito activo para el usuario: {user.email}")
+                return JsonResponse({"error": "Carrito no encontrado"}, status=400)
 
-                if not carrito:
-                    print(
-                        f"❌ No se encontró carrito activo para el usuario: {user.email}"
-                    )
-                    return JsonResponse({"error": "Carrito no encontrado"}, status=400)
+            # Crear un nuevo Pedido
+            nuevo_pedido = Pedido.objects.create(
+                user=user, total=carrito.total, estado="Preparación"
+            )
 
-                # Crear un nuevo Pedido
-                nuevo_pedido = Pedido.objects.create(
-                    user=user, total=carrito.total, estado="Preparación"
+            # Agregar productos al Pedido
+            for item in carrito.carritoproducto_set.all():
+                DetallePedido.objects.create(
+                    pedido=nuevo_pedido,
+                    producto=item.producto,
+                    cantidad=item.cantidad,
                 )
 
-                # Agregar productos al Pedido
-                for item in carrito.carritoproducto_set.all():
-                    DetallePedido.objects.create(
-                        pedido=nuevo_pedido,
-                        producto=item.producto,
-                        cantidad=item.cantidad,
-                    )
+            # Vaciar el carrito después de procesar el pedido
+            carrito.carritoproducto_set.all().delete()
+            carrito.pagado = True
+            carrito.save()
 
-                # Vaciar el carrito después de procesar el pedido
-                carrito.carritoproducto_set.all().delete()
-                carrito.pagado = True
-                carrito.save()
+            print(f"✅ Pedido creado con éxito: {nuevo_pedido.id}")
 
-                print(
-                    f"✅ Pedido {nuevo_pedido.id} creado con éxito para el usuario {user.email}"
-                )
-
-                return JsonResponse({"message": "Pedido creado con éxito"}, status=201)
-
-            return JsonResponse({"message": "Pago no aprobado"}, status=200)
+            return JsonResponse({"message": "Pedido creado con éxito"}, status=201)
 
         except json.JSONDecodeError:
             print("❌ Error al decodificar JSON")
