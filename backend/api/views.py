@@ -41,17 +41,22 @@ def create_preference(request):
         sdk = mercadopago.SDK(settings.MERCADO_PAGO_ACCESS_TOKEN)
 
         try:
-            body = json.loads(
-                request.body
-            )  # Asegúrate de cargar correctamente los datos del cuerpo de la solicitud
+            body = json.loads(request.body)  # Carga los datos de la solicitud
+
             preference_data = {
                 "items": body["items"],
                 "back_urls": {
-                    "success": "https://makishop.live/pending",
-                    "failure": "https://makishop.live/pending",
+                    "success": "https://makishop.live/success",
+                    "failure": "https://makishop.live/failure",
                     "pending": "https://makishop.live/pending",
                 },
                 "auto_return": "approved",
+                "notification_url": "https://backend.makishop.live/api/mercadopago/webhook/",  # 📌 ¡AQUÍ ESTÁ EL CAMBIO!
+                "metadata": {
+                    "user_id": body.get(
+                        "user_id"
+                    )  # 📌 Incluye el usuario que hace la compra
+                },
             }
 
             preference_response = sdk.preference().create(preference_data)
