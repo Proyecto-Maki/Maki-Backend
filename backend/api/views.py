@@ -308,6 +308,7 @@ class CustomAuthToken(TokenObtainPairSerializer):
 
             data = {}
             refresh = self.get_token(user)
+            data["user_id"] = user.id
             data["email"] = user.email
             data["is_cliente"] = user.is_cliente
             data["is_fundacion"] = user.is_fundacion
