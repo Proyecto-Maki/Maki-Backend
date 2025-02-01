@@ -76,37 +76,46 @@ def create_preference(request):
 def mercadopago_webhook(request):
     if request.method == "POST":
         try:
-            data = json.loads(request.body)
+            raw_data = request.body.decode("utf-8")
+            print(f"🔍 Webhook recibido: {raw_data}")
+
+            data = json.loads(raw_data)
             payment_id = data.get("data", {}).get("id", None)
 
             if not payment_id:
+                print(" No se recibió un ID de pago válido")
                 return JsonResponse(
                     {"error": "No se recibió un ID de pago"}, status=400
                 )
 
-            # Consultar el estado del pago
+            print(f"✔ ID de pago recibido: {payment_id}")
+
+            # Consultar el estado del pago en Mercado Pago
             payment = sdk.payment().get(payment_id)
-            status = payment["response"]["status"]
+            payment_status = payment["response"]["status"]
+            user_id = payment["response"].get("metadata", {}).get("user_id", None)
 
-            print(f"Pago recibido. ID: {payment_id}, Estado: {status}")
+            print(f" Estado del pago: {payment_status}")
 
-            if status == "approved":
-                # Obtener los datos adicionales (por ejemplo, el ID del usuario)
-                user_id = payment["response"].get("metadata", {}).get("user_id", None)
-
+            if payment_status == "approved":
                 if not user_id:
-                    return JsonResponse({"error": "No se encontró user_id"}, status=400)
+                    print(" No se encontró user_id en metadata")
+                    return JsonResponse(
+                        {"error": "Usuario no encontrado en metadata"}, status=400
+                    )
 
-                # Obtener el usuario
+                # Buscar al usuario en la base de datos
                 try:
                     user = User.objects.get(id=user_id)
                 except User.DoesNotExist:
+                    print(" Usuario no encontrado en la base de datos")
                     return JsonResponse({"error": "Usuario no encontrado"}, status=400)
 
                 # Obtener el carrito del usuario
                 carrito = Carrito.objects.filter(user=user).first()
 
                 if not carrito:
+                    print(" Carrito no encontrado para el usuario")
                     return JsonResponse({"error": "Carrito no encontrado"}, status=400)
 
                 # Crear un nuevo Pedido
@@ -125,12 +134,19 @@ def mercadopago_webhook(request):
                 # Vaciar el carrito después de procesar el pedido
                 carrito.carritoproducto_set.all().delete()
 
+                print(f" Pedido creado con éxito: {nuevo_pedido.id}")
+
                 return JsonResponse({"message": "Pedido creado con éxito"}, status=201)
 
             return JsonResponse({"message": "Pago no aprobado"}, status=200)
 
         except json.JSONDecodeError:
+            print(" Error al decodificar JSON")
             return JsonResponse({"error": "JSON inválido"}, status=400)
+
+        except Exception as e:
+            print(f" Error inesperado: {e}")
+            return JsonResponse({"error": str(e)}, status=500)
 
     return JsonResponse({"error": "Método no permitido"}, status=405)
 
