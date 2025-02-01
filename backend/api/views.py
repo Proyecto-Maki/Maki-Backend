@@ -15,7 +15,7 @@ from rest_framework.exceptions import PermissionDenied
 from .models import *
 
 # from .utils import send_code_to_user
-from .new_utils import send_code_to_user, send_test_email
+from .new_utils import send_code_to_user, send_test_email, send_update_adoption_email
 from django.utils.http import urlsafe_base64_decode
 from django.utils.encoding import smart_str, DjangoUnicodeDecodeError
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
@@ -1171,6 +1171,41 @@ class ActualizarEstadoSolicitudAdopcion(APIView):
         serializer = SetEstadoSolicitudAdopcionSerializer(solicitud_adopcion, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.update(solicitud_adopcion, serializer.validated_data)
+            numero_solicitud = solicitud_adopcion.id
+            email = solicitud_adopcion.cliente.user.email
+            fecha = solicitud_adopcion.fecha
+            nuevo_estado = solicitud_adopcion.estado
+            nombre_mascota = solicitud_adopcion.publicacion.mascota.nombre
+            sexo_mascota = solicitud_adopcion.publicacion.mascota.sexo
+            tipo_mascota = solicitud_adopcion.publicacion.mascota.tipo
+            raza_mascota = solicitud_adopcion.publicacion.mascota.raza
+            edad_mascota = solicitud_adopcion.publicacion.mascota.edad
+            motivo = solicitud_adopcion.motivo
+            id_publicacion = solicitud_adopcion.publicacion.id
+            nombre_fundacion = solicitud_adopcion.publicacion.fundacion.nombre
+            telefono_fundacion = solicitud_adopcion.publicacion.fundacion.user.telefono
+            direccion_fundacion = solicitud_adopcion.publicacion.fundacion.user.direccion.direccion
+            localidad_fundacion = solicitud_adopcion.publicacion.fundacion.user.direccion.localidad.nombre
+            email_fundacion = solicitud_adopcion.publicacion.fundacion.user.email
+
+            send_update_adoption_email(
+                numero_solicitud,
+                email,
+                fecha,
+                nuevo_estado,
+                nombre_mascota,
+                sexo_mascota,
+                tipo_mascota,
+                raza_mascota,
+                edad_mascota,
+                motivo,
+                id_publicacion,
+                nombre_fundacion,
+                telefono_fundacion,
+                direccion_fundacion,
+                localidad_fundacion,
+                email_fundacion,
+            )
             return Response(serializer.data)
         return Response({
             "error": serializer.errors,
