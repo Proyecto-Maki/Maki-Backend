@@ -12,6 +12,9 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework import exceptions
 from rest_framework.exceptions import PermissionDenied
 
+from .utils import generate_random_code
+
+
 # from .forms import RegistroForm, ClienteCreationForm, FundacionCreationForm
 from .models import *
 
@@ -95,15 +98,8 @@ def mercadopago_webhook(request):
 
             data = json.loads(raw_data)
 
-            # Ignorar notificaciones de "merchant_order"
-            if data.get("topic") == "merchant_order":
-                print("ℹ️ Webhook de merchant_order recibido, ignorando...")
-                return JsonResponse(
-                    {"message": "Merchant order recibida, no procesada"}, status=200
-                )
-
-            # Obtener el ID del pago
             payment_id = data.get("data", {}).get("id", None)
+
             if not payment_id:
                 print("❌ No se recibió un ID de pago válido")
                 return JsonResponse(
@@ -112,19 +108,13 @@ def mercadopago_webhook(request):
 
             print(f"✔ ID de pago recibido: {payment_id}")
 
-            # Consultar los detalles del pago en Mercado Pago
+            # Consultar el pago en Mercado Pago
             payment = sdk.payment().get(payment_id)
-            payment_status = payment["response"].get("status", "")
-            metadata = payment["response"].get("metadata", {})
-            user_id = metadata.get("user_id", None)
+            payment_status = payment["response"]["status"]
+            user_id = payment["response"].get("metadata", {}).get("user_id", None)
 
             print(f"📌 Estado del pago: {payment_status}")
             print(f"🔍 ID de usuario recibido en metadata: {user_id}")
-
-            # Validar que el pago está aprobado
-            if payment_status != "approved":
-                print("⚠️ El pago no está aprobado. No se crea el pedido.")
-                return JsonResponse({"message": "Pago no aprobado"}, status=200)
 
             if not user_id:
                 print("❌ No se encontró user_id en metadata")
@@ -140,21 +130,19 @@ def mercadopago_webhook(request):
                 print(f"❌ No se encontró usuario con ID {user_id}")
                 return JsonResponse({"error": "Usuario no encontrado"}, status=400)
 
-            # Buscar el carrito del usuario que no haya sido pagadoa
+            # Obtener el carrito del usuario
             carrito = Carrito.objects.filter(user=user, pagado=False).first()
+
             if not carrito:
                 print(f"❌ No se encontró carrito activo para el usuario: {user.email}")
                 return JsonResponse({"error": "Carrito no encontrado"}, status=400)
 
-            total = sum(
-                item.producto.precio * item.cantidad
-                for item in ItemCarrito.objects.filter(carrito=carrito)
-            )
-
             # Crear un nuevo Pedido
             nuevo_pedido = Pedido.objects.create(
                 user=user,
-                total=total,
+                total=sum(
+                    item.producto.precio * item.cantidad for item in carrito.items.all()
+                ),  # Calcular total
                 estado="Preparación",
             )
 
@@ -166,19 +154,23 @@ def mercadopago_webhook(request):
                     cantidad=item.cantidad,
                 )
 
-            # Vaciar el carrito después de procesar el pedido
-            # carrito.carritoproducto_set.all().delete()
+            # Marcar carrito como pagado
             carrito.pagado = True
             carrito.save()
 
-            print(f"✅ Pedido creado con éxito: {nuevo_pedido.id}")
-            print(total)
+            # 🔹 **Generar un nuevo código de carrito**
+            nuevo_codigo = generate_random_code()
+            nuevo_carrito = Carrito.objects.create(user=user, codigo=nuevo_codigo)
 
-            return JsonResponse({"message": "Pedido creado con éxito"}, status=201)
+            print(f"✅ Nuevo carrito generado para el usuario: {nuevo_carrito.codigo}")
 
-        except json.JSONDecodeError:
-            print("❌ Error al decodificar JSON")
-            return JsonResponse({"error": "JSON inválido"}, status=400)
+            return JsonResponse(
+                {
+                    "message": "Pedido creado con éxito",
+                    "nuevo_codigo_carrito": nuevo_carrito.codigo,  # 🔹 Enviar el nuevo código al frontend
+                },
+                status=201,
+            )
 
         except Exception as e:
             print(f"❌ Error inesperado: {e}")
@@ -833,6 +825,35 @@ class PadecimientoDeleteView(generics.DestroyAPIView):
         instance.delete()
 
 
+@api_view(["POST"])
+def crear_carrito(request):
+    try:
+        data = request.data
+        codigo = data.get("codigo")
+        user_id = data.get("user_id")
+
+        if not codigo:
+            return Response({"error": "Código de carrito es obligatorio"}, status=400)
+
+        user = None
+        if user_id:
+            try:
+                user = User.objects.get(id=user_id)
+            except User.DoesNotExist:
+                print("⚠️ Usuario no encontrado, creando carrito sin usuario.")
+
+        nuevo_carrito = Carrito.objects.create(codigo=codigo, user=user)
+        print(f"✅ Nuevo carrito creado: {nuevo_carrito.codigo}")
+
+        return Response(
+            {"message": "Carrito creado exitosamente", "codigo": nuevo_carrito.codigo},
+            status=201,
+        )
+
+    except Exception as e:
+        return Response({"error": str(e)}, status=500)
+
+
 @api_view(["GET"])
 def producto_en_carrito(request):
     codigo = request.query_params.get("codigo")
@@ -851,12 +872,18 @@ def producto_en_carrito(request):
 @api_view(["GET"])
 def get_estado_carrito(request):
     codigo_carrito = request.query_params.get("codigo_carrito")
+
     if not codigo_carrito:
         return Response(
             {"error": "El código del carrito no fue proporcionado."}, status=400
         )
 
-    carrito = get_object_or_404(Carrito, codigo=codigo_carrito, pagado=False)
+    try:
+        carrito = get_object_or_404(Carrito, codigo=codigo_carrito)
+    except Carrito.DoesNotExist:
+        print(f"❌ No se encontró carrito con código: {codigo_carrito}")
+        return Response({"error": "Carrito no encontrado."}, status=404)
+
     items_carrito = ItemCarrito.objects.filter(carrito=carrito)
     serializer = ItemCarritoSerializer(items_carrito, many=True)
 

@@ -5,6 +5,8 @@
 # from .models import User, OneTimePassword
 # from django.template.loader import render_to_string
 # from django.utils.html import strip_tags
+import random
+import string
 
 # from email.mime.text import MIMEText
 # from email.mime.multipart import MIMEMultipart
@@ -109,3 +111,11 @@
 #     # message.attach_alternative(html_message, "text/html")
 #     # message.send()
 #     None
+
+
+def generate_random_code(length=10):
+    """Genera un código alfanumérico aleatorio de la longitud especificada."""
+    characters = (
+        string.ascii_letters + string.digits
+    )  # Letras mayúsculas, minúsculas y números
+    return "".join(random.choices(characters, k=length))

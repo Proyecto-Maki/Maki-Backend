@@ -107,7 +107,8 @@ urlpatterns = [
     ),
     ##path("producto/", productos, name="register_producto"),
     ## Carrito
-    path("get_estado_carrito", get_estado_carrito, name="get_estado_carrito"),
+    path("crear_carrito/", crear_carrito, name="crear_carrito"),
+    path("get_estado_carrito/", get_estado_carrito, name="get_estado_carrito"),
     ## Reseñas
     path(
         "productos/resenas/<int:id>/",
