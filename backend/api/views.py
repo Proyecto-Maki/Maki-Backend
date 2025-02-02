@@ -1,5 +1,5 @@
 import os
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, authenticate
 from rest_framework import generics, status, permissions
 from rest_framework.response import Response
@@ -11,8 +11,10 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework import exceptions
 from rest_framework.exceptions import PermissionDenied
-
+from rest_framework.permissions import IsAuthenticated
 from .utils import generate_random_code
+
+from django.contrib.auth.decorators import login_required
 
 
 # from .forms import RegistroForm, ClienteCreationForm, FundacionCreationForm
@@ -24,7 +26,7 @@ from django.utils.http import urlsafe_base64_decode
 from django.utils.encoding import smart_str, DjangoUnicodeDecodeError
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.shortcuts import get_object_or_404
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
@@ -1104,6 +1106,70 @@ class ResenaDeleteView(generics.DestroyAPIView):
 
 
 ## PEDIDOS
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.response import Response
+from rest_framework import status
+from django.shortcuts import get_object_or_404
+from django.db import transaction
+from .models import Pedido
+
+
+@api_view(["PUT"])
+def cancelar_pedido(request, pedido_id):
+    print(f"Intentando cancelar pedido con ID: {pedido_id}")
+
+    user = request.user
+    print(f"Usuario autenticado: {user}")
+
+    try:
+        pedido = get_object_or_404(Pedido, id=pedido_id)
+        print(f"Pedido encontrado: {pedido}")
+
+        if pedido.user != user:
+            return Response(
+                {"error": "No tienes permiso para cancelar este pedido."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        if pedido.estado in ["Cancelado", "Entregado", "Transito"]:
+            return Response(
+                {"error": "Este pedido no puede ser cancelado."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        with transaction.atomic():
+            pedido.estado = "Cancelado"
+            pedido.save()
+            print("Pedido cancelado con éxito")
+
+            # Verificar límite antes de actualizar saldo
+            nuevo_saldo = user.saldo + pedido.total
+            if nuevo_saldo > 999999999.99:  # Límite del DecimalField
+                return Response(
+                    {
+                        "error": "No se puede actualizar el saldo: excede el límite permitido."
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            user.saldo = nuevo_saldo
+            user.save()
+            print(f"Saldo actualizado: {user.saldo}")
+
+            return Response(
+                {"message": "Pedido cancelado y saldo reembolsado correctamente."},
+                status=status.HTTP_200_OK,
+            )
+
+    except ValidationError as e:
+        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    except Exception as e:
+        print(f"Error inesperado: {str(e)}")
+        return Response(
+            {"error": f"Ocurrió un error: {str(e)}"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
 
 
 class PedidoCreateView(generics.ListCreateAPIView):

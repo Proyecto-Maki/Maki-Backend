@@ -84,7 +84,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         Direccion, on_delete=models.CASCADE, null=True, blank=True
     )
     telefono = models.CharField(max_length=10, null=True, blank=True)
-    saldo = models.DecimalField(max_digits=7, decimal_places=2, default=0.00)
+    saldo = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
 
     objects = UserManager()
 
@@ -188,9 +188,10 @@ class Mascota(models.Model):
 
     def __str__(self):
         return f"{self.id} {self.nombre}"
-    
+
 
 ## MODELO DE DETALLE DE MASCOTA - PARA PUBLICACION DE ADOPCION
+
 
 class DetalleMascota(models.Model):
 
@@ -201,12 +202,13 @@ class DetalleMascota(models.Model):
     mascota = models.OneToOneField(Mascota, on_delete=models.CASCADE)
     apto_ninos = models.BooleanField(default=False)
     apto_ruido = models.BooleanField(default=False)
-    espacio = models.CharField(max_length=255, null=False, blank=False, choices=ESPACIOS)
+    espacio = models.CharField(
+        max_length=255, null=False, blank=False, choices=ESPACIOS
+    )
     apto_otras_mascotas = models.BooleanField(default=False)
     desparacitado = models.BooleanField(default=False)
     vacunado = models.BooleanField(default=False)
     esterilizado = models.BooleanField(default=False)
-    
 
     def __str__(self):
         return f"Detalles {self.mascota.nombre} - {self.mascota.tipo}"

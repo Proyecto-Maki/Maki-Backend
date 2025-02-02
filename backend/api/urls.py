@@ -120,6 +120,7 @@ urlpatterns = [
     path("resena/update/<int:id>/", ResenaUpdateView.as_view(), name="resena_update"),
     path("resena/delete/<int:id>/", ResenaDeleteView.as_view(), name="resena_delete"),
     ## Pedidos
+    path("pedidos/<int:pedido_id>/cancelar/", cancelar_pedido, name="cancelar_pedido"),
     path("pedidos/user/<email>/", PedidosUserView.as_view(), name="pedidos_user"),
     path("pedidos/create/", PedidoCreateView.as_view(), name="pedido_create"),
     path("pedidos/update/<int:id>/", PedidoUpdateView.as_view(), name="pedido_update"),
