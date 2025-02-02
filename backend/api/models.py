@@ -206,7 +206,7 @@ class DetalleMascota(models.Model):
         max_length=255, null=False, blank=False, choices=ESPACIOS
     )
     apto_otras_mascotas = models.BooleanField(default=False)
-    desparacitado = models.BooleanField(default=False)
+    desparasitado = models.BooleanField(default=False)
     vacunado = models.BooleanField(default=False)
     esterilizado = models.BooleanField(default=False)
 
@@ -442,6 +442,7 @@ class Donacion(models.Model):
 
 class PublicacionAdopcion(models.Model):
 
+    id = models.AutoField(primary_key=True)  # Lo pogo pa que abajo me deje poner el id
     fundacion = models.ForeignKey(Fundacion, on_delete=models.CASCADE)
     mascota = models.ForeignKey(Mascota, on_delete=models.CASCADE)
     titulo = models.CharField(max_length=255, null=False, blank=False)
@@ -452,7 +453,7 @@ class PublicacionAdopcion(models.Model):
     fecha = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.titulo} - {self.mascota.nombre}"
+        return f"{self.id} {self.titulo} - {self.mascota.nombre}"
 
 
 class SolicitudAdopcion(models.Model):
@@ -466,9 +467,37 @@ class SolicitudAdopcion(models.Model):
     }
     cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE)
     publicacion = models.ForeignKey(PublicacionAdopcion, on_delete=models.CASCADE)
-    fecha = models.DateField(auto_now_add=True)
+    fecha = models.DateTimeField(auto_now_add=True)
     motivo = models.TextField(null=False, blank=False)
-    estado = models.CharField(max_length=255, null=False, blank=False, choices=ESTADOS)
+    estado = models.CharField(max_length=255, null=True, blank=True, choices=ESTADOS, default="Pendiente")
 
     def __str__(self):
         return f"{self.cliente.primer_nombre} {self.cliente.primer_apellido} - {self.publicacion.titulo}"
+
+
+class CategoriaPrincipal(models.Model):
+    nombre = models.CharField(max_length=255, null=False, blank=False)
+
+    def __str__(self):
+        return f"Categoría principal - {self.nombre}"
+
+class Categoria(models.Model):
+    nombre = models.CharField(max_length=255, null=False, blank=False)
+    categoria_principal = models.ForeignKey(CategoriaPrincipal, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f"Categoría principal - {self.categoria_principal.nombre} | Categoría - {self.nombre}"
+    
+class Subcategoria(models.Model):
+    nombre = models.CharField(max_length=255, null=False, blank=False)
+    categoria = models.ForeignKey(Categoria, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f"Categoría principal - {self.categoria.categoria_principal.nombre} | Categoría - {self.categoria.nombre} | Subcategoría - {self.nombre}"
+    
+class ProductoCategorias(models.Model):
+    producto = models.ForeignKey(Producto, on_delete=models.CASCADE)
+    sub_categoria = models.ForeignKey(Subcategoria, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f"Producto - {self.producto.nombre} | Categoría principal {self.sub_categoria.categoria.categoria_principal.nombre} | Categoría - {self.sub_categoria.categoria.nombre} | Subcategoría - {self.sub_categoria.nombre}"

@@ -16,6 +16,11 @@ from .models import (
     Direccion,
     PublicacionAdopcion,
     DetalleMascota,
+    SolicitudAdopcion,
+    CategoriaPrincipal,
+    Categoria,
+    Subcategoria,
+    ProductoCategorias
 )
 
 # Register your models here.
@@ -34,5 +39,13 @@ admin.site.register(Localidad)
 admin.site.register(Direccion)
 admin.site.register(PublicacionAdopcion)
 admin.site.register(DetalleMascota)
+admin.site.register(SolicitudAdopcion)
+admin.site.register(CategoriaPrincipal)
+admin.site.register(Categoria)
+admin.site.register(Subcategoria)
+admin.site.register(ProductoCategorias)
+
+
+
 
 

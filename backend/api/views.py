@@ -21,7 +21,7 @@ from django.contrib.auth.decorators import login_required
 from .models import *
 
 # from .utils import send_code_to_user
-from .new_utils import send_code_to_user, send_test_email
+from .new_utils import send_code_to_user, send_test_email, send_update_adoption_email
 from django.utils.http import urlsafe_base64_decode
 from django.utils.encoding import smart_str, DjangoUnicodeDecodeError
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
@@ -261,9 +261,10 @@ class ClienteSignupView(generics.ListCreateAPIView):
             )
 
         errores = {}
+        print(serializer.errors)
         for key, value in serializer.errors.items():
             errores[key] = ", ".join(value)
-
+        
         mensaje = " | ".join([f"{key}: {value}" for key, value in errores.items()])
         return Response(
             {
@@ -554,8 +555,13 @@ class FundacionDetailView(generics.RetrieveUpdateDestroyAPIView):
         serializer = self.get_serializer(fundacion, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response({
+                "message": "Fundación actualizada exitosamente",
+            }, status=status.HTTP_200_OK)
+        return Response({
+            "error": serializer.errors,
+            "detail": "Ha ocurrido un error al actualizar la fundación",
+        }, status=status.HTTP_400_BAD_REQUEST)
 
 
 class FundacionUpdateView(generics.RetrieveUpdateAPIView):
@@ -1345,15 +1351,18 @@ class PublicacionAdopcionCreateView(generics.ListCreateAPIView):
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            publicacion = serializer.save()
+            publicacion_data = self.get_serializer(publicacion).data
             return Response(
-                {"message": "Publicación de adopción creada exitosamente"},
+                {
+                    "publicacion": publicacion_data,
+                    "message": "Publicación de adopción creada exitosamente"},
                 status=status.HTTP_201_CREATED,
             )
         return Response(
             {
                 "error": serializer.errors,
-                "message": "Ha ocurrido un error al crear la publicación de adopción",
+                "detail": "Ha ocurrido un error al crear la publicación de adopción",
             },
             status=status.HTTP_400_BAD_REQUEST,
         )
@@ -1367,7 +1376,8 @@ class PublicacionesAdopcionUserView(generics.ListAPIView):
     def get_queryset(self):
         email = self.kwargs.get("email")
         user = get_object_or_404(User, email=email)
-        return PublicacionAdopcion.objects.filter(user=user)
+        fundacion = get_object_or_404(Fundacion, user=user)
+        return PublicacionAdopcion.objects.filter(fundacion=fundacion)
 
 
 ## Esta vista es para listar todas las publicaciones de adopción (sin importar la fundación)
@@ -1391,7 +1401,8 @@ class PublicacionAdopcionDetailView(generics.RetrieveUpdateDestroyAPIView):
 
 ## Esta vista es para actualizar una publicación de adopción
 class PublicacionAdopcionUpdateView(APIView):
-    permission_classes = [permissions.IsAuthenticated & IsFundacionUser]
+    serializer_class = PublicacionAdopcionSerializer
+    permission_classes = [permissions.IsAuthenticated&IsFundacionUser]
 
     def get_object(self, id):
         try:
@@ -1427,13 +1438,16 @@ class PublicacionAdopcionDeleteView(generics.DestroyAPIView):
     def get_object(self):
         id = self.kwargs.get("id")
         publicacion_adopcion = get_object_or_404(PublicacionAdopcion, id=id)
-        if publicacion_adopcion.user != self.request.user:
+        if publicacion_adopcion.fundacion.user != self.request.user:
             raise exceptions.PermissionDenied(
                 "No tienes permisos para eliminar esta publicación de adopción"
             )
         return publicacion_adopcion
 
     def perform_destroy(self, instance):
+        detalle_asociado = DetalleMascota.objects.filter(mascota=instance.mascota)
+        if detalle_asociado:
+            detalle_asociado.delete()
         instance.delete()
 
 
@@ -1451,6 +1465,30 @@ class PublicacionAdopcionClienteView(generics.ListAPIView):
         return PublicacionAdopcion.objects.select_related("mascota").filter(
             fundacion=fundacion
         )
+
+## PUBLICACION DE ADOPCION - PARA LAS FUNDACIONES
+class PublicacionAdopcionFundacionView(generics.ListAPIView):
+    serializer_class = PublicacionAdopcionSerializer
+    permission_classes = [permissions.IsAuthenticated&IsFundacionUser]
+
+    def get_queryset(self):
+        email = self.kwargs.get("email")
+        user = get_object_or_404(User, email=email)
+        fundacion = get_object_or_404(Fundacion, user=user)
+        return PublicacionAdopcion.objects.select_related('mascota').filter(fundacion=fundacion)
+        
+
+## PUBLICACION DE ADOPCION - PARA LAS FUNDACIONES
+class PublicacionAdopcionFundacionView(generics.ListAPIView):
+    serializer_class = PublicacionAdopcionSerializer
+    permission_classes = [permissions.IsAuthenticated&IsFundacionUser]
+
+    def get_queryset(self):
+        email = self.kwargs.get("email")
+        user = get_object_or_404(User, email=email)
+        fundacion = get_object_or_404(Fundacion, user=user)
+        return PublicacionAdopcion.objects.select_related('mascota').filter(fundacion=fundacion)
+        
 
 
 # --------------------------------------------------------------------------
@@ -1474,7 +1512,7 @@ class DetalleMascotaCreateView(generics.ListCreateAPIView):
         return Response(
             {
                 "error": serializer.errors,
-                "message": "Ha ocurrido un error en la crear el detalle de mascota",
+                "detail": "Ha ocurrido un error en la crear el detalle de mascota",
             },
             status=status.HTTP_400_BAD_REQUEST,
         )
@@ -1526,6 +1564,7 @@ class DetalleMascotaDeleteView(generics.DestroyAPIView):
     def perform_destroy(self, instance):
         instance.delete()
 
+#--------------------------------------------------------------------------
 
 ## SOLICITUD DE ADOPCIÓN - DEL CLIENTE
 
@@ -1559,7 +1598,7 @@ class SolicitudesAdopcionUserView(generics.ListAPIView):
     def get_queryset(self):
         email = self.kwargs.get("email")
         user = get_object_or_404(User, email=email)
-        return SolicitudAdopcion.objects.filter(user=user)
+        return SolicitudAdopcion.objects.filter(cliente__user=user)
 
 
 class SolicitudAdopcionDetailView(generics.RetrieveUpdateDestroyAPIView):
@@ -1569,3 +1608,181 @@ class SolicitudAdopcionDetailView(generics.RetrieveUpdateDestroyAPIView):
     def get_object(self):
         id = self.kwargs.get("id")
         return get_object_or_404(SolicitudAdopcion, id=id)
+    
+## SOLICITUD DE ADOPCION - PARA LA FUNDACIÓN
+class SolicitudesAdopcionFundacionView(generics.ListAPIView):
+    serializer_class = SolicitudAdopcionSerializer
+    permission_classes = [permissions.IsAuthenticated&IsFundacionUser]
+
+    def get_queryset(self):
+        email = self.kwargs.get("email")
+        user = get_object_or_404(User, email=email)
+        return SolicitudAdopcion.objects.filter(publicacion__fundacion__user=user)
+
+class SolicitudAdopcionFunDetailView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = SolicitudAdopcionSerializer
+    permission_classes = [permissions.IsAuthenticated&IsFundacionUser]
+
+    def get_object(self):
+        id = self.kwargs.get("id")
+        return get_object_or_404(SolicitudAdopcion, id=id)
+    
+class SolicitudAdopcionUpdateView(APIView):
+    permission_classes = [permissions.IsAuthenticated&IsFundacionUser]
+    serializer_class = SolicitudAdopcionSerializer
+
+    def get_object(self, id):
+        try:
+            return SolicitudAdopcion.objects.get(id=id)
+        except SolicitudAdopcion.DoesNotExist:
+            return None
+        
+    def put(self, request, id, *args, **kwargs):
+        solicitud_adopcion = self.get_object(id)
+        if not solicitud_adopcion:
+            return Response(
+                {"message": "Solicitud de adopción no encontrada"}, status=status.HTTP_404_NOT_FOUND
+            )
+        if solicitud_adopcion.publicacion.fundacion.user != request.user:
+            raise PermissionDenied("No tienes permisos para editar esta solicitud de adopción")
+        serializer = SolicitudAdopcionSerializer(solicitud_adopcion, data=request.data)
+        if serializer.is_valid():
+            serializer.update(solicitud_adopcion, serializer.validated_data)
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+class ActualizarEstadoSolicitudAdopcion(APIView):
+    permission_classes = [permissions.IsAuthenticated&IsFundacionUser]
+    serializer_class = SetEstadoSolicitudAdopcionSerializer
+
+    def get_object(self, id):
+        try:
+            return SolicitudAdopcion.objects.get(id=id)
+        except SolicitudAdopcion.DoesNotExist:
+            return None
+        
+    def patch(self, request, id, *args, **kwargs):
+        solicitud_adopcion = self.get_object(id)
+        if not solicitud_adopcion:
+            return Response(
+                {"message": "Solicitud de adopción no encontrada"}, status=status.HTTP_404_NOT_FOUND
+            )
+        if solicitud_adopcion.publicacion.fundacion.user != request.user:
+            raise PermissionDenied("No tienes permisos para editar esta solicitud de adopción")
+        serializer = SetEstadoSolicitudAdopcionSerializer(solicitud_adopcion, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.update(solicitud_adopcion, serializer.validated_data)
+            numero_solicitud = solicitud_adopcion.id
+            email = solicitud_adopcion.cliente.user.email
+            fecha = solicitud_adopcion.fecha
+            nuevo_estado = solicitud_adopcion.estado
+            nombre_mascota = solicitud_adopcion.publicacion.mascota.nombre
+            sexo_mascota = solicitud_adopcion.publicacion.mascota.sexo
+            tipo_mascota = solicitud_adopcion.publicacion.mascota.tipo
+            raza_mascota = solicitud_adopcion.publicacion.mascota.raza
+            edad_mascota = solicitud_adopcion.publicacion.mascota.edad
+            motivo = solicitud_adopcion.motivo
+            id_publicacion = solicitud_adopcion.publicacion.id
+            nombre_fundacion = solicitud_adopcion.publicacion.fundacion.nombre
+            telefono_fundacion = solicitud_adopcion.publicacion.fundacion.user.telefono
+            direccion_fundacion = solicitud_adopcion.publicacion.fundacion.user.direccion.direccion
+            localidad_fundacion = solicitud_adopcion.publicacion.fundacion.user.direccion.localidad.nombre
+            email_fundacion = solicitud_adopcion.publicacion.fundacion.user.email
+
+            send_update_adoption_email(
+                numero_solicitud,
+                email,
+                fecha,
+                nuevo_estado,
+                nombre_mascota,
+                sexo_mascota,
+                tipo_mascota,
+                raza_mascota,
+                edad_mascota,
+                motivo,
+                id_publicacion,
+                nombre_fundacion,
+                telefono_fundacion,
+                direccion_fundacion,
+                localidad_fundacion,
+                email_fundacion,
+            )
+            return Response(serializer.data)
+        return Response({
+            "error": serializer.errors,
+            "detail": "Ha ocurrido un error al actualizar el estado de la solicitud de adopción",
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+## CATEGORIAS DE PRODUCTOS
+
+class SubcategoriasDeCategoriaView(generics.ListAPIView):
+    serializer_class = SubcategoriaSerializer
+    permission_classes = [permissions.AllowAny]
+
+    def get_queryset(self):
+        nombre_categoria = self.kwargs.get("nombre")
+        categoria = get_object_or_404(Categoria, nombre=nombre_categoria)
+        return Subcategoria.objects.filter(categoria=categoria)
+    
+class ProductosPorCategoriasView(generics.ListAPIView):
+    serializer_class = ProductoSerializer
+    permission_classes = [permissions.AllowAny]
+
+    def get_queryset(self):
+        categoria_principal = self.request.query_params.get('categoria_principal', None)
+        categoria = self.request.query_params.get('categoria', None)
+        sub_categoria = self.request.query_params.get('sub_categoria', None)
+
+        productos = Producto.objects.all()
+        print(categoria_principal, categoria, sub_categoria)
+        if (categoria_principal and categoria==None and sub_categoria==None):
+            productos_ids = ProductoCategorias.objects.filter(
+                sub_categoria__categoria__categoria_principal__nombre=categoria_principal
+            ).values_list('producto', flat=True)
+            print(productos_ids)
+            productos = productos.filter(id__in=productos_ids)
+            print(productos)
+        elif (categoria_principal and categoria and sub_categoria==None):
+            productos_ids = ProductoCategorias.objects.filter(
+                sub_categoria__categoria__nombre=categoria,
+                sub_categoria__categoria__categoria_principal__nombre=categoria_principal
+            ).values_list('producto', flat=True)
+            productos = productos.filter(id__in=productos_ids)
+        elif (categoria_principal and categoria and sub_categoria):
+            productos_ids = ProductoCategorias.objects.filter(
+                sub_categoria__nombre=sub_categoria,
+                sub_categoria__categoria__nombre=categoria,
+                sub_categoria__categoria__categoria_principal__nombre=categoria_principal
+            ).values_list('producto', flat=True)
+            productos = productos.filter(id__in=productos_ids)
+        elif categoria and sub_categoria==None and categoria_principal==None:
+            productos_ids = ProductoCategorias.objects.filter(
+                sub_categoria__categoria__nombre=categoria
+            ).values_list('producto', flat=True)
+            productos = productos.filter(id__in=productos_ids)
+        elif sub_categoria and categoria==None and categoria_principal==None:
+            productos_ids = ProductoCategorias.objects.filter(
+                sub_categoria__nombre=sub_categoria
+            ).values_list('producto', flat=True)
+            productos = productos.filter(id__in=productos_ids)
+    
+        return productos
+    
+
+## ORDENAMIENTO DE PRODUCTOS POR PRECIO
+
+class OrdenarProductosPorPrecioAscView(generics.ListAPIView):
+    serializer_class = ProductoSerializer
+    permission_classes = [permissions.AllowAny]
+
+    def get_queryset(self):
+        return Producto.objects.all().order_by('precio')
+
+class OrdenarProductosPorPrecioDescView(generics.ListAPIView):
+    serializer_class = ProductoSerializer
+    permission_classes = [permissions.AllowAny]
+
+    def get_queryset(self):
+        return Producto.objects.all().order_by('-precio')
+
+
