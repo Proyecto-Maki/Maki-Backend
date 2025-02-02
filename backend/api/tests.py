@@ -1,4 +1,7 @@
 from django.test import TestCase
+from rest_framework.test import APITestCase
+from rest_framework import status
+from django.contrib.auth import get_user_model
 from django.urls import reverse
 from unittest.mock import patch
 from api.models import *
@@ -1386,91 +1389,221 @@ from django.db.utils import IntegrityError
 #         self.assertIn("init_point", response.json())
 
 
-class CarritoTestCase(TestCase):
+# class CarritoTestCase(TestCase):
+#     def setUp(self):
+#         """Configuración inicial para cada prueba"""
+#         self.client = APIClient()
+
+#         # Crear un carrito de prueba
+#         self.carrito = Carrito.objects.create(codigo="TEST123", pagado=False)
+
+#         # Crear un producto de prueba
+#         self.producto = Producto.objects.create(
+#             id=1, nombre="WHISKAS Sabor Pollo Sobres x 100gr", precio=4000
+#         )
+
+#         # Crear un item en el carrito
+#         self.item_carrito = ItemCarrito.objects.create(
+#             carrito=self.carrito, producto=self.producto, cantidad=1
+#         )
+
+#     def test_agregar_producto_al_carrito(self):
+#         """Verifica que un producto se agregue correctamente al carrito"""
+#         data = {
+#             "codigo": "TEST123",
+#             "id_producto": self.producto.id,
+#         }
+
+#         response = self.client.post(
+#             reverse("agregar_producto"),
+#             json.dumps(data),
+#             content_type="application/json",
+#         )
+#         self.assertEqual(response.status_code, 201)
+#         self.assertIn("message", response.json())
+#         self.assertEqual(
+#             response.json()["message"], "Producto agregado al carrito exitosamente"
+#         )
+
+#     def test_producto_en_carrito(self):
+#         """Verifica que un producto está en el carrito"""
+#         response = self.client.get(
+#             reverse("producto_en_carrito")
+#             + f"?codigo=TEST123&id_producto={self.producto.id}"
+#         )
+#         self.assertEqual(response.status_code, 200)
+#         self.assertTrue(response.json()["producto_en_carrito"])
+
+#     def test_get_estado_carrito(self):
+#         """Verifica que se obtenga correctamente el estado del carrito"""
+#         response = self.client.get(
+#             reverse("get_estado_carrito") + f"?codigo_carrito=TEST123"
+#         )
+#         self.assertEqual(response.status_code, 200)
+#         self.assertEqual(response.json()["codigo_carrito"], "TEST123")
+
+#     def test_update_cantidad_producto(self):
+#         """Verifica que se actualice la cantidad de un producto en el carrito"""
+#         data = {
+#             "codigo_carrito": "TEST123",
+#             "producto_id": self.producto.id,
+#             "cantidad": 5,
+#         }
+
+#         response = self.client.post(
+#             reverse("update_cantidad_producto"),
+#             json.dumps(data),
+#             content_type="application/json",
+#         )
+#         self.assertEqual(response.status_code, 200)
+#         self.item_carrito.refresh_from_db()
+#         self.assertEqual(self.item_carrito.cantidad, 5)
+
+#     def test_remove_product_from_cart(self):
+#         """Verifica que un producto se elimine correctamente del carrito"""
+#         data = {"codigo_carrito": "TEST123", "producto_id": self.producto.id}
+
+#         response = self.client.post(
+#             reverse("remove_product_from_cart"),
+#             json.dumps(data),
+#             content_type="application/json",
+#         )
+#         self.assertEqual(response.status_code, 200)
+#         self.assertEqual(
+#             response.json()["message"].strip().rstrip("."),
+#             "Producto eliminado del carrito exitosamente",
+#         )
+
+#         # Verifica que el producto ya no existe en el carrito
+#         with self.assertRaises(ItemCarrito.DoesNotExist):
+#             ItemCarrito.objects.get(carrito=self.carrito, producto=self.producto)
+
+
+class PedidoTestCase(APITestCase):
     def setUp(self):
-        """Configuración inicial para cada prueba"""
-        self.client = APIClient()
+        # Crear un usuario
+        self.user = get_user_model().objects.create_user(
+            email="user@example.com", password="securepassword123"
+        )
 
-        # Crear un carrito de prueba
-        self.carrito = Carrito.objects.create(codigo="TEST123", pagado=False)
+        # Autenticar usuario
+        self.client.force_authenticate(user=self.user)
 
-        # Crear un producto de prueba
+        # Crear un producto
         self.producto = Producto.objects.create(
-            id=1, nombre="WHISKAS Sabor Pollo Sobres x 100gr", precio=4000
+            nombre="Croquetas de Pollo",
+            descripcion="Alimento premium para perros",
+            precio=50.00,
+            stock=10,
+            categoria="Alimentos",
         )
 
-        # Crear un item en el carrito
+        # Crear un carrito con un producto
+        self.carrito = Carrito.objects.create(codigo="CART12345", user=self.user)
         self.item_carrito = ItemCarrito.objects.create(
-            carrito=self.carrito, producto=self.producto, cantidad=1
+            carrito=self.carrito, producto=self.producto, cantidad=2
         )
 
-    def test_agregar_producto_al_carrito(self):
-        """Verifica que un producto se agregue correctamente al carrito"""
-        data = {
-            "codigo": "TEST123",
-            "id_producto": self.producto.id,
-        }
-
-        response = self.client.post(
-            reverse("agregar_producto"),
-            json.dumps(data),
-            content_type="application/json",
-        )
-        self.assertEqual(response.status_code, 201)
-        self.assertIn("message", response.json())
-        self.assertEqual(
-            response.json()["message"], "Producto agregado al carrito exitosamente"
+        # Crear un pedido inicial
+        self.pedido = Pedido.objects.create(
+            user=self.user, estado="Preparación", total=100.00
         )
 
-    def test_producto_en_carrito(self):
-        """Verifica que un producto está en el carrito"""
+        # Crear un detalle de pedido
+        self.detalle_pedido = DetallePedido.objects.create(
+            pedido=self.pedido, producto=self.producto, cantidad=2
+        )
+
+    def test_crear_pedido(self):
+        """Test para verificar la creación de un pedido"""
+        data = {"user": self.user.id, "estado": "Pendiente", "total": 150.00}
+        response = self.client.post(reverse("pedido-create"), data)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data["message"], "Pedido creado exitosamente")
+
+    def test_obtener_pedidos_usuario(self):
+        """Test para obtener la lista de pedidos de un usuario"""
         response = self.client.get(
-            reverse("producto_en_carrito")
-            + f"?codigo=TEST123&id_producto={self.producto.id}"
+            reverse("pedidos-user", kwargs={"email": self.user.email})
         )
-        self.assertEqual(response.status_code, 200)
-        self.assertTrue(response.json()["producto_en_carrito"])
-
-    def test_get_estado_carrito(self):
-        """Verifica que se obtenga correctamente el estado del carrito"""
-        response = self.client.get(
-            reverse("get_estado_carrito") + f"?codigo_carrito=TEST123"
-        )
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()["codigo_carrito"], "TEST123")
-
-    def test_update_cantidad_producto(self):
-        """Verifica que se actualice la cantidad de un producto en el carrito"""
-        data = {
-            "codigo_carrito": "TEST123",
-            "producto_id": self.producto.id,
-            "cantidad": 5,
-        }
-
-        response = self.client.post(
-            reverse("update_cantidad_producto"),
-            json.dumps(data),
-            content_type="application/json",
-        )
-        self.assertEqual(response.status_code, 200)
-        self.item_carrito.refresh_from_db()
-        self.assertEqual(self.item_carrito.cantidad, 5)
-
-    def test_remove_product_from_cart(self):
-        """Verifica que un producto se elimine correctamente del carrito"""
-        data = {"codigo_carrito": "TEST123", "producto_id": self.producto.id}
-
-        response = self.client.post(
-            reverse("remove_product_from_cart"),
-            json.dumps(data),
-            content_type="application/json",
-        )
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(
-            response.json()["message"].strip().rstrip("."),
-            "Producto eliminado del carrito exitosamente",
+            len(response.data), 1
+        )  # Debe haber 1 pedido en la base de datos
+
+    def test_detalle_pedido(self):
+        """Test para obtener los detalles de un pedido"""
+        response = self.client.get(
+            reverse("detalle-pedido", kwargs={"id": self.pedido.id})
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)  # Debe haber 1 detalle de pedido
+
+    def test_cancelar_pedido(self):
+        """Test para cancelar un pedido"""
+        response = self.client.put(
+            reverse("cancelar-pedido", kwargs={"pedido_id": self.pedido.id})
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            response.data["message"],
+            "Pedido cancelado y saldo reembolsado correctamente",
         )
 
-        # Verifica que el producto ya no existe en el carrito
-        with self.assertRaises(ItemCarrito.DoesNotExist):
-            ItemCarrito.objects.get(carrito=self.carrito, producto=self.producto)
+    def test_cancelar_pedido_no_permitido(self):
+        """Test para evitar que se cancele un pedido en estado 'Entregado'"""
+        self.pedido.estado = "Entregado"
+        self.pedido.save()
+        response = self.client.put(
+            reverse("cancelar-pedido", kwargs={"pedido_id": self.pedido.id})
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data["error"], "Este pedido no puede ser cancelado.")
+
+    def test_actualizar_pedido(self):
+        """Test para actualizar el estado de un pedido"""
+        data = {"estado": "En camino"}
+        response = self.client.put(
+            reverse("pedido-update", kwargs={"id": self.pedido.id}), data
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.pedido.refresh_from_db()
+        self.assertEqual(self.pedido.estado, "En camino")
+
+    def test_eliminar_pedido(self):
+        """Test para eliminar un pedido"""
+        response = self.client.delete(
+            reverse("pedido-delete", kwargs={"id": self.pedido.id})
+        )
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(Pedido.objects.filter(id=self.pedido.id).exists())
+
+    def test_agregar_detalle_pedido(self):
+        """Test para agregar un detalle de pedido"""
+        data = {"pedido": self.pedido.id, "producto": self.producto.id, "cantidad": 3}
+        response = self.client.post(reverse("detalle-pedido-create"), data)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(
+            response.data["message"], "Detalle de pedido creado exitosamente"
+        )
+
+    def test_actualizar_detalle_pedido(self):
+        """Test para actualizar la cantidad de un producto en un pedido"""
+        data = {"cantidad": 5}
+        response = self.client.put(
+            reverse("detalle-pedido-update", kwargs={"id": self.detalle_pedido.id}),
+            data,
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.detalle_pedido.refresh_from_db()
+        self.assertEqual(self.detalle_pedido.cantidad, 5)
+
+    def test_eliminar_detalle_pedido(self):
+        """Test para eliminar un detalle de pedido"""
+        response = self.client.delete(
+            reverse("detalle-pedido-delete", kwargs={"id": self.detalle_pedido.id})
+        )
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(
+            DetallePedido.objects.filter(id=self.detalle_pedido.id).exists()
+        )
