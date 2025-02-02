@@ -247,7 +247,16 @@ class ClienteSignupView(generics.ListCreateAPIView):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
-            send_code_to_user(user.email)
+            sendgrid_response = self.send_code_to_user(user.email)
+            if sendgrid_response.status_code != 200:
+                user.delete()
+                return Response(
+                    {
+                        "error": sendgrid_response.text,
+                        "detail": "Ha ocurrido un error en el envió de tu correo de confirmación. Comunicamente con soporte técnico.",
+                    },
+                    status=status.HTTP_201_CREATED,
+                )
             return Response(
                 {
                     "user": UserSerializer(
