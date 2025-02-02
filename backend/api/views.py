@@ -146,9 +146,12 @@ def mercadopago_webhook(request):
                 print(f"❌ No se encontró carrito activo para el usuario: {user.email}")
                 return JsonResponse({"error": "Carrito no encontrado"}, status=400)
 
+            total = sum(
+                item.producto.precio * item.cantidad for item in carrito.items.all()
+            )
             # Crear un nuevo Pedido
             nuevo_pedido = Pedido.objects.create(
-                user=user, total=carrito.total, estado="Preparación"
+                user=user, total=total, estado="Preparación"
             )
 
             # Agregar productos al Pedido
