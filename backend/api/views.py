@@ -145,36 +145,54 @@ def mercadopago_webhook(request):
 
             if payment_status == "approved":
                 # 🚀 Verificar si el carrito tiene productos
-                # if not carrito.items.exists():
-                #     print(f"⚠️ El carrito del usuario {user.email} está vacío")
-                #     return JsonResponse(
-                #         {"error": "El carrito estaba vacío, no se creó el pedido"},
-                #         status=400,
-                #     )
+                items_en_carrito = list(
+                    carrito.items.all()
+                )  # Convertir a lista para debug
+                print(f"🛒 Items en carrito: {items_en_carrito}")
+
+                if not carrito.items.exists():
+                    print(f"⚠️ El carrito del usuario {user.email} está vacío")
+                    return JsonResponse(
+                        {"error": "El carrito estaba vacío, no se creó el pedido"},
+                        status=400,
+                    )
 
                 # 🚀 Crear el pedido solo si hay productos en el carrito
                 nuevo_pedido = Pedido.objects.create(
                     user=user,
                     total=sum(
                         item.producto.precio * item.cantidad
-                        for item in carrito.items.all()
+                        for item in items_en_carrito
                     ),
                     estado="Preparación",
                 )
+                print(
+                    f"✅ Pedido {nuevo_pedido.id} creado con total: {nuevo_pedido.total}"
+                )
 
                 # 📌 Transferir productos al pedido
-                for item in carrito.items.all():
+                for item in items_en_carrito:
                     DetallePedido.objects.create(
                         pedido=nuevo_pedido,
                         producto=item.producto,
                         cantidad=item.cantidad,
                     )
+                    print(f"📦 Producto {item.producto.nombre} agregado al pedido")
 
-                print(f"✅ Pedido {nuevo_pedido.id} creado para usuario {user.email}")
+                # # 📌 Transferir productos al pedido
+                # for item in carrito.items.all():
+                #     DetallePedido.objects.create(
+                #         pedido=nuevo_pedido,
+                #         producto=item.producto,
+                #         cantidad=item.cantidad,
+                #     )
+
+                # print(f"✅ Pedido {nuevo_pedido.id} creado para usuario {user.email}")
 
                 # 🗑️ Vaciar el carrito y marcarlo como pagado
                 carrito.pagado = True
                 carrito.save()
+                print(f"🛒 Carrito {carrito.codigo} marcado como pagado.")
 
                 # 🔹 **Generar un nuevo código de carrito**
 
