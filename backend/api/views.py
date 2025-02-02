@@ -124,7 +124,6 @@ def mercadopago_webhook(request):
 
             if payment_status == "approved":
                 # 🚀 Limpiar carrito tras pago exitoso
-                limpiar_carrito(user_id)
 
                 return JsonResponse(
                     {"message": "Pago aprobado y carrito reseteado"}, status=201
