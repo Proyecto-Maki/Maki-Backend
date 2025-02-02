@@ -167,7 +167,7 @@ def mercadopago_webhook(request):
                 )
 
             # Vaciar el carrito después de procesar el pedido
-            carrito.carritoproducto_set.all().delete()
+            # carrito.carritoproducto_set.all().delete()
             carrito.pagado = True
             carrito.save()
 
