@@ -11,22 +11,35 @@ from django.dispatch import receiver
 from rest_framework.authtoken.models import Token
 from django.utils.text import slugify
 from cloudinary.models import CloudinaryField
+from django.core.exceptions import ValidationError
+
 
 class Localidad(models.Model):
     id = models.AutoField(primary_key=True)
     nombre = models.CharField(max_length=255, null=False, blank=False)
 
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                check=models.Q(nombre__gt=""),
+                name="nombre_no_vacio",
+            )
+        ]
+
     def __str__(self):
         return f"{self.id} {self.nombre}"
-    
+
 
 class Direccion(models.Model):
     direccion = models.CharField(max_length=255, null=False, blank=False)
     codigo_postal = models.CharField(max_length=6, null=True, blank=True)
-    localidad = models.ForeignKey(Localidad, on_delete=models.CASCADE)
+    localidad = models.ForeignKey(
+        Localidad, on_delete=models.CASCADE, null=True, blank=True
+    )
 
     def __str__(self):
         return f"{self.direccion} {self.localidad.nombre}"
+
 
 class UserManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
@@ -67,7 +80,9 @@ class User(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(unique=True)
     # username = models.CharField(max_length=255, unique=True, null=True, blank=True)
     # direccion = models.CharField(max_length=255, null=True, blank=True)
-    direccion = models.ForeignKey(Direccion, on_delete=models.CASCADE, null=True, blank=True)
+    direccion = models.ForeignKey(
+        Direccion, on_delete=models.CASCADE, null=True, blank=True
+    )
     telefono = models.CharField(max_length=10, null=True, blank=True)
     saldo = models.DecimalField(max_digits=7, decimal_places=2, default=0.00)
 
@@ -124,16 +139,14 @@ class OneTimePassword(models.Model):
         return f"{self.user.email}-passcode"
 
 
-# MODELO DE MASCOTA
-
-
 def upload_to(instance, filename):
     return "images/{filename}".format(filename=filename)
 
 
-class Mascota(models.Model):
-    # la mascota tiene su primaty key autoincremental
+# MODELO DE MASCOTA
 
+
+class Mascota(models.Model):
     ESTADOS = {
         "Saludable": "Saludable",
         "Enfermo": "Enfermo",
@@ -143,27 +156,35 @@ class Mascota(models.Model):
         "M": "Macho",
         "H": "Hembra",
     }
+    TAMANOS = {
+        "P": "Pequeño",
+        "M": "Mediano",
+        "G": "Grande",
+    }
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=False, blank=False)
-    id = models.AutoField(primary_key=True)  # Lo pogo pa que abajo me deje poner el id
+    id = models.AutoField(primary_key=True)
     nombre = models.CharField(max_length=255, null=False, blank=False)
-    sexo = models.CharField(max_length=1, null=False, blank=False, choices=SEXOS, default="M")
+    sexo = models.CharField(
+        max_length=1, null=False, blank=False, choices=SEXOS, default="M"
+    )
     tipo = models.CharField(max_length=255, null=False, blank=False)
     raza = models.CharField(max_length=255, null=False, blank=False)
     edad = models.IntegerField(null=False, blank=False)
     estado_salud = models.CharField(
         max_length=255, null=False, blank=False, choices=ESTADOS
     )
-
-    TAMANOS = {
-        "P": "Pequeño",
-        "M": "Mediano",
-        "G": "Grande",
-    }
     tamano = models.CharField(max_length=1, null=False, blank=False, choices=TAMANOS)
     peso = models.DecimalField(max_digits=5, decimal_places=2, null=False, blank=False)
-    # imagen = models.ImageField(upload_to='mascotas/', null=True, blank=True) # Esta es de prueba
     imagen = CloudinaryField("image", null=True, blank=True)
+
+    def clean(self):
+        if self.sexo not in self.SEXOS:
+            raise ValidationError({"sexo": "Valor inválido para el campo sexo."})
+        if self.estado_salud not in self.ESTADOS:
+            raise ValidationError({"estado_salud": "Estado de salud inválido."})
+        if self.tamano not in self.TAMANOS:
+            raise ValidationError({"tamano": "Tamaño inválido."})
 
     def __str__(self):
         return f"{self.id} {self.nombre}"
@@ -197,6 +218,10 @@ class DetalleMascota(models.Model):
 class Padecimiento(models.Model):
     mascota = models.ForeignKey(Mascota, on_delete=models.CASCADE)
     padecimiento = models.CharField(max_length=255, null=False, blank=False)
+
+    def clean(self):
+        if not self.padecimiento.strip():
+            raise ValidationError({"padecimiento": "El campo no puede estar vacío."})
 
     def __str__(self):
         return f"{self.mascota.nombre} - {self.padecimiento}"
@@ -237,6 +262,10 @@ class Carrito(models.Model):
     creado = models.DateTimeField(auto_now_add=True, blank=True, null=True)
     modificado = models.DateTimeField(auto_now=True, blank=True, null=True)
 
+    def clean(self):
+        if self.cantidad < 0:
+            raise ValidationError({"cantidad": "La cantidad no puede ser negativa."})
+
     def __str__(self):
         return self.codigo
 
@@ -245,6 +274,10 @@ class ItemCarrito(models.Model):
     carrito = models.ForeignKey(Carrito, related_name="items", on_delete=models.CASCADE)
     producto = models.ForeignKey(Producto, on_delete=models.CASCADE)
     cantidad = models.IntegerField(default=1)
+
+    def clean(self):
+        if self.cantidad < 0:
+            raise ValidationError({"cantidad": "La cantidad no puede ser negativa."})
 
     def __str__(self):
         return (
@@ -255,6 +288,7 @@ class ItemCarrito(models.Model):
 ## MODELO DE PEDIDO
 
 
+# Pendiente testing (cuando se implemente)
 class Descuento(models.Model):
     descripcion = models.CharField(max_length=255, null=False, blank=False)
     porcentaje = models.DecimalField(
@@ -276,7 +310,9 @@ class Pedido(models.Model):
     id = models.AutoField(primary_key=True)  # Lo pogo pa que abajo me deje poner el id
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     fecha = models.DateTimeField(auto_now_add=True, null=False, blank=False)
-    estado = models.CharField(max_length=255, null=False, blank=False, choices=ESTADOS, default="Preparación")
+    estado = models.CharField(
+        max_length=255, null=False, blank=False, choices=ESTADOS, default="Preparación"
+    )
     descuento = models.ForeignKey(
         Descuento, on_delete=models.SET_NULL, null=True, blank=True
     )
@@ -284,14 +320,22 @@ class Pedido(models.Model):
         max_digits=10, decimal_places=2, default=0.00, null=False, blank=False
     )
 
+    def clean(self):
+        if self.estado not in self.ESTADOS.values():
+            raise ValidationError({"estado": "El estado no es válido."})
+
     def __str__(self):
-        return self.id
+        return str(self.id)
 
 
 class DetallePedido(models.Model):
     pedido = models.ForeignKey(Pedido, on_delete=models.CASCADE)
     producto = models.ForeignKey(Producto, on_delete=models.CASCADE)
     cantidad = models.IntegerField(null=False, blank=False)
+
+    def clean(self):
+        if self.cantidad < 0:
+            raise ValidationError({"cantidad": "La cantidad no puede ser negativa."})
 
     def __str__(self):
         return f"{self.producto.nombre} x {self.cantidad}"
@@ -341,10 +385,13 @@ class SolicitudCuidado(models.Model):
 
 ## MODELO DE RESEÑA
 
+
 class Resena(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     producto = models.ForeignKey(Producto, on_delete=models.CASCADE)
-    titulo = models.CharField(max_length=255, null=False, blank=False, default="Sin titulo")
+    titulo = models.CharField(
+        max_length=255, null=False, blank=False, default="Sin titulo"
+    )
     calificacion = models.IntegerField(null=False, blank=False)
     comentario = models.TextField(null=True, blank=True)
     fecha = models.DateTimeField(auto_now_add=True)
@@ -370,6 +417,10 @@ class Tarjeta(models.Model):
         max_digits=7, decimal_places=2, default=0.00, null=False, blank=False
     )
 
+    def clean(self):
+        if self.monto < 0:
+            raise ValidationError({"monto": "El monto no puede ser negativo."})
+
     def __str__(self):
         return self.tipo
 
@@ -394,7 +445,9 @@ class PublicacionAdopcion(models.Model):
     mascota = models.ForeignKey(Mascota, on_delete=models.CASCADE)
     titulo = models.CharField(max_length=255, null=False, blank=False)
     descripcion = models.TextField(null=False, blank=False)
-    direccion = models.ForeignKey(Direccion, on_delete=models.CASCADE, null=False, blank=False, default=None) 
+    direccion = models.ForeignKey(
+        Direccion, on_delete=models.CASCADE, null=False, blank=False, default=None
+    )
     fecha = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

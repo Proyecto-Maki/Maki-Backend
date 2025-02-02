@@ -4,6 +4,8 @@ from .views import *
 # from .views import register_cliente, register_fundacion
 
 urlpatterns = [
+    path("api/mercadopago/webhook/", mercadopago_webhook, name="mercadopago_webhook"),
+    path("create_preference/", create_preference, name="create_preference"),
     path("test-email/", SendTestEmail, name="test-email"),
     # path('registro/cliente/', register_cliente, name='register_cliente'),
     # path('registro/fundacion/', register_fundacion, name='register_fundacion'),
@@ -92,7 +94,21 @@ urlpatterns = [
         "productos/<slug:slug>/", ProductoDetailView.as_view(), name="producto-detalle"
     ),
     path("agregar_producto/", agregar_producto, name="agregar_producto"),
+    path("producto_en_carrito/", producto_en_carrito, name="producto_en_carrito"),
+    path(
+        "update_cantidad_producto/",
+        update_cantidad_producto,
+        name="update_cantidad_producto",
+    ),
+    path(
+        "remove_product_from_cart/",
+        remove_product_from_cart,
+        name="remove_product_from_cart",
+    ),
     ##path("producto/", productos, name="register_producto"),
+    ## Carrito
+    path("crear_carrito/", crear_carrito, name="crear_carrito"),
+    path("get_estado_carrito/", get_estado_carrito, name="get_estado_carrito"),
     ## Reseñas
     path(
         "productos/resenas/<int:id>/",
@@ -182,7 +198,6 @@ urlpatterns = [
         DetalleMascotaDeleteView.as_view(),
         name="detalle_mascota_delete",
     ),
-
     ## Publicaciones de adopcion y detalles - cliente
 
     path("publicaciones-adopcion/", PublicacionAdopcionClienteView.as_view(), name="publicaciones_adopcion_cliente"),

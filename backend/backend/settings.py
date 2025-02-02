@@ -24,6 +24,7 @@ import cloudinary.api
 import cloudinary_storage
 
 load_dotenv()
+MERCADO_PAGO_ACCESS_TOKEN = os.getenv("MERCADO_PAGO_ACCESS_TOKEN")
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -57,9 +58,9 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "whitenoise.runserver_nostatic",
-    'cloudinary_storage',
+    "cloudinary_storage",
     "django.contrib.staticfiles",
-    'cloudinary',
+    "cloudinary",
     "api",
     "backend",
     "rest_framework",
@@ -92,6 +93,7 @@ ACCOUNT_UNIQUE_EMAIL = True
 
 
 MIDDLEWARE = [
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -100,7 +102,6 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    "corsheaders.middleware.CorsMiddleware",
 ]
 
 ROOT_URLCONF = "backend.urls"
@@ -176,7 +177,7 @@ USE_TZ = True
 STATIC_URL = "static/"
 
 # MEDIA_ROOT = os.path.join(os.path.dirname(BASE_DIR), 'mediafiles')
-MEDIA_URL = '/media/'  # or any prefix you choose
+MEDIA_URL = "/media/"  # or any prefix you choose
 # DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 
 # CLOUDINARY_STORAGE = {
@@ -196,6 +197,11 @@ cloudinary.config(
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",  # Frontend
+    "http://127.0.0.1:3000",  # Alternativa
+]
+
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOWS_CREDENTIALS = True
 
@@ -204,6 +210,12 @@ STATICFILES_DIRS = [
 ]
 
 STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
+
+# MERCADO_PAGO_ACCESS_TOKEN = os.getenv("MERCADO_PAGO_ACCESS_TOKEN")
+MERCADO_PAGO_ACCESS_TOKEN = (
+    "TEST-4763199278464528-012513-40fb4eff60dd346888c1b003f27412d2-199627328"
+)
+
 
 STATICFILES_STORAGE = "django.contrib.staticfiles.storage.ManifestStaticFilesStorage"
 

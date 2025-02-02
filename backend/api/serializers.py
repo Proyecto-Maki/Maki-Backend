@@ -21,9 +21,12 @@ class LocalidadSerializer(serializers.ModelSerializer):
         model = Localidad
         fields = ["id", "nombre"]
 
+
 class DireccionSerializer(serializers.ModelSerializer):
     direccion = serializers.CharField(max_length=255)
-    codigo_postal = serializers.CharField(max_length=6, required=False, allow_blank=True)
+    codigo_postal = serializers.CharField(
+        max_length=6, required=False, allow_blank=True
+    )
     id_localidad = serializers.IntegerField()
 
     class Meta:
@@ -40,7 +43,7 @@ class DireccionSerializer(serializers.ModelSerializer):
             direccion=direccion, codigo_postal=codigo_postal, localidad=localidad
         )
         return direccion
-    
+
     def update(self, instance, validated_data):
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
@@ -204,9 +207,14 @@ class ClienteSignupSerializer(serializers.ModelSerializer):
 
     def validate_fecha_nacimiento(self, value):
         today = date.today()
-        age = today.year - value.year - ((today.month, today.day) < (value.month, value.day))
+        age = (
+            today.year
+            - value.year
+            - ((today.month, today.day) < (value.month, value.day))
+        )
         if age < 18:
-            raise serializers.ValidationError("Debes ser mayor de edad para registrarte"
+            raise serializers.ValidationError(
+                {"detail": "Debes ser mayor de edad para registrarte"}
             )
         return value
 
@@ -227,9 +235,9 @@ class ClienteSignupSerializer(serializers.ModelSerializer):
         telefono = self.validated_data.get("telefono", "")
 
         direccion = Direccion.objects.create(
-            direccion = direccion_dir,
-            codigo_postal = codigo_postal,
-            localidad = Localidad.objects.get(id=id_localidad)
+            direccion=direccion_dir,
+            codigo_postal=codigo_postal,
+            localidad=Localidad.objects.get(id=id_localidad),
         )
         
 
@@ -251,7 +259,6 @@ class ClienteSignupSerializer(serializers.ModelSerializer):
         segundo_apellido = self.validated_data.get("segundo_apellido", "")
         fecha_nacimiento = self.validated_data.get("fecha_nacimiento", None)
         self.validate_fecha_nacimiento(fecha_nacimiento)
-        
         if (User.objects.filter(email=user.email).exists()):
             raise serializers.ValidationError({
                 "detail": "Ya existe un usuario con este correo"
@@ -264,7 +271,7 @@ class ClienteSignupSerializer(serializers.ModelSerializer):
             primer_apellido=primer_apellido,
             segundo_nombre=segundo_nombre,
             segundo_apellido=segundo_apellido,
-            fecha_nacimiento=fecha_nacimiento
+            fecha_nacimiento=fecha_nacimiento,
         )
         return user
 
@@ -325,9 +332,9 @@ class FundacionSignupSerializer(serializers.ModelSerializer):
         id_localidad = self.validated_data.get("id_localidad", "")
 
         direccion = Direccion.objects.create(
-            direccion = direccion_dir,
-            codigo_postal = codigo_postal,
-            localidad = Localidad.objects.get(id=id_localidad)
+            direccion=direccion_dir,
+            codigo_postal=codigo_postal,
+            localidad=Localidad.objects.get(id=id_localidad),
         )
         telefono = self.validated_data.get("telefono", "")
 
@@ -554,13 +561,32 @@ class CarritoSerializer(serializers.ModelSerializer):
         fields = ["id", "codigo", "creado", "modificado"]
 
 
+class SimpleCarritoSerializer(serializers.ModelSerializer):
+    num_de_items = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Carrito
+        fields = ["id", "codigo", "num_items"]
+
+        def get_num_items(self, obj):
+            num_of_items = sum(
+                [ItemCarrito.cantidad for ItemCarrito in obj.items.all()]
+            )
+            return num_of_items
+
+
 class ItemCarritoSerializer(serializers.ModelSerializer):
-    producto = ProductoSerializer(read_only=True)
-    carrito = CarritoSerializer(read_only=True)
+    id = serializers.ReadOnlyField(source="producto.id")  # ID del producto
+    name = serializers.ReadOnlyField(source="producto.nombre")  # Nombre del producto
+    price = serializers.ReadOnlyField(source="producto.precio")  # Precio del producto
+    image = serializers.SerializerMethodField()  # URL de la imagen del producto
 
     class Meta:
         model = ItemCarrito
-        fields = ["id", "cantidad", "producto", "carrito"]
+        fields = ["id", "name", "price", "image", "cantidad"]
+
+    def get_image(self, obj):
+        return f"https://res.cloudinary.com/dlktjxg1a/{obj.producto.imagen}"
 
 
 class PadecimientoSerializer(serializers.ModelSerializer):
@@ -576,9 +602,7 @@ class PadecimientoSerializer(serializers.ModelSerializer):
         try:
             mascota = Mascota.objects.get(id=id_mascota)
         except Mascota.DoesNotExist:
-            raise serializers.ValidationError({
-                "detail": "La mascota no existe."
-            })
+            raise serializers.ValidationError({"detail": "La mascota no existe."})
 
         padecimiento = self.validated_data["padecimiento"]
 
@@ -586,7 +610,6 @@ class PadecimientoSerializer(serializers.ModelSerializer):
             mascota=mascota, padecimiento=padecimiento
         )
         return padecimiento_obj
-
 
 
 class ResenaSerializer(serializers.ModelSerializer):
@@ -598,11 +621,19 @@ class ResenaSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Resena
-        fields = ["id", "email", "id_producto", "titulo", "calificacion", "comentario", "fecha"]
+        fields = [
+            "id",
+            "email",
+            "id_producto",
+            "titulo",
+            "calificacion",
+            "comentario",
+            "fecha",
+        ]
 
     def save(self, **kwargs):
-        user = User.objects.get(email = self.validated_data["email"])
-        producto = Producto.objects.get(id = self.validated_data["id_producto"])
+        user = User.objects.get(email=self.validated_data["email"])
+        producto = Producto.objects.get(id=self.validated_data["id_producto"])
         titulo = self.validated_data["titulo"]
         calificacion = self.validated_data["calificacion"]
         comentario = self.validated_data["comentario"]
@@ -612,51 +643,46 @@ class ResenaSerializer(serializers.ModelSerializer):
             producto=producto,
             titulo=titulo,
             calificacion=calificacion,
-            comentario=comentario
+            comentario=comentario,
         )
         return resena
-    
+
     def update(self, instance, validated_data):
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
 
 
-
 ### PEDIDOS
+
 
 class PedidoSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(write_only=True)
     estado = serializers.CharField(max_length=255)
     total = serializers.DecimalField(max_digits=10, decimal_places=2)
-    id_descuento = serializers.IntegerField(write_only=True, required=False, allow_null=True)
+    id_descuento = serializers.IntegerField(
+        write_only=True, required=False, allow_null=True
+    )
 
     class Meta:
         model = Pedido
         fields = ["id", "email", "fecha", "estado", "id_descuento", "total"]
 
     def save(self, **kwargs):
-        user = User.objects.get(email = self.validated_data["email"])
+        user = User.objects.get(email=self.validated_data["email"])
         total = self.validated_data["total"]
         estado = self.validated_data["estado"]
         id_descuento = self.validated_data["id_descuento"]
 
         if id_descuento:
-            descuento = Descuento.objects.get(id = id_descuento)
+            descuento = Descuento.objects.get(id=id_descuento)
             pedido = Pedido.objects.create(
-                user = user,
-                estado = estado,
-                total = total,
-                descuento = descuento
+                user=user, estado=estado, total=total, descuento=descuento
             )
 
             return pedido
         else:
-            pedido = Pedido.objects.create(
-                user = user,
-                estado = estado,
-                total = total
-            )
+            pedido = Pedido.objects.create(user=user, estado=estado, total=total)
 
         return pedido
 
@@ -664,6 +690,7 @@ class PedidoSerializer(serializers.ModelSerializer):
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
+
 
 class DetallePedidoSerializer(serializers.ModelSerializer):
     id_pedido = serializers.IntegerField(write_only=True)
@@ -679,13 +706,11 @@ class DetallePedidoSerializer(serializers.ModelSerializer):
         id_producto = self.validated_data["id_producto"]
         cantidad = self.validated_data["cantidad"]
 
-        pedido = Pedido.objects.get(id = id_pedido)
-        producto = Producto.objects.get(id = id_producto)
+        pedido = Pedido.objects.get(id=id_pedido)
+        producto = Producto.objects.get(id=id_producto)
 
         detalle = DetallePedido.objects.create(
-            pedido = pedido,
-            producto = producto,
-            cantidad = cantidad
+            pedido=pedido, producto=producto, cantidad=cantidad
         )
 
         return detalle
@@ -694,6 +719,7 @@ class DetallePedidoSerializer(serializers.ModelSerializer):
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
+
 
 class DetallePedidoConProductoSerializer(serializers.ModelSerializer):
     producto = ProductoSerializer(read_only=True)
@@ -720,7 +746,7 @@ class PublicacionAdopcionSerializer(serializers.ModelSerializer):
 
     def get_detalle_mascota(self, obj):
         try:
-            detalle_mascota = DetalleMascota.objects.get(mascota = obj.mascota) 
+            detalle_mascota = DetalleMascota.objects.get(mascota=obj.mascota)
             return DetalleMascotaSerializer(detalle_mascota).data
         except DetalleMascota.DoesNotExist:
             return None
@@ -759,21 +785,21 @@ class PublicacionAdopcionSerializer(serializers.ModelSerializer):
         direccion_dir = self.validated_data["direccion"]
         id_localidad = self.validated_data["id_localidad"]
 
-        user = User.objects.get(email = email)
-        fundacion = Fundacion.objects.get(user = user)
-        mascota = Mascota.objects.get(id = id_mascota)
-        localidad = Localidad.objects.get(id = id_localidad)
+        user = User.objects.get(email=email)
+        fundacion = Fundacion.objects.get(user=user)
+        mascota = Mascota.objects.get(id=id_mascota)
+        localidad = Localidad.objects.get(id=id_localidad)
         direccion = Direccion.objects.create(
-            direccion = direccion_dir,
-            localidad = localidad,
-            codigo_postal = None
+            direccion=direccion_dir, localidad=localidad, codigo_postal=None
         )
 
         if PublicacionAdopcion.objects.filter(mascota=mascota).exists():
-            raise serializers.ValidationError({
-                "detail": "Ya existe una publicación con esta mascota.",
-                "code": "duplicate_publication"
-            })
+            raise serializers.ValidationError(
+                {
+                    "detail": "Ya existe una publicación con esta mascota.",
+                    "code": "duplicate_publication",
+                }
+            )
         
         if not Mascota.objects.filter(id = id_mascota, user = user).exists():
             raise serializers.ValidationError({
@@ -782,15 +808,15 @@ class PublicacionAdopcionSerializer(serializers.ModelSerializer):
             })
 
         publicacion = PublicacionAdopcion.objects.create(
-            fundacion = fundacion,
-            mascota = mascota,
-            titulo = titulo,
-            descripcion = descripcion,
-            direccion = direccion
+            fundacion=fundacion,
+            mascota=mascota,
+            titulo=titulo,
+            descripcion=descripcion,
+            direccion=direccion,
         )
 
         return publicacion
-    
+
     def update(self, instance, validated_data):
         # for attr, value in validated_data.items():
         #     setattr(instance, attr, value)
@@ -812,6 +838,7 @@ class PublicacionAdopcionSerializer(serializers.ModelSerializer):
         instance.save()
         return instance
 
+
 class DetalleMascotaSerializer(serializers.ModelSerializer):
     id_mascota = serializers.IntegerField(write_only=True)
     apto_ninos = serializers.BooleanField(required=True)
@@ -822,8 +849,7 @@ class DetalleMascotaSerializer(serializers.ModelSerializer):
     vacunado = serializers.BooleanField(required=True)
     esterilizado = serializers.BooleanField(required=True)
 
-
-    class Meta: 
+    class Meta:
         model = DetalleMascota
         fields = ['id', 'id_mascota', 'apto_ninos', 'apto_ruido', 'espacio', 'apto_otras_mascotas','desparasitado', 'vacunado', 'esterilizado']
     
@@ -837,13 +863,15 @@ class DetalleMascotaSerializer(serializers.ModelSerializer):
         vacunado = self.validated_data["vacunado"]
         esterilizado = self.validated_data["esterilizado"]
 
-        mascota = Mascota.objects.get(id = id_mascota)
+        mascota = Mascota.objects.get(id=id_mascota)
 
-        if DetalleMascota.objects.filter(mascota = mascota).exists():
-            raise serializers.ValidationError({
-                "detail": "El detalle de la mascota ya existe",
-            })
-        
+        if DetalleMascota.objects.filter(mascota=mascota).exists():
+            raise serializers.ValidationError(
+                {
+                    "detail": "El detalle de la mascota ya existe",
+                }
+            )
+
         detalle_mascota = DetalleMascota.objects.create(
             mascota = mascota,
             apto_ninos = apto_ninos,
@@ -877,6 +905,7 @@ class DetalleMascotaSerializer(serializers.ModelSerializer):
 
 ## SOLICITUD DE ADOPCIÓN CLIENTES
 
+
 class SolicitudAdopcionSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(write_only=True)
     id_publicacion = serializers.IntegerField(write_only=True)
@@ -886,7 +915,7 @@ class SolicitudAdopcionSerializer(serializers.ModelSerializer):
     cliente = ClienteSerializer(read_only=True)
     publicacion = PublicacionAdopcionSerializer(read_only=True)
 
-    class Meta: 
+    class Meta:
         model = SolicitudAdopcion
         fields = ['id', 'email', 'id_publicacion', 'motivo', 'fecha', 'estado', 'cliente', 'publicacion']
 
@@ -894,15 +923,19 @@ class SolicitudAdopcionSerializer(serializers.ModelSerializer):
         email = self.validated_data["email"]
         id_publicacion = self.validated_data["id_publicacion"]
 
-        cliente = Cliente.objects.get(user__email = email)
-        publicacion = PublicacionAdopcion.objects.get(id = id_publicacion)
+        cliente = Cliente.objects.get(user__email=email)
+        publicacion = PublicacionAdopcion.objects.get(id=id_publicacion)
 
-        if SolicitudAdopcion.objects.filter(cliente = cliente, publicacion = publicacion).exists():
-            raise serializers.ValidationError({
-                "detail": "Ya has solicitado esta adopción",
-                "code": "duplicate_request"
-            })
-        
+        if SolicitudAdopcion.objects.filter(
+            cliente=cliente, publicacion=publicacion
+        ).exists():
+            raise serializers.ValidationError(
+                {
+                    "detail": "Ya has solicitado esta adopción",
+                    "code": "duplicate_request",
+                }
+            )
+
         motivo = self.validated_data["motivo"]
 
         solicitud_adopcion = SolicitudAdopcion.objects.create(
@@ -913,7 +946,7 @@ class SolicitudAdopcionSerializer(serializers.ModelSerializer):
         )
 
         return solicitud_adopcion
-    
+
     def update(self, instance, validated_data):
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
