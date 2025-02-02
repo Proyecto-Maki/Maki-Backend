@@ -97,8 +97,10 @@ def mercadopago_webhook(request):
             print(f"🔍 Webhook recibido: {raw_data}")
 
             data = json.loads(raw_data)
+            print(f"📌 Datos parseados: {data}")  # <-- Añadimos este log
 
             payment_id = data.get("data", {}).get("id", None)
+            print(f"✔ ID de pago extraído: {payment_id}")
 
             if not payment_id:
                 print("❌ No se recibió un ID de pago válido")
