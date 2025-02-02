@@ -164,13 +164,14 @@ def mercadopago_webhook(request):
 
             print(f"✅ Nuevo carrito generado para el usuario: {nuevo_carrito.codigo}")
 
-            return JsonResponse(
-                {
-                    "message": "Pedido creado con éxito",
-                    "nuevo_codigo_carrito": nuevo_carrito.codigo,  # 🔹 Enviar el nuevo código al frontend
-                },
-                status=201,
-            )
+            if payment_status == "approved":
+                carrito.pagado = True
+                carrito.save()
+
+                return JsonResponse(
+                    {"message": "Pago exitoso, carrito cerrado", "reset_cart": True},
+                    status=200,
+                )
 
         except Exception as e:
             print(f"❌ Error inesperado: {e}")
