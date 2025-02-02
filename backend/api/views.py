@@ -681,16 +681,29 @@ def agregar_producto(request):
         )  # Imprime los datos recibidos
         codigo = request.data.get("codigo")
         id_producto = request.data.get("id_producto")
+        user_id = request.data.get("user_id")  # Asegurar que user_id se reciba
 
         # Verifica si los datos son válidos
-        if not codigo or not id_producto:
-            return Response(
-                {"error": "Faltan datos obligatorios: 'codigo' o 'id_producto'"},
+        if not codigo or not id_producto or not user_id:
+            return JsonResponse(
+                {
+                    "error": "Faltan datos obligatorios: 'codigo', 'id_producto' o 'user_id'"
+                },
                 status=400,
             )
 
-        carrito, creado = Carrito.objects.get_or_create(codigo=codigo)
-        producto = get_object_or_404(Producto, id=id_producto)
+        user = User.objects.get(id=user_id)
+
+        carrito, creado = Carrito.objects.get_or_create(
+            codigo=codigo, defaults={"user": user}
+        )
+
+        # Si el carrito ya existe y no tiene user_id, lo asignamos
+        if not carrito.user:
+            carrito.user = user
+            carrito.save()
+
+        producto = Producto.objects.get(id=id_producto)
 
         item_carrito, creado = ItemCarrito.objects.get_or_create(
             carrito=carrito, producto=producto
@@ -699,16 +712,19 @@ def agregar_producto(request):
         item_carrito.save()
 
         serializer = ItemCarritoSerializer(item_carrito)
-        return Response(
+        return JsonResponse(
             {
                 "data": serializer.data,
                 "message": "Producto agregado al carrito exitosamente",
             },
             status=201,
         )
+
+    except User.DoesNotExist:
+        return JsonResponse({"error": "Usuario no encontrado"}, status=400)
     except Exception as e:
-        print("Error en el servidor:", str(e))  # Log para depuración
-        return Response({"error": str(e)}, status=400)
+        print("❌ Error en el servidor:", str(e))
+        return JsonResponse({"error": str(e)}, status=500)
 
 
 class ProductoDetailView(generics.RetrieveAPIView):
