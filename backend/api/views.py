@@ -97,9 +97,15 @@ def mercadopago_webhook(request):
             print(f"🔍 Webhook recibido: {raw_data}")
 
             data = json.loads(raw_data)
+            print(f"📌 Datos parseados: {data}")
 
+            # 🚨 IGNORAR LOS WEBHOOKS DE merchant_order
+            if data.get("topic") == "merchant_order":
+                print("ℹ️ Webhook de merchant_order recibido, ignorando...")
+                return JsonResponse({"message": "Merchant order ignorado"}, status=200)
+
+            # ✅ PROCESAR SOLO PAYMENT.CREATED
             payment_id = data.get("data", {}).get("id", None)
-
             if not payment_id:
                 print("❌ No se recibió un ID de pago válido")
                 return JsonResponse(
@@ -129,7 +135,6 @@ def mercadopago_webhook(request):
             except User.DoesNotExist:
                 print(f"❌ No se encontró usuario con ID {user_id}")
                 return JsonResponse({"error": "Usuario no encontrado"}, status=400)
-
             # Obtener el carrito del usuario
             carrito = Carrito.objects.filter(user=user, pagado=False).first()
 
@@ -138,18 +143,25 @@ def mercadopago_webhook(request):
                 return JsonResponse({"error": "Carrito no encontrado"}, status=400)
 
             if payment_status == "approved":
-                # 🚀 Crear el pedido con los productos del carrito
-                total_pedido = sum(
-                    item.producto.precio * item.cantidad for item in carrito.items.all()
-                )
-
+                # 🚀 Limpiar carrito tras pago exitoso
+                # nuevo_pedido = Pedido.objects.create(
+                #     user=user,
+                #     total=sum(
+                #         item.producto.precio * item.cantidad
+                #         for item in carrito.items.all()
+                #     ),  # Calcular total
+                #     estado="Preparación",
+                # )
                 nuevo_pedido = Pedido.objects.create(
                     user=user,
-                    total=total_pedido,
+                    total=sum(
+                        item.producto.precio * item.cantidad
+                        for item in carrito.items.all()
+                    ),  # Calcular total
                     estado="Preparación",
                 )
 
-                # 🔄 Transferir productos del carrito al pedido
+                # Agregar productos al Pedido
                 for item in carrito.items.all():
                     DetallePedido.objects.create(
                         pedido=nuevo_pedido,
@@ -157,23 +169,15 @@ def mercadopago_webhook(request):
                         cantidad=item.cantidad,
                     )
 
-                # 🗑️ Vaciar el carrito y marcarlo como pagado
-                carrito.pagado = True
-                carrito.items.all().delete()
-                carrito.save()
-
-                print(f"✅ Pedido {nuevo_pedido.id} creado para usuario {user.email}")
-
                 return JsonResponse(
-                    {
-                        "message": "Pago exitoso, pedido creado, carrito cerrado",
-                        "reset_cart": True,
-                    },
-                    status=200,
+                    {"message": "Pago aprobado y carrito reseteado"}, status=201
                 )
 
             return JsonResponse({"message": "Pago no aprobado"}, status=200)
 
+        except json.JSONDecodeError:
+            print("❌ Error al decodificar JSON")
+            return JsonResponse({"error": "JSON inválido"}, status=400)
         except Exception as e:
             print(f"❌ Error inesperado: {e}")
             return JsonResponse({"error": str(e)}, status=500)
