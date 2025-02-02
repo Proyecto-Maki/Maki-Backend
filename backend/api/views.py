@@ -135,6 +135,7 @@ def mercadopago_webhook(request):
             except User.DoesNotExist:
                 print(f"❌ No se encontró usuario con ID {user_id}")
                 return JsonResponse({"error": "Usuario no encontrado"}, status=400)
+
             # Obtener el carrito del usuario
             carrito = Carrito.objects.filter(user=user, pagado=False).first()
 
@@ -143,25 +144,25 @@ def mercadopago_webhook(request):
                 return JsonResponse({"error": "Carrito no encontrado"}, status=400)
 
             if payment_status == "approved":
-                # 🚀 Limpiar carrito tras pago exitoso
-                # nuevo_pedido = Pedido.objects.create(
-                #     user=user,
-                #     total=sum(
-                #         item.producto.precio * item.cantidad
-                #         for item in carrito.items.all()
-                #     ),  # Calcular total
-                #     estado="Preparación",
-                # )
+                # 🚀 Verificar si el carrito tiene productos
+                if not carrito.items.exists():
+                    print(f"⚠️ El carrito del usuario {user.email} está vacío")
+                    return JsonResponse(
+                        {"error": "El carrito estaba vacío, no se creó el pedido"},
+                        status=400,
+                    )
+
+                # 🚀 Crear el pedido solo si hay productos en el carrito
                 nuevo_pedido = Pedido.objects.create(
                     user=user,
                     total=sum(
                         item.producto.precio * item.cantidad
                         for item in carrito.items.all()
-                    ),  # Calcular total
+                    ),
                     estado="Preparación",
                 )
 
-                # Agregar productos al Pedido
+                # 📌 Transferir productos al pedido
                 for item in carrito.items.all():
                     DetallePedido.objects.create(
                         pedido=nuevo_pedido,
@@ -169,8 +170,20 @@ def mercadopago_webhook(request):
                         cantidad=item.cantidad,
                     )
 
+                print(f"✅ Pedido {nuevo_pedido.id} creado para usuario {user.email}")
+
+                # 🗑️ Vaciar el carrito y marcarlo como pagado
+                carrito.pagado = True
+                carrito.save()
+
+                # 🔹 **Generar un nuevo código de carrito**
+
                 return JsonResponse(
-                    {"message": "Pago aprobado y carrito reseteado"}, status=201
+                    {
+                        "message": "Pago aprobado y carrito reseteado",
+                        "reset_cart": True,
+                    },
+                    status=201,
                 )
 
             return JsonResponse({"message": "Pago no aprobado"}, status=200)
