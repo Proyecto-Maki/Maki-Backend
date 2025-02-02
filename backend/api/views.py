@@ -151,11 +151,15 @@ def mercadopago_webhook(request):
             )
             # Crear un nuevo Pedido
             nuevo_pedido = Pedido.objects.create(
-                user=user, total=total, estado="Preparación"
+                user=user,
+                total=sum(
+                    item.producto.precio * item.cantidad for item in carrito.items.all()
+                ),
+                estado="Preparación",
             )
 
             # Agregar productos al Pedido
-            for item in carrito.carritoproducto_set.all():
+            for item in carrito.items.all():
                 DetallePedido.objects.create(
                     pedido=nuevo_pedido,
                     producto=item.producto,
