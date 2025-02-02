@@ -16,6 +16,42 @@ from .new_utils import send_normal_email
 from rest_framework_simplejwt.tokens import RefreshToken, TokenError
 
 
+from rest_framework import serializers
+from .models import Cuidador
+
+
+class CuidadorSerializer(serializers.ModelSerializer):
+    nombre = serializers.SerializerMethodField()
+    imagen = serializers.SerializerMethodField()
+    localidad = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Cuidador
+        fields = [
+            "id",
+            "nombre",
+            "imagen",
+            "ocupacion",
+            "categoriaMascotas",
+            "localidad",
+            "experiencia",
+        ]
+
+    def get_nombre(self, obj):
+        """Combina primer nombre y primer apellido"""
+        return f"{obj.primer_nombre} {obj.primer_apellido}"
+
+    def get_imagen(self, obj):
+        """Devuelve la URL de la imagen si existe, o una imagen por defecto"""
+        if obj.imagen:
+            return obj.imagen.url
+        return "https://via.placeholder.com/150"  # Imagen por defecto
+
+    def get_localidad(self, obj):
+        """Si la localidad existe, devuelve su nombre"""
+        return obj.localidad.nombre if obj.localidad else "Desconocida"
+
+
 class LocalidadSerializer(serializers.ModelSerializer):
     class Meta:
         model = Localidad
@@ -152,7 +188,7 @@ class ClienteSignupSerializer(serializers.ModelSerializer):
         validators=[
             UniqueValidator(
                 queryset=User.objects.all(),
-                message="Ya existe un usuario con este correo"
+                message="Ya existe un usuario con este correo",
             )
         ]
     )
@@ -204,7 +240,6 @@ class ClienteSignupSerializer(serializers.ModelSerializer):
             "password": {"write_only": True},
         }
 
-
     def validate_fecha_nacimiento(self, value):
         today = date.today()
         age = (
@@ -223,7 +258,7 @@ class ClienteSignupSerializer(serializers.ModelSerializer):
         print(email_cur)
         if not email_cur:
             raise serializers.ValidationError("El correo electrónico es requerido")
-        
+
         user = User(
             email=self.validated_data["email"],
         )
@@ -239,7 +274,6 @@ class ClienteSignupSerializer(serializers.ModelSerializer):
             codigo_postal=codigo_postal,
             localidad=Localidad.objects.get(id=id_localidad),
         )
-        
 
         if password != password2:
             raise serializers.ValidationError(
@@ -259,10 +293,10 @@ class ClienteSignupSerializer(serializers.ModelSerializer):
         segundo_apellido = self.validated_data.get("segundo_apellido", "")
         fecha_nacimiento = self.validated_data.get("fecha_nacimiento", None)
         self.validate_fecha_nacimiento(fecha_nacimiento)
-        if (User.objects.filter(email=user.email).exists()):
-            raise serializers.ValidationError({
-                "detail": "Ya existe un usuario con este correo"
-            })
+        if User.objects.filter(email=user.email).exists():
+            raise serializers.ValidationError(
+                {"detail": "Ya existe un usuario con este correo"}
+            )
 
         Cliente.objects.create(
             user=user,
@@ -281,7 +315,7 @@ class FundacionSignupSerializer(serializers.ModelSerializer):
         validators=[
             UniqueValidator(
                 queryset=User.objects.all(),
-                message="Ya existe un usuario con este correo"
+                message="Ya existe un usuario con este correo",
             )
         ]
     )
@@ -338,10 +372,10 @@ class FundacionSignupSerializer(serializers.ModelSerializer):
         )
         telefono = self.validated_data.get("telefono", "")
 
-        if (User.objects.filter(email=user.email).exists()):
-            raise serializers.ValidationError({
-                "detail": "Ya existe un usuario con este correo"
-            })
+        if User.objects.filter(email=user.email).exists():
+            raise serializers.ValidationError(
+                {"detail": "Ya existe un usuario con este correo"}
+            )
 
         if password != password2:
             raise serializers.ValidationError(
@@ -739,10 +773,23 @@ class PublicacionAdopcionSerializer(serializers.ModelSerializer):
     mascota = MascotaSerializer(read_only=True)
     detalle_mascota = serializers.SerializerMethodField()
     detalle_direccion = serializers.SerializerMethodField()
+
     # detalle_fundacion = serializers.SerializerMethodField()
     class Meta:
         model = PublicacionAdopcion
-        fields = ["id", "email", "id_mascota", "titulo", "descripcion", "direccion", "id_localidad", "fecha", "mascota", "detalle_mascota", "detalle_direccion" ]
+        fields = [
+            "id",
+            "email",
+            "id_mascota",
+            "titulo",
+            "descripcion",
+            "direccion",
+            "id_localidad",
+            "fecha",
+            "mascota",
+            "detalle_mascota",
+            "detalle_direccion",
+        ]
 
     def get_detalle_mascota(self, obj):
         try:
@@ -750,17 +797,17 @@ class PublicacionAdopcionSerializer(serializers.ModelSerializer):
             return DetalleMascotaSerializer(detalle_mascota).data
         except DetalleMascota.DoesNotExist:
             return None
-    
+
     def get_detalle_direccion(self, obj):
         if obj.direccion:
             return {
                 "direccion": obj.direccion.direccion,
                 "id_localidad": obj.direccion.localidad.id,
                 "localidad": obj.direccion.localidad.nombre,
-                "codigo_postal": obj.direccion.codigo_postal
+                "codigo_postal": obj.direccion.codigo_postal,
             }
         return None
-    
+
     # def get_detalle_fundacion(self, obj):
     #     try:
     #         fundacion = Fundacion.objects.get(id = obj.fundacion.id)
@@ -800,12 +847,14 @@ class PublicacionAdopcionSerializer(serializers.ModelSerializer):
                     "code": "duplicate_publication",
                 }
             )
-        
-        if not Mascota.objects.filter(id = id_mascota, user = user).exists():
-            raise serializers.ValidationError({
-                "detail": "No puedes publicar una mascota que no es tuya.",
-                "code": "invalid_mascota"
-            })
+
+        if not Mascota.objects.filter(id=id_mascota, user=user).exists():
+            raise serializers.ValidationError(
+                {
+                    "detail": "No puedes publicar una mascota que no es tuya.",
+                    "code": "invalid_mascota",
+                }
+            )
 
         publicacion = PublicacionAdopcion.objects.create(
             fundacion=fundacion,
@@ -823,15 +872,17 @@ class PublicacionAdopcionSerializer(serializers.ModelSerializer):
         # instance.save()
 
         direccion_data = {
-            'direccion': validated_data.pop('direccion', instance.direccion.direccion),
-            'id_localidad': validated_data.pop('id_localidad', instance.direccion.localidad.id)
+            "direccion": validated_data.pop("direccion", instance.direccion.direccion),
+            "id_localidad": validated_data.pop(
+                "id_localidad", instance.direccion.localidad.id
+            ),
         }
 
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
 
         if direccion_data:
-            localidad = Localidad.objects.get(id = direccion_data["id_localidad"])
+            localidad = Localidad.objects.get(id=direccion_data["id_localidad"])
             instance.direccion.direccion = direccion_data["direccion"]
             instance.direccion.localidad = localidad
             instance.direccion.save()
@@ -851,8 +902,18 @@ class DetalleMascotaSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = DetalleMascota
-        fields = ['id', 'id_mascota', 'apto_ninos', 'apto_ruido', 'espacio', 'apto_otras_mascotas','desparasitado', 'vacunado', 'esterilizado']
-    
+        fields = [
+            "id",
+            "id_mascota",
+            "apto_ninos",
+            "apto_ruido",
+            "espacio",
+            "apto_otras_mascotas",
+            "desparasitado",
+            "vacunado",
+            "esterilizado",
+        ]
+
     def save(self, **kwargs):
         id_mascota = self.validated_data["id_mascota"]
         apto_ninos = self.validated_data["apto_ninos"]
@@ -873,14 +934,14 @@ class DetalleMascotaSerializer(serializers.ModelSerializer):
             )
 
         detalle_mascota = DetalleMascota.objects.create(
-            mascota = mascota,
-            apto_ninos = apto_ninos,
-            apto_ruido = apto_ruido,
-            espacio = espacio,
-            apto_otras_mascotas = apto_otras_mascotas,
-            desparasitado = desparasitado,
-            vacunado = vacunado,
-            esterilizado = esterilizado
+            mascota=mascota,
+            apto_ninos=apto_ninos,
+            apto_ruido=apto_ruido,
+            espacio=espacio,
+            apto_otras_mascotas=apto_otras_mascotas,
+            desparasitado=desparasitado,
+            vacunado=vacunado,
+            esterilizado=esterilizado,
         )
 
         return detalle_mascota
@@ -888,17 +949,17 @@ class DetalleMascotaSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         data_direccion = {
             "direccion": validated_data.pop("direccion", None),
-            "id_localidad": validated_data.pop("id_localidad", None)
+            "id_localidad": validated_data.pop("id_localidad", None),
         }
 
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
 
         if data_direccion["direccion"] and data_direccion["id_localidad"]:
-            localidad = Localidad.objects.get(id = data_direccion["id_localidad"])
-            instance.direccion.direccion = data_direccion["direccion"] 
+            localidad = Localidad.objects.get(id=data_direccion["id_localidad"])
+            instance.direccion.direccion = data_direccion["direccion"]
             instance.direccion.localidad = localidad
-        
+
         instance.save()
         return instance
 
@@ -917,7 +978,16 @@ class SolicitudAdopcionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = SolicitudAdopcion
-        fields = ['id', 'email', 'id_publicacion', 'motivo', 'fecha', 'estado', 'cliente', 'publicacion']
+        fields = [
+            "id",
+            "email",
+            "id_publicacion",
+            "motivo",
+            "fecha",
+            "estado",
+            "cliente",
+            "publicacion",
+        ]
 
     def save(self, **kwargs):
         email = self.validated_data["email"]
@@ -939,10 +1009,10 @@ class SolicitudAdopcionSerializer(serializers.ModelSerializer):
         motivo = self.validated_data["motivo"]
 
         solicitud_adopcion = SolicitudAdopcion.objects.create(
-            cliente = cliente,
-            publicacion = publicacion,
-            motivo = motivo,
-            fecha = timezone.now(),
+            cliente=cliente,
+            publicacion=publicacion,
+            motivo=motivo,
+            fecha=timezone.now(),
         )
 
         return solicitud_adopcion
@@ -951,6 +1021,7 @@ class SolicitudAdopcionSerializer(serializers.ModelSerializer):
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
+
 
 class SetEstadoSolicitudAdopcionSerializer(serializers.ModelSerializer):
     estado = serializers.CharField(max_length=255, required=True)
@@ -964,22 +1035,27 @@ class SetEstadoSolicitudAdopcionSerializer(serializers.ModelSerializer):
         instance.save()
         return instance
 
+
 ## CATEGORIAS
+
 
 class CategoriaPrincipalSerializer(serializers.ModelSerializer):
     class Meta:
         model = CategoriaPrincipal
         fields = ["id", "nombre"]
 
+
 class CategoriaSerializer(serializers.ModelSerializer):
     class Meta:
         model = Categoria
         fields = ["id", "nombre", "categoria_principal"]
 
+
 class SubcategoriaSerializer(serializers.ModelSerializer):
     class Meta:
         model = Subcategoria
         fields = ["id", "nombre", "categoria", "categoria_principal"]
+
 
 class ProductoCategoriasSerializer(serializers.ModelSerializer):
     producto = models.ForeignKey(Producto, on_delete=models.CASCADE)
@@ -988,6 +1064,3 @@ class ProductoCategoriasSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProductoCategorias
         fields = ["id", "producto", "sub_categoria"]
-
-
-
