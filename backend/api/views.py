@@ -145,12 +145,12 @@ def mercadopago_webhook(request):
 
             if payment_status == "approved":
                 # 🚀 Verificar si el carrito tiene productos
-                if not carrito.items.exists():
-                    print(f"⚠️ El carrito del usuario {user.email} está vacío")
-                    return JsonResponse(
-                        {"error": "El carrito estaba vacío, no se creó el pedido"},
-                        status=400,
-                    )
+                # if not carrito.items.exists():
+                #     print(f"⚠️ El carrito del usuario {user.email} está vacío")
+                #     return JsonResponse(
+                #         {"error": "El carrito estaba vacío, no se creó el pedido"},
+                #         status=400,
+                #     )
 
                 # 🚀 Crear el pedido solo si hay productos en el carrito
                 nuevo_pedido = Pedido.objects.create(
