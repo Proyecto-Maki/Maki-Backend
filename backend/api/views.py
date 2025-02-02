@@ -152,9 +152,7 @@ def mercadopago_webhook(request):
             # Crear un nuevo Pedido
             nuevo_pedido = Pedido.objects.create(
                 user=user,
-                total=sum(
-                    item.producto.precio * item.cantidad for item in carrito.items.all()
-                ),
+                total=total,
                 estado="Preparación",
             )
 
@@ -172,6 +170,7 @@ def mercadopago_webhook(request):
             carrito.save()
 
             print(f"✅ Pedido creado con éxito: {nuevo_pedido.id}")
+            print(total)
 
             return JsonResponse({"message": "Pedido creado con éxito"}, status=201)
 
