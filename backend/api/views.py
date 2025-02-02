@@ -137,7 +137,10 @@ def mercadopago_webhook(request):
                 return JsonResponse({"error": "Usuario no encontrado"}, status=400)
 
             # Obtener el carrito del usuario
-            carrito = Carrito.objects.filter(user=user, pagado=False).first()
+            # carrito = Carrito.objects.filter(user=user, pagado=False).first()
+            carrito = (
+                Carrito.objects.filter(user=user, pagado=False).order_by("-id").first()
+            )
 
             if not carrito:
                 print(f"❌ No se encontró carrito activo para el usuario: {user.email}")
