@@ -257,8 +257,13 @@ class ClienteSignupSerializer(serializers.ModelSerializer):
         email_cur = self.validated_data.get("email")
         print(email_cur)
         if not email_cur:
-            raise serializers.ValidationError("El correo electrónico es requerido")
-
+            raise serializers.ValidationError(
+                {"detail": "El correo electrónico es requerido"}
+            )
+        if User.objects.filter(email=email_cur).exists():
+            raise serializers.ValidationError(
+                {"detail": "Ya existe un usuario con este correo"}
+            )
         user = User(
             email=self.validated_data["email"],
         )
