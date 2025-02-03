@@ -48,13 +48,13 @@ def create_preference(request):
         try:
             body = json.loads(request.body)
 
-            # ✅ Verificar si `user_id` viene en la solicitud
+            # Verificar si `user_id` viene en la solicitud
             user_id = body.get("user_id")
             if not user_id:
-                print("❌ No se envió user_id en la solicitud")
+                print("No se envió user_id en la solicitud")
                 return JsonResponse({"error": "user_id es obligatorio"}, status=400)
 
-            print(f"📌 User ID recibido: {user_id}")
+            print(f"User ID recibido: {user_id}")
 
             preference_data = {
                 "items": body["items"],
@@ -68,14 +68,14 @@ def create_preference(request):
                 "metadata": {
                     "user_id": str(
                         user_id
-                    )  # 📌 Convertir `user_id` a string por compatibilidad
+                    )  # Convertir `user_id` a string por compatibilidad
                 },
             }
 
             preference_response = sdk.preference().create(preference_data)
             preference = preference_response["response"]
 
-            print(f"📌 Preferencia creada con metadata: {preference_data['metadata']}")
+            print(f"Preferencia creada con metadata: {preference_data['metadata']}")
 
             return JsonResponse(
                 {
@@ -96,20 +96,20 @@ def mercadopago_webhook(request):
     if request.method == "POST":
         try:
             raw_data = request.body.decode("utf-8")
-            print(f"🔍 Webhook recibido: {raw_data}")
+            print(f"Webhook recibido: {raw_data}")
 
             data = json.loads(raw_data)
-            print(f"📌 Datos parseados: {data}")
+            print(f"Datos parseados: {data}")
 
-            # 🚨 IGNORAR LOS WEBHOOKS DE merchant_order
+            # IGNORAR LOS WEBHOOKS DE merchant_order
             if data.get("topic") == "merchant_order":
-                print("ℹ️ Webhook de merchant_order recibido, ignorando...")
+                print("Webhook de merchant_order recibido, ignorando...")
                 return JsonResponse({"message": "Merchant order ignorado"}, status=200)
 
-            # ✅ PROCESAR SOLO PAYMENT.CREATED
+            # PROCESAR SOLO PAYMENT.CREATED
             payment_id = data.get("data", {}).get("id", None)
             if not payment_id:
-                print("❌ No se recibió un ID de pago válido")
+                print("No se recibió un ID de pago válido")
                 return JsonResponse(
                     {"error": "No se recibió un ID de pago"}, status=400
                 )
@@ -121,11 +121,11 @@ def mercadopago_webhook(request):
             payment_status = payment["response"]["status"]
             user_id = payment["response"].get("metadata", {}).get("user_id", None)
 
-            print(f"📌 Estado del pago: {payment_status}")
-            print(f"🔍 ID de usuario recibido en metadata: {user_id}")
+            print(f"Estado del pago: {payment_status}")
+            print(f"ID de usuario recibido en metadata: {user_id}")
 
             if not user_id:
-                print("❌ No se encontró user_id en metadata")
+                print("No se encontró user_id en metadata")
                 return JsonResponse(
                     {"error": "Usuario no encontrado en metadata"}, status=400
                 )
@@ -133,9 +133,9 @@ def mercadopago_webhook(request):
             # Buscar al usuario en la base de datos
             try:
                 user = User.objects.get(id=user_id)
-                print(f"✅ Usuario encontrado en la base de datos: {user.email}")
+                print(f"Usuario encontrado en la base de datos: {user.email}")
             except User.DoesNotExist:
-                print(f"❌ No se encontró usuario con ID {user_id}")
+                print(f"No se encontró usuario con ID {user_id}")
                 return JsonResponse({"error": "Usuario no encontrado"}, status=400)
 
             # Obtener el carrito del usuario
@@ -145,24 +145,24 @@ def mercadopago_webhook(request):
             )
 
             if not carrito:
-                print(f"❌ No se encontró carrito activo para el usuario: {user.email}")
+                print(f"No se encontró carrito activo para el usuario: {user.email}")
                 return JsonResponse({"error": "Carrito no encontrado"}, status=400)
 
             if payment_status == "approved":
-                # 🚀 Verificar si el carrito tiene productos
+                # Verificar si el carrito tiene productos
                 items_en_carrito = list(
                     carrito.items.all()
                 )  # Convertir a lista para debug
-                print(f"🛒 Items en carrito: {items_en_carrito}")
+                print(f"Items en carrito: {items_en_carrito}")
 
                 if not carrito.items.exists():
-                    print(f"⚠️ El carrito del usuario {user.email} está vacío")
+                    print(f"El carrito del usuario {user.email} está vacío")
                     return JsonResponse(
                         {"error": "El carrito estaba vacío, no se creó el pedido"},
                         status=400,
                     )
 
-                # 🚀 Crear el pedido solo si hay productos en el carrito
+                # Crear el pedido solo si hay productos en el carrito
                 nuevo_pedido = Pedido.objects.create(
                     user=user,
                     total=sum(
@@ -172,19 +172,18 @@ def mercadopago_webhook(request):
                     estado="Preparación",
                 )
                 print(
-                    f"✅ Pedido {nuevo_pedido.id} creado con total: {nuevo_pedido.total}"
+                    f"Pedido {nuevo_pedido.id} creado con total: {nuevo_pedido.total}"
                 )
 
-                # 📌 Transferir productos al pedido
+                # Transferir productos al pedido
                 for item in items_en_carrito:
                     DetallePedido.objects.create(
                         pedido=nuevo_pedido,
                         producto=item.producto,
                         cantidad=item.cantidad,
                     )
-                    print(f"📦 Producto {item.producto.nombre} agregado al pedido")
+                    print(f"Producto {item.producto.nombre} agregado al pedido")
 
-                # # 📌 Transferir productos al pedido
                 # for item in carrito.items.all():
                 #     DetallePedido.objects.create(
                 #         pedido=nuevo_pedido,
@@ -192,12 +191,12 @@ def mercadopago_webhook(request):
                 #         cantidad=item.cantidad,
                 #     )
 
-                # print(f"✅ Pedido {nuevo_pedido.id} creado para usuario {user.email}")
+                # print(f"Pedido {nuevo_pedido.id} creado para usuario {user.email}")
 
-                # 🗑️ Vaciar el carrito y marcarlo como pagado
+                # Vaciar el carrito y marcarlo como pagado
                 carrito.pagado = True
                 carrito.save()
-                print(f"🛒 Carrito {carrito.codigo} marcado como pagado.")
+                print(f"Carrito {carrito.codigo} marcado como pagado.")
 
                 # 🔹 **Generar un nuevo código de carrito**
 
@@ -212,10 +211,10 @@ def mercadopago_webhook(request):
             return JsonResponse({"message": "Pago no aprobado"}, status=200)
 
         except json.JSONDecodeError:
-            print("❌ Error al decodificar JSON")
+            print("Error al decodificar JSON")
             return JsonResponse({"error": "JSON inválido"}, status=400)
         except Exception as e:
-            print(f"❌ Error inesperado: {e}")
+            print(f"Error inesperado: {e}")
             return JsonResponse({"error": str(e)}, status=500)
 
     return JsonResponse({"error": "Método no permitido"}, status=405)
@@ -359,7 +358,7 @@ class CustomAuthToken(TokenObtainPairSerializer):
 
             data = {}
             refresh = self.get_token(user)
-            data["id"] = user.id  # ✅ Enviar `user_id`
+            data["id"] = user.id  # Enviar `user_id`
             data["email"] = user.email
             data["is_cliente"] = user.is_cliente
             data["is_fundacion"] = user.is_fundacion
@@ -777,7 +776,7 @@ def agregar_producto(request):
     except User.DoesNotExist:
         return JsonResponse({"error": "Usuario no encontrado"}, status=400)
     except Exception as e:
-        print("❌ Error en el servidor:", str(e))
+        print("Error en el servidor:", str(e))
         return JsonResponse({"error": str(e)}, status=500)
 
 
@@ -894,7 +893,7 @@ def crear_carrito(request):
             try:
                 user = User.objects.get(id=user_id)
             except User.DoesNotExist:
-                print("⚠️ Usuario no encontrado, creando carrito sin usuario.")
+                print("Usuario no encontrado, creando carrito sin usuario.")
 
         nuevo_carrito = Carrito.objects.create(codigo=codigo, user=user)
         print(f"✅ Nuevo carrito creado: {nuevo_carrito.codigo}")
@@ -935,7 +934,7 @@ def get_estado_carrito(request):
     try:
         carrito = get_object_or_404(Carrito, codigo=codigo_carrito)
     except Carrito.DoesNotExist:
-        print(f"❌ No se encontró carrito con código: {codigo_carrito}")
+        print(f"No se encontró carrito con código: {codigo_carrito}")
         return Response({"error": "Carrito no encontrado."}, status=404)
 
     items_carrito = ItemCarrito.objects.filter(carrito=carrito)
