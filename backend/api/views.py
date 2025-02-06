@@ -1522,7 +1522,7 @@ class SolicitudAdopcionCreateView(generics.ListCreateAPIView):
         if serializer.is_valid():
             serializer.save()
             return Response(
-                {"message": "Solicitud de adopción enviada correctamente"},
+                {"message": "Solicitud de adopción enviada correctamente. Debes esperar a la respuesta de la fundación."},
                 status=status.HTTP_201_CREATED,
             )
         return Response(
