@@ -138,8 +138,7 @@ def mercadopago_webhook(request):
                 print(f"No se encontró usuario con ID {user_id}")
                 return JsonResponse({"error": "Usuario no encontrado"}, status=400)
 
-            # Obtener el carrito del usuario
-            # carrito = Carrito.objects.filter(user=user, pagado=False).first()
+            # Obtener el carrito del usuario más reciente
             carrito = (
                 Carrito.objects.filter(user=user, pagado=False).order_by("-id").first()
             )
@@ -175,7 +174,7 @@ def mercadopago_webhook(request):
                     f"Pedido {nuevo_pedido.id} creado con total: {nuevo_pedido.total}"
                 )
 
-                # Transferir productos al pedido
+                # Transferir productos al pedido y reducir stock
                 for item in items_en_carrito:
                     DetallePedido.objects.create(
                         pedido=nuevo_pedido,
@@ -184,25 +183,24 @@ def mercadopago_webhook(request):
                     )
                     print(f"Producto {item.producto.nombre} agregado al pedido")
 
-                # for item in carrito.items.all():
-                #     DetallePedido.objects.create(
-                #         pedido=nuevo_pedido,
-                #         producto=item.producto,
-                #         cantidad=item.cantidad,
-                #     )
+                    # **Reducir stock del producto**
+                    if item.producto.stock >= item.cantidad:
+                        item.producto.stock -= item.cantidad
+                        item.producto.save()
+                        print(
+                            f"Stock actualizado: {item.producto.nombre} - {item.producto.stock} unidades restantes"
+                        )
+                    else:
+                        print(f"⚠️ Stock insuficiente para {item.producto.nombre}")
 
-                # print(f"Pedido {nuevo_pedido.id} creado para usuario {user.email}")
-
-                # Vaciar el carrito y marcarlo como pagado
+                # Marcar el carrito como pagado
                 carrito.pagado = True
                 carrito.save()
                 print(f"Carrito {carrito.codigo} marcado como pagado.")
 
-                # 🔹 **Generar un nuevo código de carrito**
-
                 return JsonResponse(
                     {
-                        "message": "Pago aprobado y carrito reseteado",
+                        "message": "Pago aprobado, pedido creado y stock actualizado",
                         "reset_cart": True,
                     },
                     status=201,
@@ -1608,7 +1606,9 @@ class SolicitudAdopcionCreateView(generics.ListCreateAPIView):
         if serializer.is_valid():
             serializer.save()
             return Response(
-                {"message": "Solicitud de adopción enviada correctamente. Debes esperar a la respuesta de la fundación."},
+                {
+                    "message": "Solicitud de adopción enviada correctamente. Debes esperar a la respuesta de la fundación."
+                },
                 status=status.HTTP_201_CREATED,
             )
         return Response(

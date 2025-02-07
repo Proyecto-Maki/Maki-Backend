@@ -585,6 +585,7 @@ class ProductoSerializer(serializers.ModelSerializer):
             "categoria",
             "precio",
             "ingredientes",
+            "stock",
         ]
 
 
