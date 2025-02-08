@@ -615,7 +615,7 @@ class FundacionView(generics.ListAPIView):
     permission_classes = [permissions.AllowAny]
 
     def get_queryset(self):
-        return Fundacion.objects.select_related("user").all()
+        return Fundacion.objects.select_related("user").filter(user__is_verified=True)
 
 
 class FundacionLocalidadView(generics.ListAPIView):
