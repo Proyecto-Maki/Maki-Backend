@@ -120,6 +120,7 @@ urlpatterns = [
     path("resena/update/<int:id>/", ResenaUpdateView.as_view(), name="resena_update"),
     path("resena/delete/<int:id>/", ResenaDeleteView.as_view(), name="resena_delete"),
     ## Pedidos
+    path("pedidos/<int:pedido_id>/cancelar/", cancelar_pedido, name="cancelar_pedido"),
     path("pedidos/user/<email>/", PedidosUserView.as_view(), name="pedidos_user"),
     path("pedidos/create/", PedidoCreateView.as_view(), name="pedido_create"),
     path("pedidos/update/<int:id>/", PedidoUpdateView.as_view(), name="pedido_update"),
@@ -199,32 +200,80 @@ urlpatterns = [
         name="detalle_mascota_delete",
     ),
     ## Publicaciones de adopcion y detalles - cliente
-
-    path("publicaciones-adopcion/", PublicacionAdopcionClienteView.as_view(), name="publicaciones_adopcion_cliente"),
-
+    path(
+        "publicaciones-adopcion/",
+        PublicacionAdopcionClienteView.as_view(),
+        name="publicaciones_adopcion_cliente",
+    ),
     ## Solicitudes de adopción - cliente
-    path("solicitud-adopcion/create/", SolicitudAdopcionCreateView.as_view(), name="solicitud_adopcion_create"),
-    path("mis-solicitudes-adopcion/<email>/", SolicitudesAdopcionUserView.as_view(), name="mis_solicitudes_adopcion"),
-    path("mi-solicitud-adopcion/<int:id>/", SolicitudAdopcionDetailView.as_view(), name="mi_solicitud_adopcion"),
-
+    path(
+        "solicitud-adopcion/create/",
+        SolicitudAdopcionCreateView.as_view(),
+        name="solicitud_adopcion_create",
+    ),
+    path(
+        "mis-solicitudes-adopcion/<email>/",
+        SolicitudesAdopcionUserView.as_view(),
+        name="mis_solicitudes_adopcion",
+    ),
+    path(
+        "mi-solicitud-adopcion/<int:id>/",
+        SolicitudAdopcionDetailView.as_view(),
+        name="mi_solicitud_adopcion",
+    ),
     ## Solicitudes de adopción - fundacion
-    path("solicitudes-adopcion-fundacion/<email>/", SolicitudesAdopcionFundacionView.as_view(), name="solicitudes_adopcion_fundacion"),
-    path("solicitud-adopcion-fundacion/<int:id>/", SolicitudAdopcionFunDetailView.as_view(), name="solicitud_adopcion_fundacion"),
-    path("solicitud-adopcion-fundacion/update/<int:id>/", SolicitudAdopcionUpdateView.as_view(), name="solicitud_adopcion_fundacion_update"),
-    path("solicitud-adopcion-fundacion/update-estado/<int:id>/", ActualizarEstadoSolicitudAdopcion.as_view(), name="solicitud_adopcion_fundacion_update_estado"),
-
+    path(
+        "solicitudes-adopcion-fundacion/<email>/",
+        SolicitudesAdopcionFundacionView.as_view(),
+        name="solicitudes_adopcion_fundacion",
+    ),
+    path(
+        "solicitud-adopcion-fundacion/<int:id>/",
+        SolicitudAdopcionFunDetailView.as_view(),
+        name="solicitud_adopcion_fundacion",
+    ),
+    path(
+        "solicitud-adopcion-fundacion/update/<int:id>/",
+        SolicitudAdopcionUpdateView.as_view(),
+        name="solicitud_adopcion_fundacion_update",
+    ),
+    path(
+        "solicitud-adopcion-fundacion/update-estado/<int:id>/",
+        ActualizarEstadoSolicitudAdopcion.as_view(),
+        name="solicitud_adopcion_fundacion_update_estado",
+    ),
     ## Ordenamiento de productos por precio
-    path("productos/ordenar/precio-asc/", OrdenarProductosPorPrecioAscView.as_view(), name="productos_precio_asc"),
-
-    path("productos/ordenar/precio-desc/", OrdenarProductosPorPrecioDescView.as_view(), name="productos_precio_desc"),
-
-
+    path(
+        "productos/ordenar/precio-asc/",
+        OrdenarProductosPorPrecioAscView.as_view(),
+        name="productos_precio_asc",
+    ),
+    path(
+        "productos/ordenar/precio-desc/",
+        OrdenarProductosPorPrecioDescView.as_view(),
+        name="productos_precio_desc",
+    ),
     ## Productos por categoría
-    
-    path('productos-clasificados/', ProductosPorCategoriasView.as_view(), name='productos_clasificar'),
-
-    path('productos-clasificados/<str:categoria_principal>/', ProductosPorCategoriasView.as_view(), name='productos_por_categoria_principal'),
-    path('productos-clasificados/<str:categoria>/', ProductosPorCategoriasView.as_view(), name='productos_por_categoria'),
-    path('productos-clasificados/<str:sub_categoria>/', ProductosPorCategoriasView.as_view(), name='productos_por_sub_categoria'),
-
+    path(
+        "productos-clasificados/",
+        ProductosPorCategoriasView.as_view(),
+        name="productos_clasificar",
+    ),
+    path(
+        "productos-clasificados/<str:categoria_principal>/",
+        ProductosPorCategoriasView.as_view(),
+        name="productos_por_categoria_principal",
+    ),
+    path(
+        "productos-clasificados/<str:categoria>/",
+        ProductosPorCategoriasView.as_view(),
+        name="productos_por_categoria",
+    ),
+    path(
+        "productos-clasificados/<str:sub_categoria>/",
+        ProductosPorCategoriasView.as_view(),
+        name="productos_por_sub_categoria",
+    ),
+    # Cuidadores
+    path("cuidadores/", ListaCuidadoresView.as_view(), name="lista_cuidadores"),
 ]

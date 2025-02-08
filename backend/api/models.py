@@ -84,7 +84,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         Direccion, on_delete=models.CASCADE, null=True, blank=True
     )
     telefono = models.CharField(max_length=10, null=True, blank=True)
-    saldo = models.DecimalField(max_digits=7, decimal_places=2, default=0.00)
+    saldo = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
 
     objects = UserManager()
 
@@ -188,9 +188,10 @@ class Mascota(models.Model):
 
     def __str__(self):
         return f"{self.id} {self.nombre}"
-    
+
 
 ## MODELO DE DETALLE DE MASCOTA - PARA PUBLICACION DE ADOPCION
+
 
 class DetalleMascota(models.Model):
 
@@ -201,12 +202,13 @@ class DetalleMascota(models.Model):
     mascota = models.OneToOneField(Mascota, on_delete=models.CASCADE)
     apto_ninos = models.BooleanField(default=False)
     apto_ruido = models.BooleanField(default=False)
-    espacio = models.CharField(max_length=255, null=False, blank=False, choices=ESPACIOS)
+    espacio = models.CharField(
+        max_length=255, null=False, blank=False, choices=ESPACIOS
+    )
     apto_otras_mascotas = models.BooleanField(default=False)
     desparasitado = models.BooleanField(default=False)
     vacunado = models.BooleanField(default=False)
     esterilizado = models.BooleanField(default=False)
-    
 
     def __str__(self):
         return f"Detalles {self.mascota.nombre} - {self.mascota.tipo}"
@@ -345,17 +347,28 @@ class DetallePedido(models.Model):
 
 
 class Cuidador(models.Model):
-    cedula = models.BigIntegerField(unique=True, null=False, blank=False)
+    CATEGORIAS_MASCOTAS = {
+        "Gatos": "Gatos",
+        "Perros": "Perros",
+        "Aves": "Aves",
+        "Reptiles": "Reptiles",
+        "Roedores": "Roedores",
+        "Peces": "Peces",
+    }
     primer_nombre = models.CharField(max_length=255, null=False, blank=False)
     segundo_nombre = models.CharField(max_length=255, null=True, blank=True)
     primer_apellido = models.CharField(max_length=255, null=False, blank=False)
     segundo_apellido = models.CharField(max_length=255, null=True, blank=True)
-    telefono = models.CharField(max_length=10, null=False, blank=False)
-    direccion = models.CharField(max_length=255, null=False, blank=False)
-    email = models.EmailField(unique=True, null=False, blank=False)
+    imagen = CloudinaryField("image", null=True, blank=True)
+    categoriaMascotas = models.CharField(
+        max_length=8, null=True, blank=True, choices=CATEGORIAS_MASCOTAS
+    )
+
     ocupacion = models.CharField(max_length=255, null=False, blank=False)
+    localidad = models.ForeignKey(
+        Localidad, on_delete=models.CASCADE, null=True, blank=True
+    )
     experiencia = models.TextField(null=False, blank=False)
-    descripcion_servicio = models.TextField(null=False, blank=False)
 
     def __str__(self):
         return f"{self.primer_nombre} {self.primer_apellido}"
@@ -467,7 +480,9 @@ class SolicitudAdopcion(models.Model):
     publicacion = models.ForeignKey(PublicacionAdopcion, on_delete=models.CASCADE)
     fecha = models.DateTimeField(auto_now_add=True)
     motivo = models.TextField(null=False, blank=False)
-    estado = models.CharField(max_length=255, null=True, blank=True, choices=ESTADOS, default="Pendiente")
+    estado = models.CharField(
+        max_length=255, null=True, blank=True, choices=ESTADOS, default="Pendiente"
+    )
 
     def __str__(self):
         return f"{self.cliente.primer_nombre} {self.cliente.primer_apellido} - {self.publicacion.titulo}"
@@ -479,20 +494,25 @@ class CategoriaPrincipal(models.Model):
     def __str__(self):
         return f"Categoría principal - {self.nombre}"
 
+
 class Categoria(models.Model):
     nombre = models.CharField(max_length=255, null=False, blank=False)
-    categoria_principal = models.ForeignKey(CategoriaPrincipal, on_delete=models.CASCADE)
+    categoria_principal = models.ForeignKey(
+        CategoriaPrincipal, on_delete=models.CASCADE
+    )
 
     def __str__(self):
         return f"Categoría principal - {self.categoria_principal.nombre} | Categoría - {self.nombre}"
-    
+
+
 class Subcategoria(models.Model):
     nombre = models.CharField(max_length=255, null=False, blank=False)
     categoria = models.ForeignKey(Categoria, on_delete=models.CASCADE)
 
     def __str__(self):
         return f"Categoría principal - {self.categoria.categoria_principal.nombre} | Categoría - {self.categoria.nombre} | Subcategoría - {self.nombre}"
-    
+
+
 class ProductoCategorias(models.Model):
     producto = models.ForeignKey(Producto, on_delete=models.CASCADE)
     sub_categoria = models.ForeignKey(Subcategoria, on_delete=models.CASCADE)

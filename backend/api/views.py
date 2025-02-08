@@ -1,5 +1,5 @@
 import os
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, authenticate
 from rest_framework import generics, status, permissions
 from rest_framework.response import Response
@@ -11,8 +11,10 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework import exceptions
 from rest_framework.exceptions import PermissionDenied
-
+from rest_framework.permissions import IsAuthenticated
 from .utils import generate_random_code
+
+from django.contrib.auth.decorators import login_required
 
 
 # from .forms import RegistroForm, ClienteCreationForm, FundacionCreationForm
@@ -24,7 +26,7 @@ from django.utils.http import urlsafe_base64_decode
 from django.utils.encoding import smart_str, DjangoUnicodeDecodeError
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.shortcuts import get_object_or_404
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
@@ -46,13 +48,13 @@ def create_preference(request):
         try:
             body = json.loads(request.body)
 
-            # ✅ Verificar si `user_id` viene en la solicitud
+            # Verificar si `user_id` viene en la solicitud
             user_id = body.get("user_id")
             if not user_id:
-                print("❌ No se envió user_id en la solicitud")
+                print("No se envió user_id en la solicitud")
                 return JsonResponse({"error": "user_id es obligatorio"}, status=400)
 
-            print(f"📌 User ID recibido: {user_id}")
+            print(f"User ID recibido: {user_id}")
 
             preference_data = {
                 "items": body["items"],
@@ -66,14 +68,14 @@ def create_preference(request):
                 "metadata": {
                     "user_id": str(
                         user_id
-                    )  # 📌 Convertir `user_id` a string por compatibilidad
+                    )  # Convertir `user_id` a string por compatibilidad
                 },
             }
 
             preference_response = sdk.preference().create(preference_data)
             preference = preference_response["response"]
 
-            print(f"📌 Preferencia creada con metadata: {preference_data['metadata']}")
+            print(f"Preferencia creada con metadata: {preference_data['metadata']}")
 
             return JsonResponse(
                 {
@@ -94,20 +96,20 @@ def mercadopago_webhook(request):
     if request.method == "POST":
         try:
             raw_data = request.body.decode("utf-8")
-            print(f"🔍 Webhook recibido: {raw_data}")
+            print(f"Webhook recibido: {raw_data}")
 
             data = json.loads(raw_data)
-            print(f"📌 Datos parseados: {data}")
+            print(f"Datos parseados: {data}")
 
-            # 🚨 IGNORAR LOS WEBHOOKS DE merchant_order
+            # IGNORAR LOS WEBHOOKS DE merchant_order
             if data.get("topic") == "merchant_order":
-                print("ℹ️ Webhook de merchant_order recibido, ignorando...")
+                print("Webhook de merchant_order recibido, ignorando...")
                 return JsonResponse({"message": "Merchant order ignorado"}, status=200)
 
-            # ✅ PROCESAR SOLO PAYMENT.CREATED
+            # PROCESAR SOLO PAYMENT.CREATED
             payment_id = data.get("data", {}).get("id", None)
             if not payment_id:
-                print("❌ No se recibió un ID de pago válido")
+                print("No se recibió un ID de pago válido")
                 return JsonResponse(
                     {"error": "No se recibió un ID de pago"}, status=400
                 )
@@ -119,11 +121,11 @@ def mercadopago_webhook(request):
             payment_status = payment["response"]["status"]
             user_id = payment["response"].get("metadata", {}).get("user_id", None)
 
-            print(f"📌 Estado del pago: {payment_status}")
-            print(f"🔍 ID de usuario recibido en metadata: {user_id}")
+            print(f"Estado del pago: {payment_status}")
+            print(f"ID de usuario recibido en metadata: {user_id}")
 
             if not user_id:
-                print("❌ No se encontró user_id en metadata")
+                print("No se encontró user_id en metadata")
                 return JsonResponse(
                     {"error": "Usuario no encontrado en metadata"}, status=400
                 )
@@ -131,36 +133,35 @@ def mercadopago_webhook(request):
             # Buscar al usuario en la base de datos
             try:
                 user = User.objects.get(id=user_id)
-                print(f"✅ Usuario encontrado en la base de datos: {user.email}")
+                print(f"Usuario encontrado en la base de datos: {user.email}")
             except User.DoesNotExist:
-                print(f"❌ No se encontró usuario con ID {user_id}")
+                print(f"No se encontró usuario con ID {user_id}")
                 return JsonResponse({"error": "Usuario no encontrado"}, status=400)
 
-            # Obtener el carrito del usuario
-            # carrito = Carrito.objects.filter(user=user, pagado=False).first()
+            # Obtener el carrito del usuario más reciente
             carrito = (
                 Carrito.objects.filter(user=user, pagado=False).order_by("-id").first()
             )
 
             if not carrito:
-                print(f"❌ No se encontró carrito activo para el usuario: {user.email}")
+                print(f"No se encontró carrito activo para el usuario: {user.email}")
                 return JsonResponse({"error": "Carrito no encontrado"}, status=400)
 
             if payment_status == "approved":
-                # 🚀 Verificar si el carrito tiene productos
+                # Verificar si el carrito tiene productos
                 items_en_carrito = list(
                     carrito.items.all()
                 )  # Convertir a lista para debug
-                print(f"🛒 Items en carrito: {items_en_carrito}")
+                print(f"Items en carrito: {items_en_carrito}")
 
                 if not carrito.items.exists():
-                    print(f"⚠️ El carrito del usuario {user.email} está vacío")
+                    print(f"El carrito del usuario {user.email} está vacío")
                     return JsonResponse(
                         {"error": "El carrito estaba vacío, no se creó el pedido"},
                         status=400,
                     )
 
-                # 🚀 Crear el pedido solo si hay productos en el carrito
+                # Crear el pedido solo si hay productos en el carrito
                 nuevo_pedido = Pedido.objects.create(
                     user=user,
                     total=sum(
@@ -170,38 +171,36 @@ def mercadopago_webhook(request):
                     estado="Preparación",
                 )
                 print(
-                    f"✅ Pedido {nuevo_pedido.id} creado con total: {nuevo_pedido.total}"
+                    f"Pedido {nuevo_pedido.id} creado con total: {nuevo_pedido.total}"
                 )
 
-                # 📌 Transferir productos al pedido
+                # Transferir productos al pedido y reducir stock
                 for item in items_en_carrito:
                     DetallePedido.objects.create(
                         pedido=nuevo_pedido,
                         producto=item.producto,
                         cantidad=item.cantidad,
                     )
-                    print(f"📦 Producto {item.producto.nombre} agregado al pedido")
+                    print(f"Producto {item.producto.nombre} agregado al pedido")
 
-                # # 📌 Transferir productos al pedido
-                # for item in carrito.items.all():
-                #     DetallePedido.objects.create(
-                #         pedido=nuevo_pedido,
-                #         producto=item.producto,
-                #         cantidad=item.cantidad,
-                #     )
+                    # **Reducir stock del producto**
+                    if item.producto.stock >= item.cantidad:
+                        item.producto.stock -= item.cantidad
+                        item.producto.save()
+                        print(
+                            f"Stock actualizado: {item.producto.nombre} - {item.producto.stock} unidades restantes"
+                        )
+                    else:
+                        print(f"⚠️ Stock insuficiente para {item.producto.nombre}")
 
-                # print(f"✅ Pedido {nuevo_pedido.id} creado para usuario {user.email}")
-
-                # 🗑️ Vaciar el carrito y marcarlo como pagado
+                # Marcar el carrito como pagado
                 carrito.pagado = True
                 carrito.save()
-                print(f"🛒 Carrito {carrito.codigo} marcado como pagado.")
-
-                # 🔹 **Generar un nuevo código de carrito**
+                print(f"Carrito {carrito.codigo} marcado como pagado.")
 
                 return JsonResponse(
                     {
-                        "message": "Pago aprobado y carrito reseteado",
+                        "message": "Pago aprobado, pedido creado y stock actualizado",
                         "reset_cart": True,
                     },
                     status=201,
@@ -210,10 +209,10 @@ def mercadopago_webhook(request):
             return JsonResponse({"message": "Pago no aprobado"}, status=200)
 
         except json.JSONDecodeError:
-            print("❌ Error al decodificar JSON")
+            print("Error al decodificar JSON")
             return JsonResponse({"error": "JSON inválido"}, status=400)
         except Exception as e:
-            print(f"❌ Error inesperado: {e}")
+            print(f"Error inesperado: {e}")
             return JsonResponse({"error": str(e)}, status=500)
 
     return JsonResponse({"error": "Método no permitido"}, status=405)
@@ -271,7 +270,7 @@ class ClienteSignupView(generics.ListCreateAPIView):
         print(serializer.errors)
         for key, value in serializer.errors.items():
             errores[key] = ", ".join(value)
-        
+
         mensaje = " | ".join([f"{key}: {value}" for key, value in errores.items()])
         return Response(
             {
@@ -366,7 +365,7 @@ class CustomAuthToken(TokenObtainPairSerializer):
 
             data = {}
             refresh = self.get_token(user)
-            data["id"] = user.id  # ✅ Enviar `user_id`
+            data["id"] = user.id  # Enviar `user_id`
             data["email"] = user.email
             data["is_cliente"] = user.is_cliente
             data["is_fundacion"] = user.is_fundacion
@@ -562,13 +561,19 @@ class FundacionDetailView(generics.RetrieveUpdateDestroyAPIView):
         serializer = self.get_serializer(fundacion, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
-            return Response({
-                "message": "Fundación actualizada exitosamente",
-            }, status=status.HTTP_200_OK)
-        return Response({
-            "error": serializer.errors,
-            "detail": "Ha ocurrido un error al actualizar la fundación",
-        }, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {
+                    "message": "Fundación actualizada exitosamente",
+                },
+                status=status.HTTP_200_OK,
+            )
+        return Response(
+            {
+                "error": serializer.errors,
+                "detail": "Ha ocurrido un error al actualizar la fundación",
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
 
 
 class FundacionUpdateView(generics.RetrieveUpdateAPIView):
@@ -778,7 +783,7 @@ def agregar_producto(request):
     except User.DoesNotExist:
         return JsonResponse({"error": "Usuario no encontrado"}, status=400)
     except Exception as e:
-        print("❌ Error en el servidor:", str(e))
+        print("Error en el servidor:", str(e))
         return JsonResponse({"error": str(e)}, status=500)
 
 
@@ -895,7 +900,7 @@ def crear_carrito(request):
             try:
                 user = User.objects.get(id=user_id)
             except User.DoesNotExist:
-                print("⚠️ Usuario no encontrado, creando carrito sin usuario.")
+                print("Usuario no encontrado, creando carrito sin usuario.")
 
         nuevo_carrito = Carrito.objects.create(codigo=codigo, user=user)
         print(f"✅ Nuevo carrito creado: {nuevo_carrito.codigo}")
@@ -936,7 +941,7 @@ def get_estado_carrito(request):
     try:
         carrito = get_object_or_404(Carrito, codigo=codigo_carrito)
     except Carrito.DoesNotExist:
-        print(f"❌ No se encontró carrito con código: {codigo_carrito}")
+        print(f"No se encontró carrito con código: {codigo_carrito}")
         return Response({"error": "Carrito no encontrado."}, status=404)
 
     items_carrito = ItemCarrito.objects.filter(carrito=carrito)
@@ -1119,6 +1124,70 @@ class ResenaDeleteView(generics.DestroyAPIView):
 
 
 ## PEDIDOS
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.response import Response
+from rest_framework import status
+from django.shortcuts import get_object_or_404
+from django.db import transaction
+from .models import Pedido
+
+
+@api_view(["PUT"])
+def cancelar_pedido(request, pedido_id):
+    print(f"Intentando cancelar pedido con ID: {pedido_id}")
+
+    user = request.user
+    print(f"Usuario autenticado: {user}")
+
+    try:
+        pedido = get_object_or_404(Pedido, id=pedido_id)
+        print(f"Pedido encontrado: {pedido}")
+
+        if pedido.user != user:
+            return Response(
+                {"error": "No tienes permiso para cancelar este pedido."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        if pedido.estado in ["Cancelado", "Entregado", "Transito"]:
+            return Response(
+                {"error": "Este pedido no puede ser cancelado."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        with transaction.atomic():
+            pedido.estado = "Cancelado"
+            pedido.save()
+            print("Pedido cancelado con éxito")
+
+            # Verificar límite antes de actualizar saldo
+            nuevo_saldo = user.saldo + pedido.total
+            if nuevo_saldo > 999999999.99:  # Límite del DecimalField
+                return Response(
+                    {
+                        "error": "No se puede actualizar el saldo: excede el límite permitido."
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            user.saldo = nuevo_saldo
+            user.save()
+            print(f"Saldo actualizado: {user.saldo}")
+
+            return Response(
+                {"message": "Pedido cancelado y saldo reembolsado correctamente."},
+                status=status.HTTP_200_OK,
+            )
+
+    except ValidationError as e:
+        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    except Exception as e:
+        print(f"Error inesperado: {str(e)}")
+        return Response(
+            {"error": f"Ocurrió un error: {str(e)}"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
 
 
 class PedidoCreateView(generics.ListCreateAPIView):
@@ -1299,7 +1368,8 @@ class PublicacionAdopcionCreateView(generics.ListCreateAPIView):
             return Response(
                 {
                     "publicacion": publicacion_data,
-                    "message": "Publicación de adopción creada exitosamente"},
+                    "message": "Publicación de adopción creada exitosamente",
+                },
                 status=status.HTTP_201_CREATED,
             )
         return Response(
@@ -1345,7 +1415,7 @@ class PublicacionAdopcionDetailView(generics.RetrieveUpdateDestroyAPIView):
 ## Esta vista es para actualizar una publicación de adopción
 class PublicacionAdopcionUpdateView(APIView):
     serializer_class = PublicacionAdopcionSerializer
-    permission_classes = [permissions.IsAuthenticated&IsFundacionUser]
+    permission_classes = [permissions.IsAuthenticated & IsFundacionUser]
 
     def get_object(self, id):
         try:
@@ -1409,29 +1479,33 @@ class PublicacionAdopcionClienteView(generics.ListAPIView):
             fundacion=fundacion
         )
 
+
 ## PUBLICACION DE ADOPCION - PARA LAS FUNDACIONES
 class PublicacionAdopcionFundacionView(generics.ListAPIView):
     serializer_class = PublicacionAdopcionSerializer
-    permission_classes = [permissions.IsAuthenticated&IsFundacionUser]
+    permission_classes = [permissions.IsAuthenticated & IsFundacionUser]
 
     def get_queryset(self):
         email = self.kwargs.get("email")
         user = get_object_or_404(User, email=email)
         fundacion = get_object_or_404(Fundacion, user=user)
-        return PublicacionAdopcion.objects.select_related('mascota').filter(fundacion=fundacion)
-        
+        return PublicacionAdopcion.objects.select_related("mascota").filter(
+            fundacion=fundacion
+        )
+
 
 ## PUBLICACION DE ADOPCION - PARA LAS FUNDACIONES
 class PublicacionAdopcionFundacionView(generics.ListAPIView):
     serializer_class = PublicacionAdopcionSerializer
-    permission_classes = [permissions.IsAuthenticated&IsFundacionUser]
+    permission_classes = [permissions.IsAuthenticated & IsFundacionUser]
 
     def get_queryset(self):
         email = self.kwargs.get("email")
         user = get_object_or_404(User, email=email)
         fundacion = get_object_or_404(Fundacion, user=user)
-        return PublicacionAdopcion.objects.select_related('mascota').filter(fundacion=fundacion)
-        
+        return PublicacionAdopcion.objects.select_related("mascota").filter(
+            fundacion=fundacion
+        )
 
 
 # --------------------------------------------------------------------------
@@ -1461,6 +1535,15 @@ class DetalleMascotaCreateView(generics.ListCreateAPIView):
         )
 
 
+# Cuidadores
+class ListaCuidadoresView(APIView):
+    def get(self, request):
+        cuidadores = Cuidador.objects.all()
+        serializer = CuidadorSerializer(cuidadores, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+# Detalle Mascotas
 class DetalleMascotaView(generics.ListAPIView):
     serializer_class = DetalleMascotaSerializer
     permission_classes = [permissions.IsAuthenticated & IsFundacionUser]
@@ -1507,9 +1590,10 @@ class DetalleMascotaDeleteView(generics.DestroyAPIView):
     def perform_destroy(self, instance):
         instance.delete()
 
-#--------------------------------------------------------------------------
 
-## SOLICITUD DE ADOPCIÓN - DEL CLIENTE
+# --------------------------------------------------------------------------
+
+## SOLICITUD DE ADOPCIÓN - DEL CLIENTEda
 
 
 class SolicitudAdopcionCreateView(generics.ListCreateAPIView):
@@ -1522,7 +1606,9 @@ class SolicitudAdopcionCreateView(generics.ListCreateAPIView):
         if serializer.is_valid():
             serializer.save()
             return Response(
-                {"message": "Solicitud de adopción enviada correctamente. Debes esperar a la respuesta de la fundación."},
+                {
+                    "message": "Solicitud de adopción enviada correctamente. Debes esperar a la respuesta de la fundación."
+                },
                 status=status.HTTP_201_CREATED,
             )
         return Response(
@@ -1551,27 +1637,30 @@ class SolicitudAdopcionDetailView(generics.RetrieveUpdateDestroyAPIView):
     def get_object(self):
         id = self.kwargs.get("id")
         return get_object_or_404(SolicitudAdopcion, id=id)
-    
+
+
 ## SOLICITUD DE ADOPCION - PARA LA FUNDACIÓN
 class SolicitudesAdopcionFundacionView(generics.ListAPIView):
     serializer_class = SolicitudAdopcionSerializer
-    permission_classes = [permissions.IsAuthenticated&IsFundacionUser]
+    permission_classes = [permissions.IsAuthenticated & IsFundacionUser]
 
     def get_queryset(self):
         email = self.kwargs.get("email")
         user = get_object_or_404(User, email=email)
         return SolicitudAdopcion.objects.filter(publicacion__fundacion__user=user)
 
+
 class SolicitudAdopcionFunDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = SolicitudAdopcionSerializer
-    permission_classes = [permissions.IsAuthenticated&IsFundacionUser]
+    permission_classes = [permissions.IsAuthenticated & IsFundacionUser]
 
     def get_object(self):
         id = self.kwargs.get("id")
         return get_object_or_404(SolicitudAdopcion, id=id)
-    
+
+
 class SolicitudAdopcionUpdateView(APIView):
-    permission_classes = [permissions.IsAuthenticated&IsFundacionUser]
+    permission_classes = [permissions.IsAuthenticated & IsFundacionUser]
     serializer_class = SolicitudAdopcionSerializer
 
     def get_object(self, id):
@@ -1579,23 +1668,27 @@ class SolicitudAdopcionUpdateView(APIView):
             return SolicitudAdopcion.objects.get(id=id)
         except SolicitudAdopcion.DoesNotExist:
             return None
-        
+
     def put(self, request, id, *args, **kwargs):
         solicitud_adopcion = self.get_object(id)
         if not solicitud_adopcion:
             return Response(
-                {"message": "Solicitud de adopción no encontrada"}, status=status.HTTP_404_NOT_FOUND
+                {"message": "Solicitud de adopción no encontrada"},
+                status=status.HTTP_404_NOT_FOUND,
             )
         if solicitud_adopcion.publicacion.fundacion.user != request.user:
-            raise PermissionDenied("No tienes permisos para editar esta solicitud de adopción")
+            raise PermissionDenied(
+                "No tienes permisos para editar esta solicitud de adopción"
+            )
         serializer = SolicitudAdopcionSerializer(solicitud_adopcion, data=request.data)
         if serializer.is_valid():
             serializer.update(solicitud_adopcion, serializer.validated_data)
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+
+
 class ActualizarEstadoSolicitudAdopcion(APIView):
-    permission_classes = [permissions.IsAuthenticated&IsFundacionUser]
+    permission_classes = [permissions.IsAuthenticated & IsFundacionUser]
     serializer_class = SetEstadoSolicitudAdopcionSerializer
 
     def get_object(self, id):
@@ -1603,16 +1696,21 @@ class ActualizarEstadoSolicitudAdopcion(APIView):
             return SolicitudAdopcion.objects.get(id=id)
         except SolicitudAdopcion.DoesNotExist:
             return None
-        
+
     def patch(self, request, id, *args, **kwargs):
         solicitud_adopcion = self.get_object(id)
         if not solicitud_adopcion:
             return Response(
-                {"message": "Solicitud de adopción no encontrada"}, status=status.HTTP_404_NOT_FOUND
+                {"message": "Solicitud de adopción no encontrada"},
+                status=status.HTTP_404_NOT_FOUND,
             )
         if solicitud_adopcion.publicacion.fundacion.user != request.user:
-            raise PermissionDenied("No tienes permisos para editar esta solicitud de adopción")
-        serializer = SetEstadoSolicitudAdopcionSerializer(solicitud_adopcion, data=request.data, partial=True)
+            raise PermissionDenied(
+                "No tienes permisos para editar esta solicitud de adopción"
+            )
+        serializer = SetEstadoSolicitudAdopcionSerializer(
+            solicitud_adopcion, data=request.data, partial=True
+        )
         if serializer.is_valid():
             serializer.update(solicitud_adopcion, serializer.validated_data)
             numero_solicitud = solicitud_adopcion.id
@@ -1628,8 +1726,12 @@ class ActualizarEstadoSolicitudAdopcion(APIView):
             id_publicacion = solicitud_adopcion.publicacion.id
             nombre_fundacion = solicitud_adopcion.publicacion.fundacion.nombre
             telefono_fundacion = solicitud_adopcion.publicacion.fundacion.user.telefono
-            direccion_fundacion = solicitud_adopcion.publicacion.fundacion.user.direccion.direccion
-            localidad_fundacion = solicitud_adopcion.publicacion.fundacion.user.direccion.localidad.nombre
+            direccion_fundacion = (
+                solicitud_adopcion.publicacion.fundacion.user.direccion.direccion
+            )
+            localidad_fundacion = (
+                solicitud_adopcion.publicacion.fundacion.user.direccion.localidad.nombre
+            )
             email_fundacion = solicitud_adopcion.publicacion.fundacion.user.email
 
             send_update_adoption_email(
@@ -1651,12 +1753,17 @@ class ActualizarEstadoSolicitudAdopcion(APIView):
                 email_fundacion,
             )
             return Response(serializer.data)
-        return Response({
-            "error": serializer.errors,
-            "detail": "Ha ocurrido un error al actualizar el estado de la solicitud de adopción",
-        }, status=status.HTTP_400_BAD_REQUEST)
+        return Response(
+            {
+                "error": serializer.errors,
+                "detail": "Ha ocurrido un error al actualizar el estado de la solicitud de adopción",
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
 
 ## CATEGORIAS DE PRODUCTOS
+
 
 class SubcategoriasDeCategoriaView(generics.ListAPIView):
     serializer_class = SubcategoriaSerializer
@@ -1666,66 +1773,67 @@ class SubcategoriasDeCategoriaView(generics.ListAPIView):
         nombre_categoria = self.kwargs.get("nombre")
         categoria = get_object_or_404(Categoria, nombre=nombre_categoria)
         return Subcategoria.objects.filter(categoria=categoria)
-    
+
+
 class ProductosPorCategoriasView(generics.ListAPIView):
     serializer_class = ProductoSerializer
     permission_classes = [permissions.AllowAny]
 
     def get_queryset(self):
-        categoria_principal = self.request.query_params.get('categoria_principal', None)
-        categoria = self.request.query_params.get('categoria', None)
-        sub_categoria = self.request.query_params.get('sub_categoria', None)
+        categoria_principal = self.request.query_params.get("categoria_principal", None)
+        categoria = self.request.query_params.get("categoria", None)
+        sub_categoria = self.request.query_params.get("sub_categoria", None)
 
         productos = Producto.objects.all()
         print(categoria_principal, categoria, sub_categoria)
-        if (categoria_principal and categoria==None and sub_categoria==None):
+        if categoria_principal and categoria == None and sub_categoria == None:
             productos_ids = ProductoCategorias.objects.filter(
                 sub_categoria__categoria__categoria_principal__nombre=categoria_principal
-            ).values_list('producto', flat=True)
+            ).values_list("producto", flat=True)
             print(productos_ids)
             productos = productos.filter(id__in=productos_ids)
             print(productos)
-        elif (categoria_principal and categoria and sub_categoria==None):
+        elif categoria_principal and categoria and sub_categoria == None:
             productos_ids = ProductoCategorias.objects.filter(
                 sub_categoria__categoria__nombre=categoria,
-                sub_categoria__categoria__categoria_principal__nombre=categoria_principal
-            ).values_list('producto', flat=True)
+                sub_categoria__categoria__categoria_principal__nombre=categoria_principal,
+            ).values_list("producto", flat=True)
             productos = productos.filter(id__in=productos_ids)
-        elif (categoria_principal and categoria and sub_categoria):
+        elif categoria_principal and categoria and sub_categoria:
             productos_ids = ProductoCategorias.objects.filter(
                 sub_categoria__nombre=sub_categoria,
                 sub_categoria__categoria__nombre=categoria,
-                sub_categoria__categoria__categoria_principal__nombre=categoria_principal
-            ).values_list('producto', flat=True)
+                sub_categoria__categoria__categoria_principal__nombre=categoria_principal,
+            ).values_list("producto", flat=True)
             productos = productos.filter(id__in=productos_ids)
-        elif categoria and sub_categoria==None and categoria_principal==None:
+        elif categoria and sub_categoria == None and categoria_principal == None:
             productos_ids = ProductoCategorias.objects.filter(
                 sub_categoria__categoria__nombre=categoria
-            ).values_list('producto', flat=True)
+            ).values_list("producto", flat=True)
             productos = productos.filter(id__in=productos_ids)
-        elif sub_categoria and categoria==None and categoria_principal==None:
+        elif sub_categoria and categoria == None and categoria_principal == None:
             productos_ids = ProductoCategorias.objects.filter(
                 sub_categoria__nombre=sub_categoria
-            ).values_list('producto', flat=True)
+            ).values_list("producto", flat=True)
             productos = productos.filter(id__in=productos_ids)
-    
+
         return productos
-    
+
 
 ## ORDENAMIENTO DE PRODUCTOS POR PRECIO
+
 
 class OrdenarProductosPorPrecioAscView(generics.ListAPIView):
     serializer_class = ProductoSerializer
     permission_classes = [permissions.AllowAny]
 
     def get_queryset(self):
-        return Producto.objects.all().order_by('precio')
+        return Producto.objects.all().order_by("precio")
+
 
 class OrdenarProductosPorPrecioDescView(generics.ListAPIView):
     serializer_class = ProductoSerializer
     permission_classes = [permissions.AllowAny]
 
     def get_queryset(self):
-        return Producto.objects.all().order_by('-precio')
-
-
+        return Producto.objects.all().order_by("-precio")

@@ -16,6 +16,42 @@ from .new_utils import send_normal_email
 from rest_framework_simplejwt.tokens import RefreshToken, TokenError
 
 
+from rest_framework import serializers
+from .models import Cuidador
+
+
+class CuidadorSerializer(serializers.ModelSerializer):
+    nombre = serializers.SerializerMethodField()
+    imagen = serializers.SerializerMethodField()
+    localidad = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Cuidador
+        fields = [
+            "id",
+            "nombre",
+            "imagen",
+            "ocupacion",
+            "categoriaMascotas",
+            "localidad",
+            "experiencia",
+        ]
+
+    def get_nombre(self, obj):
+        """Combina primer nombre y primer apellido"""
+        return f"{obj.primer_nombre} {obj.primer_apellido}"
+
+    def get_imagen(self, obj):
+        """Devuelve la URL de la imagen si existe, o una imagen por defecto"""
+        if obj.imagen:
+            return obj.imagen.url
+        return "https://via.placeholder.com/150"  # Imagen por defecto
+
+    def get_localidad(self, obj):
+        """Si la localidad existe, devuelve su nombre"""
+        return obj.localidad.nombre if obj.localidad else "Desconocida"
+
+
 class LocalidadSerializer(serializers.ModelSerializer):
     class Meta:
         model = Localidad
@@ -262,6 +298,10 @@ class ClienteSignupSerializer(serializers.ModelSerializer):
         segundo_apellido = self.validated_data.get("segundo_apellido", "")
         fecha_nacimiento = self.validated_data.get("fecha_nacimiento", None)
         self.validate_fecha_nacimiento(fecha_nacimiento)
+        if User.objects.filter(email=user.email).exists():
+            raise serializers.ValidationError(
+                {"detail": "Ya existe un usuario con este correo"}
+            )
 
         Cliente.objects.create(
             user=user,
@@ -545,6 +585,7 @@ class ProductoSerializer(serializers.ModelSerializer):
             "categoria",
             "precio",
             "ingredientes",
+            "stock",
         ]
 
 
