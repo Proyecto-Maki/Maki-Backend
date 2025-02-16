@@ -407,6 +407,7 @@ class Resena(models.Model):
     )
     calificacion = models.IntegerField(null=False, blank=False)
     comentario = models.TextField(null=True, blank=True)
+    num_likes = models.IntegerField(default=0)
     fecha = models.DateTimeField(auto_now_add=True)
 
     class Meta:
