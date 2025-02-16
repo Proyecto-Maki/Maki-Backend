@@ -1145,13 +1145,18 @@ def cancelar_pedido(request, pedido_id):
 
         if pedido.user != user:
             return Response(
-                {"error": "No tienes permiso para cancelar este pedido."},
+                {
+                    "error": "No tienes permisos para cancelar este pedido",
+                    "detail": "No tienes permisos para cancelar este pedido",
+                },
                 status=status.HTTP_403_FORBIDDEN,
             )
 
         if pedido.estado in ["Cancelado", "Entregado", "Transito"]:
             return Response(
-                {"error": "Este pedido no puede ser cancelado."},
+                {
+                    "error": "Este pedido no puede ser cancelado.",
+                    "detail": "Este pedido no puede ser cancelado.",},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -1165,7 +1170,8 @@ def cancelar_pedido(request, pedido_id):
             if nuevo_saldo > 999999999.99:  # Límite del DecimalField
                 return Response(
                     {
-                        "error": "No se puede actualizar el saldo: excede el límite permitido."
+                        "error": "No se puede actualizar el saldo: excede el límite permitido.",
+                        "detail": "No se puede actualizar el saldo: excede el límite permitido.",
                     },
                     status=status.HTTP_400_BAD_REQUEST,
                 )
@@ -1207,7 +1213,7 @@ class PedidoCreateView(generics.ListCreateAPIView):
         return Response(
             {
                 "error": serializer.errors,
-                "message": "Ha ocurrido un error al crear el pedido",
+                "detail": "Ha ocurrido un error al crear el pedido",
             },
             status=status.HTTP_400_BAD_REQUEST,
         )
@@ -1230,7 +1236,7 @@ class DetallePedidoCreateView(generics.ListCreateAPIView):
         return Response(
             {
                 "error": serializer.errors,
-                "message": "Ha ocurrido un error al crear el detalle de pedido",
+                "detail": "Ha ocurrido un error al crear el detalle de pedido",
             },
             status=status.HTTP_400_BAD_REQUEST,
         )
