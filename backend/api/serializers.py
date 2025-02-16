@@ -106,7 +106,7 @@ class ClienteSerializer(serializers.ModelSerializer):
     localidad = serializers.CharField(source="user.direccion.localidad.nombre")
     telefono = serializers.CharField(source="user.telefono")
     saldo = serializers.DecimalField(
-        source="user.saldo", max_digits=7, decimal_places=2
+        source="user.saldo", max_digits=10, decimal_places=2, read_only=True
     )
     is_verified = serializers.BooleanField(source="user.is_verified", read_only=True)
 
@@ -150,7 +150,7 @@ class FundacionSerializer(serializers.ModelSerializer):
     localidad = serializers.CharField(source="user.direccion.localidad.nombre")
     telefono = serializers.CharField(source="user.telefono", read_only=True)
     saldo = serializers.DecimalField(
-        source="user.saldo", max_digits=7, decimal_places=2, read_only=True
+        source="user.saldo", max_digits=10, decimal_places=2, read_only=True
     )
     is_verified = serializers.BooleanField(source="user.is_verified", read_only=True)
 
