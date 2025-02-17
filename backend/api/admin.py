@@ -22,6 +22,7 @@ from .models import (
     Subcategoria,
     ProductoCategorias,
     Cuidador,
+    SolicitudCuidado,
 )
 
 # Register your models here.
@@ -46,3 +47,4 @@ admin.site.register(Categoria)
 admin.site.register(Subcategoria)
 admin.site.register(ProductoCategorias)
 admin.site.register(Cuidador)
+admin.site.register(SolicitudCuidado)

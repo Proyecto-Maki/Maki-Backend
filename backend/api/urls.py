@@ -276,4 +276,21 @@ urlpatterns = [
     ),
     # Cuidadores
     path("cuidadores/", ListaCuidadoresView.as_view(), name="lista_cuidadores"),
+
+    # Solicitudes de cuidado
+
+    path("solicitud-cuidado/create/", SolictudCuidadoCreateView.as_view(), name="solicitud_cuidado_create"),
+
+    path("mis-solicitudes-cuidado/<email>/", SolicitudCiudadoUserView.as_view(), name="mis_solicitudes_cuidado"),
+
+    path("mi-solicitud-cuidado/<int:id>/", SolicitudCuidadoDetailView.as_view(), name="solicitud_cuidado"),
+
+    path("solicitud-cuidado/update/<int:id>/", SolicitudCuidadoUpdateView.as_view(), name="solicitud_cuidado_update"),
+
+    path("solicitud-cuidado/update-estado/<int:id>/", ActualizarEstadoSolicitudCuidado.as_view(), name="solicitud_cuidado_update_estado"),
+
+    
+
+
+
 ]

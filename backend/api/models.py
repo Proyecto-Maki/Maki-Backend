@@ -12,6 +12,7 @@ from rest_framework.authtoken.models import Token
 from django.utils.text import slugify
 from cloudinary.models import CloudinaryField
 from django.core.exceptions import ValidationError
+from django.utils import timezone
 
 
 class Localidad(models.Model):
@@ -369,6 +370,7 @@ class Cuidador(models.Model):
         Localidad, on_delete=models.CASCADE, null=True, blank=True
     )
     experiencia = models.TextField(null=False, blank=False)
+    hoja_vida = CloudinaryField("image", null=True, blank=True)
 
     def __str__(self):
         return f"{self.primer_nombre} {self.primer_apellido}"
@@ -390,10 +392,13 @@ class SolicitudCuidado(models.Model):
     cuidador = models.ForeignKey(Cuidador, on_delete=models.CASCADE)
     cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE)
     mascota = models.ForeignKey(Mascota, on_delete=models.CASCADE)
-    fecha_inicio = models.DateField(null=False, blank=False)
-    fecha_fin = models.DateField(null=False, blank=False)
+    fecha_solicitud = models.DateTimeField(auto_now_add=True)
+    fecha_inicio = models.DateTimeField(null=False, blank=False)
+    fecha_fin = models.DateTimeField(null=False, blank=False)
+    horas_cuidado = models.IntegerField(null=False, blank=False, default=0)
     descripcion = models.TextField(null=False, blank=False)
     estado = models.CharField(max_length=255, null=False, blank=False, choices=ESTADOS)
+    costo = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, null=False, blank=False)
 
 
 ## MODELO DE RESEÑA

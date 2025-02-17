@@ -203,3 +203,61 @@ def send_update_adoption_email(numero_solicitud, email, fecha, nuevo_estado, nom
             "detail": "Error al enviar el correo electrónico",
             "error": str(e.body),
         }
+    
+
+def send_update_care_email(numero_solicitud, email, fecha, nuevo_estado, nombre_mascota, sexo_mascota, tipo_mascota, raza_mascota, edad_mascota, motivo, id_publicacion, nombre_fundacion, telefono_fundacion, direccion_fundacion, localidad_fundacion, email_fundacion):
+    Subject = "Actualización de solicitud de cuidado #{}".format(numero_solicitud)
+    email = email
+    context = {
+        "numero_solicitud": numero_solicitud, 
+        "email": email,
+        "fecha": date_format(fecha),
+        "nuevo_estado": nuevo_estado,
+        "nombre_mascota": nombre_mascota,
+        "sexo_mascota": format_sexo_mascota(sexo_mascota),
+        "tipo_mascota": tipo_mascota,
+        "raza_mascota": raza_mascota,
+        "edad_mascota": edad_mascota,
+        "motivo": motivo,
+        "id_publicacion": id_publicacion,
+        "nombre_fundacion": nombre_fundacion,
+        "telefono_fundacion": telefono_fundacion,
+        "direccion_fundacion": direccion_fundacion,
+        "localidad_fundacion": localidad_fundacion,
+        "email_fundacion": email_fundacion
+    }
+    html_message = render_to_string("email-update-care.html", context=context)
+
+    message = Mail(
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        to_emails=email,
+        subject=Subject,
+        html_content=html_message,
+    )
+
+    message.add_bcc(settings.DEFAULT_FROM_EMAIL)
+    # os.environ["REQUESTS_CA_BUNDLE"] = certifi.where()
+
+    if not os.environ.get("PYTHONHTTPSVERIFY", "") and getattr(
+        ssl, "_create_unverified_context", None
+    ):
+        ssl._create_default_https_context = ssl._create_unverified_context
+    try:
+
+        sg = SendGridAPIClient(api_key=settings.SENDGRID_API_KEY)
+        # sg.http.client.ca_certs = certifi.where()  # Configura el archivo de certificados
+        response = sg.send(message)
+        print(response.status_code)
+        print(response.body)
+        print(response.headers)
+        return {
+            "message": "Correo electrónico enviado con éxito",
+            "status_code": response.status_code,
+        }
+    except Exception as e:
+        print(str(e))
+        return {
+            "detail": "Error al enviar el correo electrónico",
+            "error": str(e.body),
+        }
+    

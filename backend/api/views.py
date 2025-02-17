@@ -21,7 +21,7 @@ from django.contrib.auth.decorators import login_required
 from .models import *
 
 # from .utils import send_code_to_user
-from .new_utils import send_code_to_user, send_test_email, send_update_adoption_email
+from .new_utils import send_code_to_user, send_test_email, send_update_adoption_email, send_update_care_email
 from django.utils.http import urlsafe_base64_decode
 from django.utils.encoding import smart_str, DjangoUnicodeDecodeError
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
@@ -1124,14 +1124,6 @@ class ResenaDeleteView(generics.DestroyAPIView):
 
 
 ## PEDIDOS
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.response import Response
-from rest_framework import status
-from django.shortcuts import get_object_or_404
-from django.db import transaction
-from .models import Pedido
-
-
 @api_view(["PUT"])
 def cancelar_pedido(request, pedido_id):
     print(f"Intentando cancelar pedido con ID: {pedido_id}")
@@ -1156,7 +1148,8 @@ def cancelar_pedido(request, pedido_id):
             return Response(
                 {
                     "error": "Este pedido no puede ser cancelado.",
-                    "detail": "Este pedido no puede ser cancelado.",},
+                    "detail": "Este pedido no puede ser cancelado.",
+                },
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -1643,6 +1636,8 @@ class SolicitudAdopcionDetailView(generics.RetrieveUpdateDestroyAPIView):
     def get_object(self):
         id = self.kwargs.get("id")
         return get_object_or_404(SolicitudAdopcion, id=id)
+    
+
 
 
 ## SOLICITUD DE ADOPCION - PARA LA FUNDACIÓN
@@ -1843,3 +1838,153 @@ class OrdenarProductosPorPrecioDescView(generics.ListAPIView):
 
     def get_queryset(self):
         return Producto.objects.all().order_by("-precio")
+
+# SOLICITUD DE CUIDADO
+
+class SolictudCuidadoCreateView(generics.ListCreateAPIView):
+    queryset = SolicitudCuidado.objects.all()
+    permission_classes = [permissions.IsAuthenticated & IsClienteUser]
+    serializer_class = SolicitudCuidadoSerializer
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(
+                {
+                    "message": "Solicitud de cuidado enviada correctamente. Debes esperar a la respuesta del cuidador."
+                },
+                status=status.HTTP_201_CREATED,)
+        
+        return Response(
+            {
+                "error": serializer.errors,
+                "message": "Ha ocurrido un error al enviar la solicitud de cuidado",
+            }, status=status.HTTP_400_BAD_REQUEST,)
+
+class SolicitudCiudadoUserView(generics.ListAPIView):
+    serializer_class = SolicitudCuidadoSerializer
+    permission_classes = [permissions.IsAuthenticated & IsClienteUser]
+
+    def get_queryset(self):
+        email = self.kwargs.get("email")
+        user = get_object_or_404(User, email=email)
+        return SolicitudCuidado.objects.filter(cliente__user=user)
+    
+class SolicitudCuidadoDetailView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = SolicitudCuidadoSerializer
+    permission_classes = [permissions.IsAuthenticated & IsClienteUser]
+
+    def get_object(self):
+        id = self.kwargs.get("id")
+        return get_object_or_404(SolicitudCuidado, id=id)
+    
+
+class SolicitudCuidadoUpdateView(APIView):
+    permission_classes = [permissions.IsAuthenticated & IsClienteUser]
+    serializer_class = SolicitudCuidadoSerializer
+
+    def get_object(self, id):
+        try:
+            return SolicitudCuidado.objects.get(id=id)
+        except SolicitudCuidado.DoesNotExist:
+            return None
+
+    def put(self, request, id, *args, **kwargs):
+        solicitud_cuidado = self.get_object(id)
+        if not solicitud_cuidado:
+            return Response(
+                {"message": "Solicitud de cuidado no encontrada"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        if solicitud_cuidado.cliente.user != request.user:
+            raise PermissionDenied(
+                "No tienes permisos para editar esta solicitud de cuidado"
+            )
+        serializer = SolicitudCuidadoSerializer(solicitud_cuidado, data=request.data)
+        if serializer.is_valid():
+            serializer.update(solicitud_cuidado, serializer.validated_data)
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+class ActualizarEstadoSolicitudCuidado(APIView):
+    permission_classes = [permissions.IsAuthenticated ]
+    serializer_class = SetEstadoSolicitudCuidadoSerializer
+
+    def get_object(self, id):
+        try:
+            return SolicitudCuidado.objects.get(id=id)
+        except SolicitudCuidado.DoesNotExist:
+            return None
+
+    def patch(self, request, id, *args, **kwargs):
+        solicitud_cuidado = self.get_object(id)
+        if not solicitud_cuidado:
+            return Response(
+                {"message": "Solicitud de cuidado no encontrada"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        if solicitud_cuidado.cuidador.user != request.user:
+            raise PermissionDenied(
+                "No tienes permisos para editar esta solicitud de cuidado"
+            )
+        serializer = SetEstadoSolicitudCuidadoSerializer(
+            solicitud_cuidado, data=request.data, partial=True
+        )
+        if serializer.is_valid():
+            serializer.update(solicitud_cuidado, serializer.validated_data)
+            numero_solicitud = solicitud_cuidado.id
+            email = solicitud_cuidado.cliente.user.email
+            fecha = solicitud_cuidado.fecha
+            nuevo_estado = solicitud_cuidado.estado
+            nombre_mascota = solicitud_cuidado.mascota.nombre
+            sexo_mascota = solicitud_cuidado.mascota.sexo
+            tipo_mascota = solicitud_cuidado.mascota.tipo
+            raza_mascota = solicitud_cuidado.mascota.raza
+            edad_mascota = solicitud_cuidado.mascota.edad
+            descripcion = solicitud_cuidado.descripcion
+            id_mascota = solicitud_cuidado.mascota.id
+            nombre_cuidador = solicitud_cuidado.cuidador.nombre
+            telefono_cuidador = solicitud_cuidado.cuidador.user.telefono
+            direccion_cuidador = (
+                solicitud_cuidado.cuidador.direccion.direccion
+            )
+            localidad_cuidador = (
+                solicitud_cuidado.cuidador.direccion.localidad.nombre
+            )
+            email_cuidador = solicitud_cuidado.cuidador.user.email
+
+            send_update_care_email(
+                numero_solicitud,
+                email,
+                fecha,
+                nuevo_estado,
+                nombre_mascota,
+                sexo_mascota,
+                tipo_mascota,
+                raza_mascota,
+                edad_mascota,
+                descripcion,
+                id_mascota,
+                nombre_cuidador,
+                telefono_cuidador,
+                direccion_cuidador,
+                localidad_cuidador,
+                email_cuidador,
+            )
+
+            return Response(serializer.data)
+        return Response(
+            {
+                "error": serializer.errors,
+                "detail": "Ha ocurrido un error al actualizar el estado de la solicitud de cuidado",
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+
+    
+    
+
+
+    
