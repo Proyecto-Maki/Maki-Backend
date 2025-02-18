@@ -1855,7 +1855,7 @@ class SolictudCuidadoCreateView(generics.ListCreateAPIView):
                     "message": "Solicitud de cuidado enviada correctamente. Debes esperar a la respuesta del cuidador."
                 },
                 status=status.HTTP_201_CREATED,)
-        
+        print("Errores del serializador:", serializer.errors)
         return Response(
             {
                 "error": serializer.errors,

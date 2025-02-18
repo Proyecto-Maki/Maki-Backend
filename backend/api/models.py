@@ -396,8 +396,9 @@ class SolicitudCuidado(models.Model):
     fecha_inicio = models.DateTimeField(null=False, blank=False)
     fecha_fin = models.DateTimeField(null=False, blank=False)
     horas_cuidado = models.IntegerField(null=False, blank=False, default=0)
+    is_cuidado_especial = models.BooleanField(default=False)
     descripcion = models.TextField(null=False, blank=False)
-    estado = models.CharField(max_length=255, null=False, blank=False, choices=ESTADOS)
+    estado = models.CharField(max_length=255, null=False, blank=False, choices=ESTADOS, default="Pendiente")
     costo = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, null=False, blank=False)
 
 
