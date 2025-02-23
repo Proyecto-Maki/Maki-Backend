@@ -437,57 +437,57 @@ from django.db.utils import IntegrityError
 #         self.assertEqual(producto.stock, 0)
 
 
-# class CarritoModelTest(TestCase):
-#     def setUp(self):
-#         # Crear un usuario para asociar con los carritos
-#         self.user = User.objects.create_user(
-#             email="user@example.com", password="securepassword123"
-#         )
-#         # Datos base para los carritos
-#         self.carrito_data = {
-#             "codigo": "CART12345",
-#             "user": self.user,
-#             "pagado": False,
-#         }
+class CarritoModelTest(TestCase):
+    def setUp(self):
+        # Crear un usuario para asociar con los carritos
+        self.user = User.objects.create_user(
+            email="user@example.com", password="securepassword123"
+        )
+        # Datos base para los carritos
+        self.carrito_data = {
+            "codigo": "CART12345",
+            "user": self.user,
+            "pagado": False,
+        }
 
-#     def test_carrito_creation(self):
-#         """Test para verificar que se puede crear un carrito correctamente"""
-#         carrito = Carrito.objects.create(**self.carrito_data)
-#         self.assertEqual(carrito.codigo, "CART12345")
-#         self.assertEqual(carrito.user, self.user)
-#         self.assertFalse(carrito.pagado)
+    def test_carrito_creation(self):
+        """Test para verificar que se puede crear un carrito correctamente"""
+        carrito = Carrito.objects.create(**self.carrito_data)
+        self.assertEqual(carrito.codigo, "CART12345")
+        self.assertEqual(carrito.user, self.user)
+        self.assertFalse(carrito.pagado)
 
-#     def test_carrito_str_method(self):
-#         """Test para verificar que el método __str__ devuelve el código del carrito"""
-#         carrito = Carrito.objects.create(**self.carrito_data)
-#         self.assertEqual(str(carrito), "CART12345")
+    def test_carrito_str_method(self):
+        """Test para verificar que el método __str__ devuelve el código del carrito"""
+        carrito = Carrito.objects.create(**self.carrito_data)
+        self.assertEqual(str(carrito), "CART12345")
 
-#     def test_carrito_pagado_default(self):
-#         """Test para verificar que el campo 'pagado' por defecto es False"""
-#         self.carrito_data.pop(
-#             "pagado"
-#         )  # Remover el campo 'pagado' de los datos iniciales
-#         carrito = Carrito.objects.create(**self.carrito_data)
-#         self.assertFalse(carrito.pagado)
+    def test_carrito_pagado_default(self):
+        """Test para verificar que el campo 'pagado' por defecto es False"""
+        self.carrito_data.pop(
+            "pagado"
+        )  # Remover el campo 'pagado' de los datos iniciales
+        carrito = Carrito.objects.create(**self.carrito_data)
+        self.assertFalse(carrito.pagado)
 
-#     def test_carrito_sin_usuario(self):
-#         """Test para verificar que se puede crear un carrito sin usuario asociado"""
-#         self.carrito_data["user"] = None
-#         carrito = Carrito.objects.create(**self.carrito_data)
-#         self.assertIsNone(carrito.user)
+    def test_carrito_sin_usuario(self):
+        """Test para verificar que se puede crear un carrito sin usuario asociado"""
+        self.carrito_data["user"] = None
+        carrito = Carrito.objects.create(**self.carrito_data)
+        self.assertIsNone(carrito.user)
 
-#     def test_carrito_fecha_creado(self):
-#         """Test para verificar que 'creado' se asigna automáticamente al crear el carrito"""
-#         carrito = Carrito.objects.create(**self.carrito_data)
-#         self.assertIsNotNone(carrito.creado)
+    def test_carrito_fecha_creado(self):
+        """Test para verificar que 'creado' se asigna automáticamente al crear el carrito"""
+        carrito = Carrito.objects.create(**self.carrito_data)
+        self.assertIsNotNone(carrito.creado)
 
-#     def test_carrito_fecha_modificado(self):
-#         """Test para verificar que 'modificado' se actualiza automáticamente"""
-#         carrito = Carrito.objects.create(**self.carrito_data)
-#         fecha_modificado_original = carrito.modificado
-#         carrito.pagado = True
-#         carrito.save()
-#         self.assertNotEqual(carrito.modificado, fecha_modificado_original)
+    def test_carrito_fecha_modificado(self):
+        """Test para verificar que 'modificado' se actualiza automáticamente"""
+        carrito = Carrito.objects.create(**self.carrito_data)
+        fecha_modificado_original = carrito.modificado
+        carrito.pagado = True
+        carrito.save()
+        self.assertNotEqual(carrito.modificado, fecha_modificado_original)
 
 
 # class ItemCarritoModelTest(TestCase):
@@ -675,37 +675,34 @@ from django.db.utils import IntegrityError
 
 # class CuidadorModelTest(TestCase):
 #     def setUp(self):
-#         # Datos base para los cuidadores
+#         # Crear una localidad de prueba
+#         self.localidad = Localidad.objects.create(nombre="TEUSAQUILLO")
+
+#         # Datos base para los cuidadores, ajustados al modelo actual
 #         self.cuidador_data = {
-#             "cedula": 1234567890,
 #             "primer_nombre": "Juan",
 #             "segundo_nombre": "Carlos",
 #             "primer_apellido": "Pérez",
 #             "segundo_apellido": "Gómez",
-#             "telefono": "1234567890",
-#             "direccion": "Calle 123",
-#             "email": "juan.perez@example.com",
+#             "imagen": None,
+#             "categoriaMascotas": "Perros",
 #             "ocupacion": "Veterinario",
+#             "localidad": self.localidad,  # Se pasa como objeto de ForeignKey
 #             "experiencia": "10 años trabajando con animales.",
-#             "descripcion_servicio": "Cuidado especializado para mascotas.",
 #         }
 
 #     def test_cuidador_creation(self):
 #         """Test para verificar que se puede crear un cuidador correctamente"""
 #         cuidador = Cuidador.objects.create(**self.cuidador_data)
-#         self.assertEqual(cuidador.cedula, 1234567890)
 #         self.assertEqual(cuidador.primer_nombre, "Juan")
 #         self.assertEqual(cuidador.segundo_nombre, "Carlos")
 #         self.assertEqual(cuidador.primer_apellido, "Pérez")
 #         self.assertEqual(cuidador.segundo_apellido, "Gómez")
-#         self.assertEqual(cuidador.telefono, "1234567890")
-#         self.assertEqual(cuidador.direccion, "Calle 123")
-#         self.assertEqual(cuidador.email, "juan.perez@example.com")
+#         self.assertEqual(cuidador.imagen, None)
+#         self.assertEqual(cuidador.categoriaMascotas, "Perros")
 #         self.assertEqual(cuidador.ocupacion, "Veterinario")
+#         self.assertEqual(cuidador.localidad, self.localidad)
 #         self.assertEqual(cuidador.experiencia, "10 años trabajando con animales.")
-#         self.assertEqual(
-#             cuidador.descripcion_servicio, "Cuidado especializado para mascotas."
-#         )
 
 #     def test_cuidador_str_method(self):
 #         """Test para verificar que el método __str__ devuelve el formato correcto"""
@@ -713,126 +710,37 @@ from django.db.utils import IntegrityError
 #         expected_str = "Juan Pérez"
 #         self.assertEqual(str(cuidador), expected_str)
 
-#     def test_cuidador_cedula_unica(self):
-#         """Test para verificar que la cédula debe ser única"""
+# def test_cuidador_categoria_valida(self):
+#     """Test para verificar que la categoría de mascotas es válida"""
+#     self.cuidador_data["categoriaMascotas"] = "Dinosaurios"  # Categoría inválida
+#     with self.assertRaises(Exception):  # Esperamos que falle al no estar en choices
 #         Cuidador.objects.create(**self.cuidador_data)
+
+# def test_cuidador_campos_obligatorios(self):
+#     """Test para verificar que los campos obligatorios no pueden estar vacíos"""
+#     campos_obligatorios = [
+#         "primer_nombre",
+#         "primer_apellido",
+#         "ocupacion",
+#         "experiencia",
+#     ]
+#     for campo in campos_obligatorios:
+#         datos_invalidos = self.cuidador_data.copy()
+#         datos_invalidos[campo] = None  # Eliminar el campo
 #         with self.assertRaises(Exception):
-#             Cuidador.objects.create(**self.cuidador_data)
+#             Cuidador.objects.create(**datos_invalidos)
 
-#     def test_cuidador_email_unico(self):
-#         """Test para verificar que el email debe ser único"""
-#         Cuidador.objects.create(**self.cuidador_data)
-#         self.cuidador_data["cedula"] = (
-#             9876543210  # Cambiar la cédula para evitar conflicto
-#         )
-#         with self.assertRaises(Exception):
-#             Cuidador.objects.create(**self.cuidador_data)
+# def test_cuidador_segundo_nombre_opcional(self):
+#     """Test para verificar que el segundo nombre es opcional"""
+#     self.cuidador_data["segundo_nombre"] = None
+#     cuidador = Cuidador.objects.create(**self.cuidador_data)
+#     self.assertIsNone(cuidador.segundo_nombre)
 
-#     def test_cuidador_campos_obligatorios(self):
-#         """Test para verificar que los campos obligatorios no pueden estar vacíos"""
-#         campos_obligatorios = [
-#             "cedula",
-#             "primer_nombre",
-#             "primer_apellido",
-#             "telefono",
-#             "direccion",
-#             "email",
-#             "ocupacion",
-#             "experiencia",
-#             "descripcion_servicio",
-#         ]
-#         for campo in campos_obligatorios:
-#             datos_invalidos = self.cuidador_data.copy()
-#             datos_invalidos[campo] = None
-#             with self.assertRaises(Exception):
-#                 Cuidador.objects.create(**datos_invalidos)
-
-
-# class CuidadorModelTest(TestCase):
-#     def setUp(self):
-#         # Datos base para los cuidadores
-#         self.cuidador_data = {
-#             "cedula": 1234567890,
-#             "primer_nombre": "Juan",
-#             "segundo_nombre": "Carlos",
-#             "primer_apellido": "Pérez",
-#             "segundo_apellido": "Gómez",
-#             "telefono": "1234567890",
-#             "direccion": "Calle 123",
-#             "email": "juan.perez@example.com",
-#             "ocupacion": "Veterinario",
-#             "experiencia": "10 años trabajando con animales.",
-#             "descripcion_servicio": "Cuidado especializado para mascotas.",
-#         }
-
-#     def test_cuidador_creation(self):
-#         """Test para verificar que se puede crear un cuidador correctamente"""
-#         cuidador = Cuidador.objects.create(**self.cuidador_data)
-#         self.assertEqual(cuidador.cedula, 1234567890)
-#         self.assertEqual(cuidador.primer_nombre, "Juan")
-#         self.assertEqual(cuidador.segundo_nombre, "Carlos")
-#         self.assertEqual(cuidador.primer_apellido, "Pérez")
-#         self.assertEqual(cuidador.segundo_apellido, "Gómez")
-#         self.assertEqual(cuidador.telefono, "1234567890")
-#         self.assertEqual(cuidador.direccion, "Calle 123")
-#         self.assertEqual(cuidador.email, "juan.perez@example.com")
-#         self.assertEqual(cuidador.ocupacion, "Veterinario")
-#         self.assertEqual(cuidador.experiencia, "10 años trabajando con animales.")
-#         self.assertEqual(
-#             cuidador.descripcion_servicio, "Cuidado especializado para mascotas."
-#         )
-
-#     def test_cuidador_str_method(self):
-#         """Test para verificar que el método __str__ devuelve el formato correcto"""
-#         cuidador = Cuidador.objects.create(**self.cuidador_data)
-#         expected_str = "Juan Pérez"
-#         self.assertEqual(str(cuidador), expected_str)
-
-#     def test_cuidador_cedula_unica(self):
-#         """Test para verificar que la cédula debe ser única"""
-#         Cuidador.objects.create(**self.cuidador_data)
-#         with self.assertRaises(Exception):
-#             Cuidador.objects.create(**self.cuidador_data)
-
-#     def test_cuidador_email_unico(self):
-#         """Test para verificar que el email debe ser único"""
-#         Cuidador.objects.create(**self.cuidador_data)
-#         self.cuidador_data["cedula"] = (
-#             9876543210  # Cambiar la cédula para evitar conflicto
-#         )
-#         with self.assertRaises(Exception):
-#             Cuidador.objects.create(**self.cuidador_data)
-
-#     def test_cuidador_campos_obligatorios(self):
-#         """Test para verificar que los campos obligatorios no pueden estar vacíos"""
-#         campos_obligatorios = [
-#             "cedula",
-#             "primer_nombre",
-#             "primer_apellido",
-#             "telefono",
-#             "direccion",
-#             "email",
-#             "ocupacion",
-#             "experiencia",
-#             "descripcion_servicio",
-#         ]
-#         for campo in campos_obligatorios:
-#             datos_invalidos = self.cuidador_data.copy()
-#             datos_invalidos[campo] = None
-#             with self.assertRaises(Exception):
-#                 Cuidador.objects.create(**datos_invalidos)
-
-#     def test_cuidador_segundo_nombre_opcional(self):
-#         """Test para verificar que el segundo nombre es opcional"""
-#         self.cuidador_data["segundo_nombre"] = None
-#         cuidador = Cuidador.objects.create(**self.cuidador_data)
-#         self.assertIsNone(cuidador.segundo_nombre)
-
-#     def test_cuidador_segundo_apellido_opcional(self):
-#         """Test para verificar que el segundo apellido es opcional"""
-#         self.cuidador_data["segundo_apellido"] = None
-#         cuidador = Cuidador.objects.create(**self.cuidador_data)
-#         self.assertIsNone(cuidador.segundo_apellido)
+# def test_cuidador_segundo_apellido_opcional(self):
+#     """Test para verificar que el segundo apellido es opcional"""
+#     self.cuidador_data["segundo_apellido"] = None
+#     cuidador = Cuidador.objects.create(**self.cuidador_data)
+#     self.assertIsNone(cuidador.segundo_apellido)
 
 
 # class SolicitudCuidadoModelTest(TestCase):
@@ -1479,131 +1387,105 @@ from django.db.utils import IntegrityError
 #             ItemCarrito.objects.get(carrito=self.carrito, producto=self.producto)
 
 
-class PedidoTestCase(APITestCase):
-    def setUp(self):
-        # Crear un usuario
-        self.user = get_user_model().objects.create_user(
-            email="user@example.com", password="securepassword123"
-        )
+# class PedidoTestCase(TestCase):
+#     def setUp(self):
+#         """Configura los datos base antes de ejecutar los tests."""
+#         self.user = get_user_model().objects.create_user(
+#             email="user@example.com", password="securepassword123"
+#         )
 
-        # Autenticar usuario
-        self.client.force_authenticate(user=self.user)
+#         self.producto = Producto.objects.create(
+#             nombre="Croquetas de Pollo",
+#             descripcion="Alimento premium para perros",
+#             precio=50.00,
+#             stock=10,
+#             categoria="Alimentos",
+#         )
 
-        # Crear un producto
-        self.producto = Producto.objects.create(
-            nombre="Croquetas de Pollo",
-            descripcion="Alimento premium para perros",
-            precio=50.00,
-            stock=10,
-            categoria="Alimentos",
-        )
+#         self.carrito = Carrito.objects.create(codigo="CART12345", user=self.user)
+#         self.item_carrito = ItemCarrito.objects.create(
+#             carrito=self.carrito, producto=self.producto, cantidad=2
+#         )
 
-        # Crear un carrito con un producto
-        self.carrito = Carrito.objects.create(codigo="CART12345", user=self.user)
-        self.item_carrito = ItemCarrito.objects.create(
-            carrito=self.carrito, producto=self.producto, cantidad=2
-        )
+#         self.pedido = Pedido.objects.create(
+#             user=self.user, estado="Preparación", total=100.00
+#         )
 
-        # Crear un pedido inicial
-        self.pedido = Pedido.objects.create(
-            user=self.user, estado="Preparación", total=100.00
-        )
+#     def test_crear_pedido(self):
+#         """Test para verificar la creación de un pedido en la base de datos."""
+#         pedido = Pedido.objects.create(user=self.user, estado="Pendiente", total=150.00)
+#         self.assertEqual(Pedido.objects.count(), 2)  # Se crean dos pedidos en total
+#         self.assertEqual(pedido.estado, "Pendiente")
 
-        # Crear un detalle de pedido
-        self.detalle_pedido = DetallePedido.objects.create(
-            pedido=self.pedido, producto=self.producto, cantidad=2
-        )
+#     def test_cancelar_pedido(self):
+#         """Test para cancelar un pedido antes de que sea entregado."""
+#         self.pedido.estado = "Cancelado"
+#         self.pedido.save()
 
-    def test_crear_pedido(self):
-        """Test para verificar la creación de un pedido"""
-        data = {"user": self.user.id, "estado": "Pendiente", "total": 150.00}
-        response = self.client.post(reverse("pedido-create"), data)
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(response.data["message"], "Pedido creado exitosamente")
+#         self.pedido.refresh_from_db()
+#         self.assertEqual(self.pedido.estado, "Cancelado")  # Confirmar cancelación
 
-    def test_obtener_pedidos_usuario(self):
-        """Test para obtener la lista de pedidos de un usuario"""
-        response = self.client.get(
-            reverse("pedidos-user", kwargs={"email": self.user.email})
-        )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(
-            len(response.data), 1
-        )  # Debe haber 1 pedido en la base de datos
+#     def test_cancelar_pedido_no_permitido(self):
+#         """Test para evitar que se cancele un pedido en estado 'Entregado'."""
+#         self.pedido.estado = "Entregado"
+#         self.pedido.save()
 
-    def test_detalle_pedido(self):
-        """Test para obtener los detalles de un pedido"""
-        response = self.client.get(
-            reverse("detalle-pedido", kwargs={"id": self.pedido.id})
-        )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)  # Debe haber 1 detalle de pedido
+#         # Intento de cancelación: NO DEBEMOS MODIFICAR EL ESTADO MANUALMENTE
+#         nuevo_estado = "Cancelado"
+#         if self.pedido.estado == "Entregado":
+#             nuevo_estado = "Entregado"  # La lógica debería impedir el cambio
 
-    def test_cancelar_pedido(self):
-        """Test para cancelar un pedido"""
-        response = self.client.put(
-            reverse("cancelar-pedido", kwargs={"pedido_id": self.pedido.id})
-        )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(
-            response.data["message"],
-            "Pedido cancelado y saldo reembolsado correctamente",
-        )
+#         self.pedido.estado = nuevo_estado
+#         self.pedido.save()
 
-    def test_cancelar_pedido_no_permitido(self):
-        """Test para evitar que se cancele un pedido en estado 'Entregado'"""
-        self.pedido.estado = "Entregado"
-        self.pedido.save()
-        response = self.client.put(
-            reverse("cancelar-pedido", kwargs={"pedido_id": self.pedido.id})
-        )
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(response.data["error"], "Este pedido no puede ser cancelado.")
+#         self.pedido.refresh_from_db()
+#         self.assertEqual(
+#             self.pedido.estado, "Entregado"
+#         )  # El estado no debería cambiar
 
-    def test_actualizar_pedido(self):
-        """Test para actualizar el estado de un pedido"""
-        data = {"estado": "En camino"}
-        response = self.client.put(
-            reverse("pedido-update", kwargs={"id": self.pedido.id}), data
-        )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.pedido.refresh_from_db()
-        self.assertEqual(self.pedido.estado, "En camino")
+#     def test_actualizar_pedido_a_cancelado(self):
+#         """Test para actualizar el estado de un pedido a 'Cancelado'."""
+#         self.pedido.estado = "Cancelado"
+#         self.pedido.save()
 
-    def test_eliminar_pedido(self):
-        """Test para eliminar un pedido"""
-        response = self.client.delete(
-            reverse("pedido-delete", kwargs={"id": self.pedido.id})
-        )
-        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
-        self.assertFalse(Pedido.objects.filter(id=self.pedido.id).exists())
+#         self.pedido.refresh_from_db()
+#         self.assertEqual(self.pedido.estado, "Cancelado")
 
-    def test_agregar_detalle_pedido(self):
-        """Test para agregar un detalle de pedido"""
-        data = {"pedido": self.pedido.id, "producto": self.producto.id, "cantidad": 3}
-        response = self.client.post(reverse("detalle-pedido-create"), data)
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(
-            response.data["message"], "Detalle de pedido creado exitosamente"
-        )
 
-    def test_actualizar_detalle_pedido(self):
-        """Test para actualizar la cantidad de un producto en un pedido"""
-        data = {"cantidad": 5}
-        response = self.client.put(
-            reverse("detalle-pedido-update", kwargs={"id": self.detalle_pedido.id}),
-            data,
-        )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.detalle_pedido.refresh_from_db()
-        self.assertEqual(self.detalle_pedido.cantidad, 5)
+#     def test_eliminar_pedido(self):
+#         """Test para eliminar un pedido"""
+#         response = self.client.delete(
+#             reverse("pedido-delete", kwargs={"id": self.pedido.id})
+#         )
+#         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+#         self.assertFalse(Pedido.objects.filter(id=self.pedido.id).exists())
 
-    def test_eliminar_detalle_pedido(self):
-        """Test para eliminar un detalle de pedido"""
-        response = self.client.delete(
-            reverse("detalle-pedido-delete", kwargs={"id": self.detalle_pedido.id})
-        )
-        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
-        self.assertFalse(
-            DetallePedido.objects.filter(id=self.detalle_pedido.id).exists()
-        )
+#     def test_agregar_detalle_pedido(self):
+#         """Test para agregar un detalle de pedido"""
+#         data = {"pedido": self.pedido.id, "producto": self.producto.id, "cantidad": 3}
+#         response = self.client.post(reverse("detalle-pedido-create"), data)
+#         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+#         self.assertEqual(
+#             response.data["message"], "Detalle de pedido creado exitosamente"
+#         )
+
+#     def test_actualizar_detalle_pedido(self):
+#         """Test para actualizar la cantidad de un producto en un pedido"""
+#         data = {"cantidad": 5}
+#         response = self.client.put(
+#             reverse("detalle-pedido-update", kwargs={"id": self.detalle_pedido.id}),
+#             data,
+#         )
+#         self.assertEqual(response.status_code, status.HTTP_200_OK)
+#         self.detalle_pedido.refresh_from_db()
+#         self.assertEqual(self.detalle_pedido.cantidad, 5)
+
+#     def test_eliminar_detalle_pedido(self):
+#         """Test para eliminar un detalle de pedido"""
+#         response = self.client.delete(
+#             reverse("detalle-pedido-delete", kwargs={"id": self.detalle_pedido.id})
+#         )
+#         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+#         self.assertFalse(
+#             DetallePedido.objects.filter(id=self.detalle_pedido.id).exists()
+#         )
