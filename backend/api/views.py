@@ -277,35 +277,79 @@ def SendTestEmail(request):
         return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
+# class ClienteSignupView(generics.ListCreateAPIView):
+#     # serializer_class = ClienteSignupSerializer
+#     # def post(self, request, *args, **kwargs):
+#     #     serializer = self.get_serializer(data=request.data)
+#     #     serializer.is_valid(raise_exception=True)
+#     #     user = serializer.save()
+#     #     return Response({
+#     #             "user": UserSerializer(user, context=self.get_serializer_context()).data,
+#     #             "token": Token.objects.get(user=user).key,
+#     #             "message": "Cliente creado exitosamente",
+#     #         })
+#     queryset = Cliente.objects.all()
+#     serializer_class = ClienteSignupSerializer
+#     permission_classes = [permissions.AllowAny]
+
+#     def create(self, request, *args, **kwargs):
+#         serializer = self.get_serializer(data=request.data)
+#         if serializer.is_valid():
+#             user = serializer.save()
+#             send_code_to_user(user.email)
+#             # if sendgrid_response.status_code != 200:
+#             #     user.delete()
+#             #     return Response(
+#             #         {
+#             #             "error": sendgrid_response.text,
+#             #             "detail": "Ha ocurrido un error en el envió de tu correo de confirmación. Comunicamente con soporte técnico.",
+#             #         },
+#             #         status=status.HTTP_201_CREATED,
+#             #     )
+#             return Response(
+#                 {
+#                     "user": UserSerializer(
+#                         user, context=self.get_serializer_context()
+#                     ).data,
+#                     "message": "Cliente creado exitosamente. Se envió un código de verificación a tu correo electrónico",
+#                 },
+#                 status=status.HTTP_201_CREATED,
+#             )
+
+#         errores = {}
+#         print(serializer.errors)
+#         for key, value in serializer.errors.items():
+#             errores[key] = ", ".join(value)
+
+#         mensaje = " | ".join([f"{key}: {value}" for key, value in errores.items()])
+#         return Response(
+#             {
+#                 "error": serializer.errors,
+#                 "detail": mensaje,
+#             },
+#             status=status.HTTP_400_BAD_REQUEST,
+#         )
+
+
 class ClienteSignupView(generics.ListCreateAPIView):
-    # serializer_class = ClienteSignupSerializer
-    # def post(self, request, *args, **kwargs):
-    #     serializer = self.get_serializer(data=request.data)
-    #     serializer.is_valid(raise_exception=True)
-    #     user = serializer.save()
-    #     return Response({
-    #             "user": UserSerializer(user, context=self.get_serializer_context()).data,
-    #             "token": Token.objects.get(user=user).key,
-    #             "message": "Cliente creado exitosamente",
-    #         })
-    queryset = Cliente.objects.all()
-    serializer_class = ClienteSignupSerializer
+
+    queryset = User.objects.all()  # Asegúrate de usar el modelo correcto de usuario
+    serializer_class = ClienteSignupSerializer  # Usamos el serializer para clientes
     permission_classes = [permissions.AllowAny]
 
     def create(self, request, *args, **kwargs):
+        # Aquí se está usando el serializer de cliente
         serializer = self.get_serializer(data=request.data)
+
+        # Verificar si el serializer es válido
         if serializer.is_valid():
+            # Guardar el nuevo usuario (cliente)
             user = serializer.save()
+
+            # Enviar el código de verificación por correo
             send_code_to_user(user.email)
-            # if sendgrid_response.status_code != 200:
-            #     user.delete()
-            #     return Response(
-            #         {
-            #             "error": sendgrid_response.text,
-            #             "detail": "Ha ocurrido un error en el envió de tu correo de confirmación. Comunicamente con soporte técnico.",
-            #         },
-            #         status=status.HTTP_201_CREATED,
-            #     )
+
+            # Responder con un mensaje de éxito
             return Response(
                 {
                     "user": UserSerializer(
@@ -316,8 +360,8 @@ class ClienteSignupView(generics.ListCreateAPIView):
                 status=status.HTTP_201_CREATED,
             )
 
+        # Si los datos del serializer no son válidos, se devuelven los errores
         errores = {}
-        print(serializer.errors)
         for key, value in serializer.errors.items():
             errores[key] = ", ".join(value)
 
