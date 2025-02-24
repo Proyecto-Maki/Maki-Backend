@@ -303,4 +303,9 @@ urlpatterns = [
         ActualizarEstadoSolicitudCuidado.as_view(),
         name="solicitud_cuidado_update_estado",
     ),
+    path(
+        "solicitud-cuidado/cancelar-solicitud/<int:id>/",
+        CancelarSolicitudCuidado.as_view(),
+        name="cancelar_solicitud_cuidado",
+    )
 ]

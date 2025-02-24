@@ -13,6 +13,8 @@ from rest_framework import exceptions
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 from .utils import generate_random_code
+from datetime import timedelta
+from django.utils import timezone
 
 from django.contrib.auth.decorators import login_required
 
@@ -26,6 +28,8 @@ from .new_utils import (
     send_test_email,
     send_update_adoption_email,
     send_update_care_email,
+    send_cancel_care_email,
+    money_format,
 )
 from django.utils.http import urlsafe_base64_decode
 from django.utils.encoding import smart_str, DjangoUnicodeDecodeError
@@ -2077,3 +2081,105 @@ class ActualizarEstadoSolicitudCuidado(APIView):
             },
             status=status.HTTP_400_BAD_REQUEST,
         )
+    
+class CancelarSolicitudCuidado(APIView):
+    permission_classes = [permissions.IsAuthenticated & IsClienteUser]
+    serializer_class = SetEstadoSolicitudCuidadoSerializer
+
+    def get_object(self, id):
+        try:
+            return SolicitudCuidado.objects.get(id=id)
+        except SolicitudCuidado.DoesNotExist:
+            return None
+        
+    def patch(self, request, id, *args, **kwargs):
+        solicitud_cuidado = self.get_object(id)
+        if not solicitud_cuidado:
+            return Response(
+                {"error": "Solicitud de cuidado no encontrada",
+                 "detail": "Solicitud de cuidado no encontrada"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        if solicitud_cuidado.cliente.user != request.user:
+            raise PermissionDenied(
+                {
+                    "error": "No tienes permisos para editar esta solicitud de cuidado",
+                    "detail": "No tienes permisos para editar esta solicitud de cuidado"
+                }, status=status.HTTP_403_FORBIDDEN
+            )
+        
+        if solicitud_cuidado.estado == "Cancelada":
+            return Response(
+                {
+                    "error": "Esta solicitud ya ha sido cancelada",
+                    "detail": "Esta solicitud ya ha sido cancelada"
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        tiempo_restante = solicitud_cuidado.fecha_inicio - timezone.now()
+        reembolso = 0
+
+        # Reembolso segun los casos
+        if tiempo_restante > timedelta(hours=48):
+            reembolso = solicitud_cuidado.costo
+        elif timedelta(hours=24) < tiempo_restante <= timedelta(hours=48):
+            reembolso = solicitud_cuidado.costo * 0.5
+        else:
+            reembolso = 0
+        
+        # Actualización del saldo del cliente
+        cliente = solicitud_cuidado.cliente
+        try: 
+            cliente.user.saldo += reembolso
+            cliente.save()
+        except Exception as e:
+            return Response(
+                {
+                    "error": "Ha ocurrido un error al actualizar el saldo del cliente",
+                    "detail": str(e)
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+        # Cambio en el estado de la solicitud
+        solicitud_cuidado.estado = "Cancelada"
+        solicitud_cuidado.fecha_actualizacion = timezone.now()
+        solicitud_cuidado.save()
+
+
+        # Envio de correo de cancelación
+        numero_solicitud = solicitud_cuidado.id
+        email = solicitud_cuidado.cliente.user.email
+        fecha_solicitud = solicitud_cuidado.fecha_solicitud
+        fecha_inicio = solicitud_cuidado.fecha_inicio
+        fecha_actualizacion = solicitud_cuidado.fecha_actualizacion
+        nombre_mascota = solicitud_cuidado.mascota.nombre
+        descripcion = solicitud_cuidado.descripcion
+        costo = money_format(solicitud_cuidado.costo)
+        nombre_cuidador = f"{solicitud_cuidado.cuidador.primer_nombre} {solicitud_cuidado.cuidador.segundo_nombre or ''} {solicitud_cuidado.cuidador.primer_apellido} {solicitud_cuidado.cuidador.segundo_apellido or ''}"
+
+        try:
+            send_cancel_care_email(
+                numero_solicitud,
+                email,
+                fecha_solicitud,
+                fecha_inicio,
+                fecha_actualizacion,
+                nombre_mascota,
+                descripcion,
+                costo,
+                nombre_cuidador
+            )
+        except Exception as e:
+            return Response(
+                {
+                    "error": "Ha ocurrido un error al enviar el correo de cancelación",
+                    "detail": str(e)
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+        return Response({
+            "message": "Solicitud de cuidado cancelada exitosamente. Se ha enviado un correo de confirmación de la cancelación.",
+        }, status=status.HTTP_200_OK)

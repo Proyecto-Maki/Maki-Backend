@@ -1290,6 +1290,7 @@ class SolicitudCuidadoSerializer(serializers.ModelSerializer):
             "is_cuidado_especial",
             "costo",
             "fecha_solicitud",
+            "fecha_actualizacion",
             "horas_cuidado",
             "estado",
             "mascota",
@@ -1406,3 +1407,5 @@ class SetEstadoSolicitudCuidadoSerializer(serializers.ModelSerializer):
         instance.estado = validated_data["estado"]
         instance.save()
         return instance
+
+

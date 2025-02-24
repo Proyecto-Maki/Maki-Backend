@@ -396,6 +396,7 @@ class SolicitudCuidado(models.Model):
     cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE)
     mascota = models.ForeignKey(Mascota, on_delete=models.CASCADE)
     fecha_solicitud = models.DateTimeField(auto_now_add=True)
+    fecha_actualizacion = models.DateTimeField(auto_now=True, null=True, blank=True)
     fecha_inicio = models.DateTimeField(null=False, blank=False)
     fecha_fin = models.DateTimeField(null=False, blank=False)
     horas_cuidado = models.IntegerField(null=False, blank=False, default=0)
