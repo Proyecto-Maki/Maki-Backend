@@ -375,6 +375,8 @@ class Cuidador(models.Model):
 
     def __str__(self):
         return f"{self.primer_nombre} {self.primer_apellido}"
+    telefono = models.CharField(max_length=10, null=True, blank=True)
+    email = models.EmailField(null=True, blank=True)
 
 
 ## MODELO DE SOLICITUD DE CUIDADO

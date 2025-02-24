@@ -31,11 +31,18 @@ class CuidadorSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "nombre",
+            "primer_nombre",
+            "segundo_nombre",
+            "primer_apellido",
+            "segundo_apellido",
+            "cedula",
             "imagen",
             "ocupacion",
             "categoria_mascotas",
             "localidad",
             "experiencia",
+            "telefono",
+            "email",
         ]
 
     def get_nombre(self, obj):
@@ -65,6 +72,8 @@ class CuidadorSerializer(serializers.ModelSerializer):
         localidad = self.validated_data["localidad"]
         imagen = self.validated_data.get("imagen", None)
         hoja_vida = self.validated_data.get("hoja_vida", None)
+        telefono = self.validated_data.get("telefono", "")
+        email = self.validated_data.get("email", "")
 
         if (len(cedula) != 10):
             raise serializers.ValidationError(
@@ -84,6 +93,8 @@ class CuidadorSerializer(serializers.ModelSerializer):
             experiencia=experiencia,
             localidad=localidad,
             imagen=imagen,
+            telefono=telefono,
+            email=email,
             hoja_vida=hoja_vida
         )
         return cuidador
