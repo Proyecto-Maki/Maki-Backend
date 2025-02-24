@@ -221,6 +221,138 @@ class FundacionSerializer(serializers.ModelSerializer):
         return instance_fundacion
 
 
+# class ClienteSignupSerializer(serializers.ModelSerializer):
+#     email = serializers.EmailField(
+#         validators=[
+#             UniqueValidator(
+#                 queryset=User.objects.all(),
+#                 message="Ya existe un usuario con este correo",
+#             )
+#         ]
+#     )
+#     password2 = serializers.CharField(style={"input_type": "password"}, write_only=True)
+#     direccion = serializers.CharField(max_length=255, required=True, allow_blank=True)
+#     codigo_postal = serializers.CharField(
+#         max_length=6, required=False, allow_blank=True, write_only=True
+#     )
+#     id_localidad = serializers.IntegerField(write_only=True)
+#     telefono = serializers.CharField(
+#         max_length=10, required=False, allow_blank=True, write_only=True
+#     )
+#     primer_nombre = serializers.CharField(
+#         max_length=255, required=True, allow_blank=True, write_only=True
+#     )
+#     primer_apellido = serializers.CharField(
+#         max_length=255, required=True, allow_blank=True, write_only=True
+#     )
+#     segundo_nombre = serializers.CharField(
+#         max_length=255, required=False, allow_blank=True, write_only=True
+#     )
+#     cedula = serializers.CharField(
+#         max_length=10, required=True, allow_blank=True, write_only=True
+#     )
+#     segundo_apellido = serializers.CharField(
+#         max_length=255, required=False, allow_blank=True, write_only=True
+#     )
+
+#     fecha_nacimiento = serializers.DateField(required=False, write_only=True)
+
+#     class Meta:
+#         model = User
+#         fields = [
+#             "email",
+#             "password",
+#             "password2",
+#             "direccion",
+#             "codigo_postal",
+#             "id_localidad",
+#             "telefono",
+#             "cedula",
+#             "primer_nombre",
+#             "primer_apellido",
+#             "segundo_nombre",
+#             "segundo_apellido",
+#             "fecha_nacimiento",
+#         ]
+#         extra_kwargs = {
+#             "password": {"write_only": True},
+#         }
+
+#     def validate_fecha_nacimiento(self, value):
+#         today = date.today()
+#         age = (
+#             today.year
+#             - value.year
+#             - ((today.month, today.day) < (value.month, value.day))
+#         )
+#         if age < 18:
+#             raise serializers.ValidationError(
+#                 {"detail": "Debes ser mayor de edad para registrarte"}
+#             )
+#         return value
+
+#     def save(self, **kwargs):
+#         email_cur = self.validated_data.get("email")
+#         print(email_cur)
+#         if not email_cur:
+#             raise serializers.ValidationError(
+#                 {"detail": "El correo electrónico es requerido"}
+#             )
+#         if User.objects.filter(email=email_cur).exists():
+#             raise serializers.ValidationError(
+#                 {"detail": "Ya existe un usuario con este correo"}
+#             )
+#         user = User(
+#             email=self.validated_data["email"],
+#         )
+#         password = self.validated_data["password"]
+#         password2 = self.validated_data["password2"]
+#         direccion_dir = self.validated_data.get("direccion", "")
+#         codigo_postal = self.validated_data.get("codigo_postal", "")
+#         id_localidad = self.validated_data.get("id_localidad", "")
+#         telefono = self.validated_data.get("telefono", "")
+
+#         direccion = Direccion.objects.create(
+#             direccion=direccion_dir,
+#             codigo_postal=codigo_postal,
+#             localidad=Localidad.objects.get(id=id_localidad),
+#         )
+
+#         if password != password2:
+#             raise serializers.ValidationError(
+#                 {"detail": "Las contraseñas no coinciden"}
+#             )
+#         user.set_password(password)
+#         user.direccion = direccion
+#         user.telefono = telefono
+
+#         user.is_cliente = True
+#         user.is_verified = False  # Set is_verified to False
+#         user.save()
+#         cedula = self.validated_data.get("cedula", "")
+#         primer_nombre = self.validated_data.get("primer_nombre", "")
+#         primer_apellido = self.validated_data.get("primer_apellido", "")
+#         segundo_nombre = self.validated_data.get("segundo_nombre", "")
+#         segundo_apellido = self.validated_data.get("segundo_apellido", "")
+#         fecha_nacimiento = self.validated_data.get("fecha_nacimiento", None)
+#         self.validate_fecha_nacimiento(fecha_nacimiento)
+#         if User.objects.filter(email=user.email).exists():
+#             raise serializers.ValidationError(
+#                 {"detail": "Ya existe un usuario con este correo"}
+#             )
+
+#         Cliente.objects.create(
+#             user=user,
+#             cedula=cedula,
+#             primer_nombre=primer_nombre,
+#             primer_apellido=primer_apellido,
+#             segundo_nombre=segundo_nombre,
+#             segundo_apellido=segundo_apellido,
+#             fecha_nacimiento=fecha_nacimiento,
+#         )
+#         return user
+
+
 class ClienteSignupSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(
         validators=[
@@ -292,8 +424,8 @@ class ClienteSignupSerializer(serializers.ModelSerializer):
         return value
 
     def save(self, **kwargs):
+        # Validar si el correo ya está registrado
         email_cur = self.validated_data.get("email")
-        print(email_cur)
         if not email_cur:
             raise serializers.ValidationError(
                 {"detail": "El correo electrónico es requerido"}
@@ -302,9 +434,12 @@ class ClienteSignupSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {"detail": "Ya existe un usuario con este correo"}
             )
+
+        # Crear el usuario
         user = User(
             email=self.validated_data["email"],
         )
+
         password = self.validated_data["password"]
         password2 = self.validated_data["password2"]
         direccion_dir = self.validated_data.get("direccion", "")
@@ -312,23 +447,28 @@ class ClienteSignupSerializer(serializers.ModelSerializer):
         id_localidad = self.validated_data.get("id_localidad", "")
         telefono = self.validated_data.get("telefono", "")
 
+        # Crear la dirección asociada al cliente
         direccion = Direccion.objects.create(
             direccion=direccion_dir,
             codigo_postal=codigo_postal,
             localidad=Localidad.objects.get(id=id_localidad),
         )
 
+        # Verificar que las contraseñas coinciden
         if password != password2:
             raise serializers.ValidationError(
                 {"detail": "Las contraseñas no coinciden"}
             )
+
+        # Establecer la contraseña
         user.set_password(password)
         user.direccion = direccion
         user.telefono = telefono
-
-        user.is_cliente = True
-        user.is_verified = False  # Set is_verified to False
+        user.is_cliente = True  # Es un cliente, no una fundación
+        user.is_verified = False  # Inicialmente no está verificado
         user.save()
+
+        # Datos adicionales del cliente
         cedula = self.validated_data.get("cedula", "")
         primer_nombre = self.validated_data.get("primer_nombre", "")
         primer_apellido = self.validated_data.get("primer_apellido", "")
@@ -336,11 +476,8 @@ class ClienteSignupSerializer(serializers.ModelSerializer):
         segundo_apellido = self.validated_data.get("segundo_apellido", "")
         fecha_nacimiento = self.validated_data.get("fecha_nacimiento", None)
         self.validate_fecha_nacimiento(fecha_nacimiento)
-        if User.objects.filter(email=user.email).exists():
-            raise serializers.ValidationError(
-                {"detail": "Ya existe un usuario con este correo"}
-            )
 
+        # Crear el cliente en la base de datos
         Cliente.objects.create(
             user=user,
             cedula=cedula,
@@ -350,6 +487,7 @@ class ClienteSignupSerializer(serializers.ModelSerializer):
             segundo_apellido=segundo_apellido,
             fecha_nacimiento=fecha_nacimiento,
         )
+
         return user
 
 

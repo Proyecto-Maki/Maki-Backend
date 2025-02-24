@@ -21,7 +21,12 @@ from django.contrib.auth.decorators import login_required
 from .models import *
 
 # from .utils import send_code_to_user
-from .new_utils import send_code_to_user, send_test_email, send_update_adoption_email, send_update_care_email
+from .new_utils import (
+    send_code_to_user,
+    send_test_email,
+    send_update_adoption_email,
+    send_update_care_email,
+)
 from django.utils.http import urlsafe_base64_decode
 from django.utils.encoding import smart_str, DjangoUnicodeDecodeError
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
@@ -59,7 +64,7 @@ def create_preference(request):
             preference_data = {
                 "items": body["items"],
                 "back_urls": {
-                    "success": "https://makishop.live/success",
+                    "success": "https://makishop.live/",
                     "failure": "https://makishop.live/failure",
                     "pending": "https://makishop.live/pending",
                 },
@@ -218,6 +223,51 @@ def mercadopago_webhook(request):
     return JsonResponse({"error": "Método no permitido"}, status=405)
 
 
+from django.db import transaction
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def pagar_con_saldo_maki(request):
+    try:
+        user = request.user
+        codigo_carrito = request.data.get("codigo_carrito")
+
+        carrito = get_object_or_404(
+            Carrito, codigo=codigo_carrito, user=user, pagado=False
+        )
+        total_pedido = sum(
+            item.producto.precio * item.cantidad for item in carrito.items.all()
+        )
+
+        if user.saldo < total_pedido:
+            return Response({"error": "Saldo insuficiente"}, status=400)
+
+        with transaction.atomic():
+            user.saldo -= total_pedido
+            user.save()
+
+            pedido = Pedido.objects.create(
+                user=user, total=total_pedido, estado="Preparación"
+            )
+            for item in carrito.items.all():
+                DetallePedido.objects.create(
+                    pedido=pedido, producto=item.producto, cantidad=item.cantidad
+                )
+                item.producto.stock -= item.cantidad
+                item.producto.save()
+
+            carrito.pagado = True
+            carrito.save()
+
+        return Response(
+            {"message": "Pedido realizado con éxito usando saldo de Maki"}, status=200
+        )
+
+    except Exception as e:
+        return Response({"error": str(e)}, status=500)
+
+
 @api_view(["GET"])
 def SendTestEmail(request):
     try:
@@ -227,35 +277,79 @@ def SendTestEmail(request):
         return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
+# class ClienteSignupView(generics.ListCreateAPIView):
+#     # serializer_class = ClienteSignupSerializer
+#     # def post(self, request, *args, **kwargs):
+#     #     serializer = self.get_serializer(data=request.data)
+#     #     serializer.is_valid(raise_exception=True)
+#     #     user = serializer.save()
+#     #     return Response({
+#     #             "user": UserSerializer(user, context=self.get_serializer_context()).data,
+#     #             "token": Token.objects.get(user=user).key,
+#     #             "message": "Cliente creado exitosamente",
+#     #         })
+#     queryset = Cliente.objects.all()
+#     serializer_class = ClienteSignupSerializer
+#     permission_classes = [permissions.AllowAny]
+
+#     def create(self, request, *args, **kwargs):
+#         serializer = self.get_serializer(data=request.data)
+#         if serializer.is_valid():
+#             user = serializer.save()
+#             send_code_to_user(user.email)
+#             # if sendgrid_response.status_code != 200:
+#             #     user.delete()
+#             #     return Response(
+#             #         {
+#             #             "error": sendgrid_response.text,
+#             #             "detail": "Ha ocurrido un error en el envió de tu correo de confirmación. Comunicamente con soporte técnico.",
+#             #         },
+#             #         status=status.HTTP_201_CREATED,
+#             #     )
+#             return Response(
+#                 {
+#                     "user": UserSerializer(
+#                         user, context=self.get_serializer_context()
+#                     ).data,
+#                     "message": "Cliente creado exitosamente. Se envió un código de verificación a tu correo electrónico",
+#                 },
+#                 status=status.HTTP_201_CREATED,
+#             )
+
+#         errores = {}
+#         print(serializer.errors)
+#         for key, value in serializer.errors.items():
+#             errores[key] = ", ".join(value)
+
+#         mensaje = " | ".join([f"{key}: {value}" for key, value in errores.items()])
+#         return Response(
+#             {
+#                 "error": serializer.errors,
+#                 "detail": mensaje,
+#             },
+#             status=status.HTTP_400_BAD_REQUEST,
+#         )
+
+
 class ClienteSignupView(generics.ListCreateAPIView):
-    # serializer_class = ClienteSignupSerializer
-    # def post(self, request, *args, **kwargs):
-    #     serializer = self.get_serializer(data=request.data)
-    #     serializer.is_valid(raise_exception=True)
-    #     user = serializer.save()
-    #     return Response({
-    #             "user": UserSerializer(user, context=self.get_serializer_context()).data,
-    #             "token": Token.objects.get(user=user).key,
-    #             "message": "Cliente creado exitosamente",
-    #         })
-    queryset = Cliente.objects.all()
-    serializer_class = ClienteSignupSerializer
+
+    queryset = User.objects.all()  # Asegúrate de usar el modelo correcto de usuario
+    serializer_class = ClienteSignupSerializer  # Usamos el serializer para clientes
     permission_classes = [permissions.AllowAny]
 
     def create(self, request, *args, **kwargs):
+        # Aquí se está usando el serializer de cliente
         serializer = self.get_serializer(data=request.data)
+
+        # Verificar si el serializer es válido
         if serializer.is_valid():
+            # Guardar el nuevo usuario (cliente)
             user = serializer.save()
+
+            # Enviar el código de verificación por correo
             send_code_to_user(user.email)
-            # if sendgrid_response.status_code != 200:
-            #     user.delete()
-            #     return Response(
-            #         {
-            #             "error": sendgrid_response.text,
-            #             "detail": "Ha ocurrido un error en el envió de tu correo de confirmación. Comunicamente con soporte técnico.",
-            #         },
-            #         status=status.HTTP_201_CREATED,
-            #     )
+
+            # Responder con un mensaje de éxito
             return Response(
                 {
                     "user": UserSerializer(
@@ -266,8 +360,8 @@ class ClienteSignupView(generics.ListCreateAPIView):
                 status=status.HTTP_201_CREATED,
             )
 
+        # Si los datos del serializer no son válidos, se devuelven los errores
         errores = {}
-        print(serializer.errors)
         for key, value in serializer.errors.items():
             errores[key] = ", ".join(value)
 
@@ -1636,8 +1730,6 @@ class SolicitudAdopcionDetailView(generics.RetrieveUpdateDestroyAPIView):
     def get_object(self):
         id = self.kwargs.get("id")
         return get_object_or_404(SolicitudAdopcion, id=id)
-    
-
 
 
 ## SOLICITUD DE ADOPCION - PARA LA FUNDACIÓN
@@ -1839,7 +1931,9 @@ class OrdenarProductosPorPrecioDescView(generics.ListAPIView):
     def get_queryset(self):
         return Producto.objects.all().order_by("-precio")
 
+
 # SOLICITUD DE CUIDADO
+
 
 class SolictudCuidadoCreateView(generics.ListCreateAPIView):
     queryset = SolicitudCuidado.objects.all()
@@ -1854,13 +1948,17 @@ class SolictudCuidadoCreateView(generics.ListCreateAPIView):
                 {
                     "message": "Solicitud de cuidado enviada correctamente. Debes esperar a la respuesta del cuidador."
                 },
-                status=status.HTTP_201_CREATED,)
+                status=status.HTTP_201_CREATED,
+            )
         print("Errores del serializador:", serializer.errors)
         return Response(
             {
                 "error": serializer.errors,
                 "message": "Ha ocurrido un error al enviar la solicitud de cuidado",
-            }, status=status.HTTP_400_BAD_REQUEST,)
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
 
 class SolicitudCiudadoUserView(generics.ListAPIView):
     serializer_class = SolicitudCuidadoSerializer
@@ -1870,7 +1968,8 @@ class SolicitudCiudadoUserView(generics.ListAPIView):
         email = self.kwargs.get("email")
         user = get_object_or_404(User, email=email)
         return SolicitudCuidado.objects.filter(cliente__user=user)
-    
+
+
 class SolicitudCuidadoDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = SolicitudCuidadoSerializer
     permission_classes = [permissions.IsAuthenticated & IsClienteUser]
@@ -1878,7 +1977,7 @@ class SolicitudCuidadoDetailView(generics.RetrieveUpdateDestroyAPIView):
     def get_object(self):
         id = self.kwargs.get("id")
         return get_object_or_404(SolicitudCuidado, id=id)
-    
+
 
 class SolicitudCuidadoUpdateView(APIView):
     permission_classes = [permissions.IsAuthenticated & IsClienteUser]
@@ -1906,9 +2005,10 @@ class SolicitudCuidadoUpdateView(APIView):
             serializer.update(solicitud_cuidado, serializer.validated_data)
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+
+
 class ActualizarEstadoSolicitudCuidado(APIView):
-    permission_classes = [permissions.IsAuthenticated ]
+    permission_classes = [permissions.IsAuthenticated]
     serializer_class = SetEstadoSolicitudCuidadoSerializer
 
     def get_object(self, id):
@@ -1946,12 +2046,8 @@ class ActualizarEstadoSolicitudCuidado(APIView):
             id_mascota = solicitud_cuidado.mascota.id
             nombre_cuidador = solicitud_cuidado.cuidador.nombre
             telefono_cuidador = solicitud_cuidado.cuidador.user.telefono
-            direccion_cuidador = (
-                solicitud_cuidado.cuidador.direccion.direccion
-            )
-            localidad_cuidador = (
-                solicitud_cuidado.cuidador.direccion.localidad.nombre
-            )
+            direccion_cuidador = solicitud_cuidado.cuidador.direccion.direccion
+            localidad_cuidador = solicitud_cuidado.cuidador.direccion.localidad.nombre
             email_cuidador = solicitud_cuidado.cuidador.user.email
 
             send_update_care_email(
@@ -1981,10 +2077,3 @@ class ActualizarEstadoSolicitudCuidado(APIView):
             },
             status=status.HTTP_400_BAD_REQUEST,
         )
-
-
-    
-    
-
-
-    
