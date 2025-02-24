@@ -360,8 +360,9 @@ class Cuidador(models.Model):
     segundo_nombre = models.CharField(max_length=255, null=True, blank=True)
     primer_apellido = models.CharField(max_length=255, null=False, blank=False)
     segundo_apellido = models.CharField(max_length=255, null=True, blank=True)
-    imagen = CloudinaryField("image", null=True, blank=True)
-    categoriaMascotas = models.CharField(
+    cedula = models.BigIntegerField(unique=True, null=True, blank=True)
+    imagen = CloudinaryField("imagen", null=True, blank=True)
+    categoria_mascotas = models.CharField(
         max_length=8, null=True, blank=True, choices=CATEGORIAS_MASCOTAS
     )
 
@@ -370,7 +371,7 @@ class Cuidador(models.Model):
         Localidad, on_delete=models.CASCADE, null=True, blank=True
     )
     experiencia = models.TextField(null=False, blank=False)
-    hoja_vida = CloudinaryField("image", null=True, blank=True)
+    hoja_vida = CloudinaryField("hoja_vida", null=True, blank=True)
 
     def __str__(self):
         return f"{self.primer_nombre} {self.primer_apellido}"

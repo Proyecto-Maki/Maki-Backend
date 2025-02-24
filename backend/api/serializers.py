@@ -24,6 +24,7 @@ class CuidadorSerializer(serializers.ModelSerializer):
     nombre = serializers.SerializerMethodField()
     imagen = serializers.SerializerMethodField()
     localidad = serializers.SerializerMethodField()
+    cedula = serializers.CharField(max_length=10, required=True, allow_blank=True)
 
     class Meta:
         model = Cuidador
@@ -32,7 +33,7 @@ class CuidadorSerializer(serializers.ModelSerializer):
             "nombre",
             "imagen",
             "ocupacion",
-            "categoriaMascotas",
+            "categoria_mascotas",
             "localidad",
             "experiencia",
         ]
@@ -50,6 +51,43 @@ class CuidadorSerializer(serializers.ModelSerializer):
     def get_localidad(self, obj):
         """Si la localidad existe, devuelve su nombre"""
         return obj.localidad.nombre if obj.localidad else "Desconocida"
+    
+    def save(self, **kwargs):
+        cedula = self.validated_data["cedula"]
+        primer_nombre = self.validated_data["primer_nombre"]
+        primer_apellido = self.validated_data["primer_apellido"]
+        segundo_nombre = self.validated_data.get("segundo_nombre", "")
+        segundo_apellido = self.validated_data.get("segundo_apellido", "")
+        fecha_nacimiento = self.validated_data["fecha_nacimiento"]
+        ocupacion = self.validated_data["ocupacion"]
+        categoria_mascotas = self.validated_data["categoria_mascotas"]
+        experiencia = self.validated_data["experiencia"]
+        localidad = self.validated_data["localidad"]
+        imagen = self.validated_data.get("imagen", None)
+        hoja_vida = self.validated_data.get("hoja_vida", None)
+
+        if (len(cedula) != 10):
+            raise serializers.ValidationError(
+                {"detail": "La cédula debe tener 10 dígitos"}
+            )
+        
+
+        cuidador = Cuidador.objects.create(
+            cedula=cedula,
+            primer_nombre=primer_nombre,
+            primer_apellido=primer_apellido,
+            segundo_nombre=segundo_nombre,
+            segundo_apellido=segundo_apellido,
+            fecha_nacimiento=fecha_nacimiento,
+            ocupacion=ocupacion,
+            categoria_mascotas=categoria_mascotas,
+            experiencia=experiencia,
+            localidad=localidad,
+            imagen=imagen,
+            hoja_vida=hoja_vida
+        )
+        return cuidador
+
 
 
 class LocalidadSerializer(serializers.ModelSerializer):
@@ -1086,6 +1124,9 @@ class SolicitudCuidadoSerializer(serializers.ModelSerializer):
     is_cuidado_especial = serializers.BooleanField()
     costo = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
     horas_cuidado = serializers.IntegerField()
+    mascota = MascotaSerializer(read_only=True)
+    cuidador = CuidadorSerializer(read_only=True)
+    cliente = ClienteSerializer(read_only=True)
 
     class Meta:
         model = SolicitudCuidado
@@ -1104,7 +1145,15 @@ class SolicitudCuidadoSerializer(serializers.ModelSerializer):
             "estado",
             "mascota",
             "cuidador",
+            "cliente",
         ]
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        mascota = instance.mascota
+        cliente = mascota.user.cliente
+        representation['cliente'] = ClienteSerializer(cliente).data
+        return representation
 
     def save(self, **kwargs):
         email = self.validated_data["email"]
