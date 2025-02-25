@@ -1280,10 +1280,10 @@ class ResenasProductoView(generics.ListAPIView):
 
 class ResenaCuidadorView(generics.ListAPIView):
     serializer_class = ResenaSerializer
-    permission_classes = [AllowAny]
+    permission_classes = [permissions.IsAuthenticated & IsClienteUser]
 
     def get_queryset(self):
-        cuidador_id = self.kwargs["cuidador_id"]
+        cuidador_id = self.kwargs["id"]
         content_type = ContentType.objects.get_for_model(Cuidador)
         return Resena.objects.filter(content_type=content_type, object_id=cuidador_id)
 
@@ -1742,6 +1742,9 @@ class DetalleMascotaCreateView(generics.ListCreateAPIView):
 
 # Cuidadores
 class ListaCuidadoresView(APIView):
+    serializer_class = CuidadorSerializer
+    permission_classes = [permissions.IsAuthenticated & IsClienteUser]
+
     def get(self, request):
         cuidadores = Cuidador.objects.all()
         serializer = CuidadorSerializer(cuidadores, many=True)

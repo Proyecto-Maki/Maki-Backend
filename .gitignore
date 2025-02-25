@@ -19,3 +19,4 @@ credentials.json
 .env
 backend/api/sendgrid_test.py
 backend/env
+backend
