@@ -1137,17 +1137,115 @@ def remove_product_from_cart(request):
 ### RESEÑAS
 
 
-class ResenaCreateView(generics.ListCreateAPIView):
+# class ResenaCreateView(generics.ListCreateAPIView):
+#     queryset = Resena.objects.all()
+#     permission_classes = [permissions.IsAuthenticated]
+#     serializer_class = ResenaSerializer
+
+#     def create(self, request, *args, **kwargs):
+#         serializer = self.get_serializer(data=request.data)
+#         if serializer.is_valid():
+#             serializer.save()
+#             return Response(
+#                 {"message": "Reseña creada exitosamente"},
+#                 status=status.HTTP_201_CREATED,
+#             )
+
+#         return Response(
+#             {
+#                 "error": serializer.errors,
+#                 "message": "Ha ocurrido un error al crear la reseña",
+#             },
+#             status=status.HTTP_400_BAD_REQUEST,
+#         )
+
+
+class ResenaProductoCreateView(generics.ListCreateAPIView):
     queryset = Resena.objects.all()
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = ResenaSerializer
 
     def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
+        data = request.data.copy()
+        producto_id = kwargs.get("id")
+
+        if not producto_id:
+            return Response(
+                {
+                    "error": "Falta el ID del producto",
+                    "message": "Ha ocurrido un error al crear la reseña",
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            content_type = ContentType.objects.get_for_model(Producto)
+        except ContentType.DoesNotExist:
+            return Response(
+                {
+                    "error": "El modelo 'producto' no es válido",
+                    "message": "Ha ocurrido un error al crear la reseña",
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        data["content_type"] = content_type.id
+        data["object_id"] = producto_id
+
+        serializer = self.get_serializer(data=data)
         if serializer.is_valid():
             serializer.save()
             return Response(
-                {"message": "Reseña creada exitosamente"},
+                {"message": "Reseña de producto creada exitosamente"},
+                status=status.HTTP_201_CREATED,
+            )
+
+        return Response(
+            {
+                "error": serializer.errors,
+                "message": "Ha ocurrido un error al crear la reseña",
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+
+class ResenaCuidadorCreateView(generics.ListCreateAPIView):
+    queryset = Resena.objects.all()
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = ResenaSerializer
+
+    def create(self, request, *args, **kwargs):
+        data = request.data.copy()
+        cuidador_id = kwargs.get("id")
+
+        if not cuidador_id:
+            return Response(
+                {
+                    "error": "Falta el ID del cuidador",
+                    "message": "Ha ocurrido un error al crear la reseña",
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            content_type = ContentType.objects.get_for_model(Cuidador)
+        except ContentType.DoesNotExist:
+            return Response(
+                {
+                    "error": "El modelo 'cuidador' no es válido",
+                    "message": "Ha ocurrido un error al crear la reseña",
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        data["content_type"] = content_type.id
+        data["object_id"] = cuidador_id
+
+        serializer = self.get_serializer(data=data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(
+                {"message": "Reseña de cuidador creada exitosamente"},
                 status=status.HTTP_201_CREATED,
             )
 
@@ -1175,9 +1273,19 @@ class ResenasProductoView(generics.ListAPIView):
     permission_classes = [AllowAny]
 
     def get_queryset(self):
-        id_producto = self.kwargs.get("id")
-        producto = get_object_or_404(Producto, id=id_producto)
-        return Resena.objects.filter(producto=producto)
+        producto_id = self.kwargs["producto_id"]
+        content_type = ContentType.objects.get_for_model(Producto)
+        return Resena.objects.filter(content_type=content_type, object_id=producto_id)
+
+
+class ResenaCuidadorView(generics.ListAPIView):
+    serializer_class = ResenaSerializer
+    permission_classes = [AllowAny]
+
+    def get_queryset(self):
+        cuidador_id = self.kwargs["cuidador_id"]
+        content_type = ContentType.objects.get_for_model(Cuidador)
+        return Resena.objects.filter(content_type=content_type, object_id=cuidador_id)
 
 
 class ResenaUpdateView(APIView):
@@ -1638,7 +1746,7 @@ class ListaCuidadoresView(APIView):
         cuidadores = Cuidador.objects.all()
         serializer = CuidadorSerializer(cuidadores, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
-    
+
 
 class CuidadorDetailView(APIView):
     serializer_class = CuidadorSerializer
@@ -2095,7 +2203,8 @@ class ActualizarEstadoSolicitudCuidado(APIView):
             },
             status=status.HTTP_400_BAD_REQUEST,
         )
-    
+
+
 class CancelarSolicitudCuidado(APIView):
     permission_classes = [permissions.IsAuthenticated & IsClienteUser]
     serializer_class = SetEstadoSolicitudCuidadoSerializer
@@ -2105,30 +2214,33 @@ class CancelarSolicitudCuidado(APIView):
             return SolicitudCuidado.objects.get(id=id)
         except SolicitudCuidado.DoesNotExist:
             return None
-        
+
     def patch(self, request, id, *args, **kwargs):
         solicitud_cuidado = self.get_object(id)
         if not solicitud_cuidado:
             return Response(
-                {"error": "Solicitud de cuidado no encontrada",
-                 "detail": "Solicitud de cuidado no encontrada"},
+                {
+                    "error": "Solicitud de cuidado no encontrada",
+                    "detail": "Solicitud de cuidado no encontrada",
+                },
                 status=status.HTTP_404_NOT_FOUND,
             )
         if solicitud_cuidado.cliente.user != request.user:
             raise PermissionDenied(
                 {
                     "error": "No tienes permisos para editar esta solicitud de cuidado",
-                    "detail": "No tienes permisos para editar esta solicitud de cuidado"
-                }, status=status.HTTP_403_FORBIDDEN
+                    "detail": "No tienes permisos para editar esta solicitud de cuidado",
+                },
+                status=status.HTTP_403_FORBIDDEN,
             )
-        
+
         if solicitud_cuidado.estado == "Cancelada":
             return Response(
                 {
                     "error": "Esta solicitud ya ha sido cancelada",
-                    "detail": "Esta solicitud ya ha sido cancelada"
+                    "detail": "Esta solicitud ya ha sido cancelada",
                 },
-                status=status.HTTP_400_BAD_REQUEST
+                status=status.HTTP_400_BAD_REQUEST,
             )
         tiempo_restante = solicitud_cuidado.fecha_inicio - timezone.now()
         reembolso = 0
@@ -2140,26 +2252,25 @@ class CancelarSolicitudCuidado(APIView):
             reembolso = solicitud_cuidado.costo * 0.5
         else:
             reembolso = 0
-        
+
         # Actualización del saldo del cliente
         cliente = solicitud_cuidado.cliente
-        try: 
+        try:
             cliente.user.saldo += reembolso
             cliente.save()
         except Exception as e:
             return Response(
                 {
                     "error": "Ha ocurrido un error al actualizar el saldo del cliente",
-                    "detail": str(e)
+                    "detail": str(e),
                 },
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
         # Cambio en el estado de la solicitud
         solicitud_cuidado.estado = "Cancelada"
         solicitud_cuidado.fecha_actualizacion = timezone.now()
         solicitud_cuidado.save()
-
 
         # Envio de correo de cancelación
         numero_solicitud = solicitud_cuidado.id
@@ -2182,18 +2293,20 @@ class CancelarSolicitudCuidado(APIView):
                 nombre_mascota,
                 descripcion,
                 costo,
-                nombre_cuidador
+                nombre_cuidador,
             )
         except Exception as e:
             return Response(
                 {
                     "error": "Ha ocurrido un error al enviar el correo de cancelación",
-                    "detail": str(e)
+                    "detail": str(e),
                 },
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
-
-        return Response({
-            "message": "Solicitud de cuidado cancelada exitosamente. Se ha enviado un correo de confirmación de la cancelación.",
-        }, status=status.HTTP_200_OK)
+        return Response(
+            {
+                "message": "Solicitud de cuidado cancelada exitosamente. Se ha enviado un correo de confirmación de la cancelación.",
+            },
+            status=status.HTTP_200_OK,
+        )

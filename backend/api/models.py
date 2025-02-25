@@ -13,6 +13,8 @@ from django.utils.text import slugify
 from cloudinary.models import CloudinaryField
 from django.core.exceptions import ValidationError
 from django.utils import timezone
+from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
 
 
 class Localidad(models.Model):
@@ -411,7 +413,7 @@ class SolicitudCuidado(models.Model):
 
 class Resena(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    producto = models.ForeignKey(Producto, on_delete=models.CASCADE)
+    
     titulo = models.CharField(
         max_length=255, null=False, blank=False, default="Sin titulo"
     )
@@ -419,6 +421,9 @@ class Resena(models.Model):
     comentario = models.TextField(null=True, blank=True)
     num_likes = models.IntegerField(default=0)
     fecha = models.DateTimeField(auto_now_add=True)
+    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
+    object_id = models.PositiveIntegerField(null=True, blank=True)
+    content_object = GenericForeignKey('content_type', 'object_id')
 
     class Meta:
         constraints = [
@@ -429,7 +434,7 @@ class Resena(models.Model):
         ]
 
     def __str__(self):
-        return f"Reseña de {self.user.id} para {self.producto.nombre}"
+        return f"Reseña de {self.user.id}"
 
 
 ## MODELO DE DONACION
