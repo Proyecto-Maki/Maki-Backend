@@ -277,6 +277,9 @@ urlpatterns = [
     ),
     # Cuidadores
     path("cuidadores/", ListaCuidadoresView.as_view(), name="lista_cuidadores"),
+    path("cuidador/<int:id>/", CuidadorDetailView.as_view(), name="cuidador_detail"),
+
+
     # Solicitudes de cuidado
     path(
         "solicitud-cuidado/create/",

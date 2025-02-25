@@ -729,7 +729,7 @@ class FundacionLocalidadView(generics.ListAPIView):
         id_localidad = self.kwargs.get("id")
         localidad = get_object_or_404(Localidad, id=id_localidad)
         return Fundacion.objects.select_related("user__direccion__localidad").filter(
-            user__direccion__localidad=localidad
+            user__direccion__localidad=localidad, user__is_verified=True
         )
 
 
@@ -1637,6 +1637,20 @@ class ListaCuidadoresView(APIView):
     def get(self, request):
         cuidadores = Cuidador.objects.all()
         serializer = CuidadorSerializer(cuidadores, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+
+class CuidadorDetailView(APIView):
+    serializer_class = CuidadorSerializer
+    permission_classes = [permissions.IsAuthenticated & IsClienteUser]
+
+    def get_object(self):
+        id = self.kwargs.get("id")
+        return get_object_or_404(Cuidador, id=id)
+
+    def get(self, request, id):
+        cuidador = self.get_object()
+        serializer = CuidadorSerializer(cuidador)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 

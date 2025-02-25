@@ -43,6 +43,7 @@ class CuidadorSerializer(serializers.ModelSerializer):
             "experiencia",
             "telefono",
             "email",
+            "hoja_vida",
         ]
 
     def get_nombre(self, obj):
