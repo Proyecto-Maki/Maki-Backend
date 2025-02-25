@@ -846,7 +846,8 @@ class ResenaSerializer(serializers.ModelSerializer):
     titulo = serializers.CharField(max_length=255)
     calificacion = serializers.IntegerField()
     comentario = serializers.CharField(max_length=500)
-
+    user_data = serializers.SerializerMethodField()
+    
     class Meta:
         model = Resena
         fields = [
@@ -858,7 +859,29 @@ class ResenaSerializer(serializers.ModelSerializer):
             "comentario",
             "fecha",
             "num_likes",
+            "user_data",
         ]
+
+    def get_user_data(self, obj):
+        try: 
+            user_base = obj.user
+            user_data = {
+                "email": user_base.email,
+                "is_cliente": user_base.is_cliente,
+                "is_fundacion": user_base.is_fundacion,
+            }
+            if user_base.is_cliente == True:
+                cliente = Cliente.objects.select_related("user").get(user=user_base)
+                cliente_data = ClienteSerializer(cliente).data
+                user_data.update(cliente_data)
+            elif user_base.is_fundacion == True:
+                fundacion = Fundacion.objects.select_related("user").get(user=user_base)
+                fundacion_data = FundacionSerializer(fundacion).data
+                user_data.update(fundacion_data)
+            return user_data
+        except Exception as e:
+            raise serializers.ValidationError(f"Error en la recepción de los datos del usuario: {str(e)}")
+        
 
     def save(self, **kwargs):
         user = User.objects.get(email=self.validated_data["email"])
