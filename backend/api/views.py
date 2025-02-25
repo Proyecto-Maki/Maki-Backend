@@ -1273,7 +1273,7 @@ class ResenasProductoView(generics.ListAPIView):
     permission_classes = [AllowAny]
 
     def get_queryset(self):
-        producto_id = self.kwargs["producto_id"]
+        producto_id = self.kwargs["id"]
         content_type = ContentType.objects.get_for_model(Producto)
         return Resena.objects.filter(content_type=content_type, object_id=producto_id)
 
