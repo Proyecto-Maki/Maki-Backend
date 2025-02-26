@@ -1167,13 +1167,14 @@ class ResenaProductoCreateView(generics.ListCreateAPIView):
 
     def create(self, request, *args, **kwargs):
         data = request.data.copy()
-        producto_id = kwargs.get("id")
+        producto_id = data.get("id")
+        
 
         if not producto_id:
             return Response(
                 {
                     "error": "Falta el ID del producto",
-                    "message": "Ha ocurrido un error al crear la reseña",
+                    "detail": "Ha ocurrido un error al crear la reseña. Falta el ID del producto.",
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
@@ -1184,7 +1185,7 @@ class ResenaProductoCreateView(generics.ListCreateAPIView):
             return Response(
                 {
                     "error": "El modelo 'producto' no es válido",
-                    "message": "Ha ocurrido un error al crear la reseña",
+                    "detail": "Ha ocurrido un error al crear la reseña. Producto no es válido.",
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
@@ -1203,7 +1204,7 @@ class ResenaProductoCreateView(generics.ListCreateAPIView):
         return Response(
             {
                 "error": serializer.errors,
-                "message": "Ha ocurrido un error al crear la reseña",
+                "detail": "Ha ocurrido un error al crear la reseña",
             },
             status=status.HTTP_400_BAD_REQUEST,
         )
@@ -1216,13 +1217,13 @@ class ResenaCuidadorCreateView(generics.ListCreateAPIView):
 
     def create(self, request, *args, **kwargs):
         data = request.data.copy()
-        cuidador_id = kwargs.get("id")
+        cuidador_id = data.get("id")
 
         if not cuidador_id:
             return Response(
                 {
                     "error": "Falta el ID del cuidador",
-                    "message": "Ha ocurrido un error al crear la reseña",
+                    "detail": "Ha ocurrido un error al crear la reseña. Falta el ID del cuidador.",
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
@@ -1233,7 +1234,7 @@ class ResenaCuidadorCreateView(generics.ListCreateAPIView):
             return Response(
                 {
                     "error": "El modelo 'cuidador' no es válido",
-                    "message": "Ha ocurrido un error al crear la reseña",
+                    "detail": "Ha ocurrido un error al crear la reseña. Cuidador no es válido.",
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
@@ -1252,7 +1253,7 @@ class ResenaCuidadorCreateView(generics.ListCreateAPIView):
         return Response(
             {
                 "error": serializer.errors,
-                "message": "Ha ocurrido un error al crear la reseña",
+                "detail": "Ha ocurrido un error al crear la reseña",
             },
             status=status.HTTP_400_BAD_REQUEST,
         )

@@ -122,6 +122,8 @@ urlpatterns = [
 
     path("resenas/user/<email>/", ResenasUserView.as_view(), name="resenas_user"),
     # path("resena/create/", ResenaCreateView.as_view(), name="resena_create"),
+    path("resenas-productos/create/", ResenaProductoCreateView.as_view(), name="resena_producto_create"),
+    path("resenas-cuidadores/create/", ResenaCuidadorCreateView.as_view(), name="resena_cuidador_create"),
     path("resena/update/<int:id>/", ResenaUpdateView.as_view(), name="resena_update"),
     path("resena/delete/<int:id>/", ResenaDeleteView.as_view(), name="resena_delete"),
     ## Pedidos

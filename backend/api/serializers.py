@@ -842,7 +842,8 @@ class PadecimientoSerializer(serializers.ModelSerializer):
 
 class ResenaSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(write_only=True)
-    id_producto = serializers.IntegerField(write_only=True)
+    object_id = serializers.IntegerField(write_only=True)  # Usar un solo campo 'id'
+    content_type = serializers.PrimaryKeyRelatedField(queryset=ContentType.objects.all())
     titulo = serializers.CharField(max_length=255)
     calificacion = serializers.IntegerField()
     comentario = serializers.CharField(max_length=500)
@@ -851,9 +852,9 @@ class ResenaSerializer(serializers.ModelSerializer):
     class Meta:
         model = Resena
         fields = [
-            "id",
+            "object_id",
+            "content_type",
             "email",
-            "id_producto",
             "titulo",
             "calificacion",
             "comentario",
@@ -870,11 +871,11 @@ class ResenaSerializer(serializers.ModelSerializer):
                 "is_cliente": user_base.is_cliente,
                 "is_fundacion": user_base.is_fundacion,
             }
-            if user_base.is_cliente == True:
+            if user_base.is_cliente:
                 cliente = Cliente.objects.select_related("user").get(user=user_base)
                 cliente_data = ClienteSerializer(cliente).data
                 user_data.update(cliente_data)
-            elif user_base.is_fundacion == True:
+            elif user_base.is_fundacion:
                 fundacion = Fundacion.objects.select_related("user").get(user=user_base)
                 fundacion_data = FundacionSerializer(fundacion).data
                 user_data.update(fundacion_data)
@@ -882,21 +883,23 @@ class ResenaSerializer(serializers.ModelSerializer):
         except Exception as e:
             raise serializers.ValidationError(f"Error en la recepción de los datos del usuario: {str(e)}")
         
-
     def save(self, **kwargs):
         user = User.objects.get(email=self.validated_data["email"])
-        producto = Producto.objects.get(id=self.validated_data["id_producto"])
         titulo = self.validated_data["titulo"]
         calificacion = self.validated_data["calificacion"]
         comentario = self.validated_data["comentario"]
+        object_id = self.validated_data["object_id"]
+        content_type = self.validated_data["content_type"]
 
         resena = Resena.objects.create(
             user=user,
-            producto=producto,
             titulo=titulo,
             calificacion=calificacion,
             comentario=comentario,
+            content_type=content_type,
+            object_id=object_id,
         )
+
         return resena
 
     def update(self, instance, validated_data):
