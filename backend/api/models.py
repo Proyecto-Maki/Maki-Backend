@@ -443,7 +443,7 @@ class Resena(models.Model):
 class Tarjeta(models.Model):
     tipo = models.CharField(max_length=255, null=False, blank=False, primary_key=True)
     monto = models.DecimalField(
-        max_digits=7, decimal_places=2, default=0.00, null=False, blank=False
+        max_digits=8, decimal_places=2, default=0.00, null=False, blank=False
     )
 
     def clean(self):
@@ -458,7 +458,7 @@ class Donacion(models.Model):
     cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE)
     fundacion = models.ForeignKey(Fundacion, on_delete=models.CASCADE)
     tarjeta = models.ForeignKey(Tarjeta, on_delete=models.CASCADE)
-    fecha = models.DateField(auto_now_add=True)
+    fecha = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"Donacion de {self.cliente.primer_nombre} {self.cliente.primer_apellido} para {self.fundacion.nombre}"

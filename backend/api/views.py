@@ -1168,7 +1168,7 @@ class ResenaProductoCreateView(generics.ListCreateAPIView):
     def create(self, request, *args, **kwargs):
         data = request.data.copy()
         producto_id = data.get("id")
-        
+
 
         if not producto_id:
             return Response(
@@ -1212,7 +1212,7 @@ class ResenaProductoCreateView(generics.ListCreateAPIView):
 
 class ResenaCuidadorCreateView(generics.ListCreateAPIView):
     queryset = Resena.objects.all()
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated & IsClienteUser]
     serializer_class = ResenaSerializer
 
     def create(self, request, *args, **kwargs):

@@ -23,6 +23,8 @@ from .models import (
     ProductoCategorias,
     Cuidador,
     SolicitudCuidado,
+    Tarjeta,
+    Donacion,
 )
 
 # Register your models here.
@@ -48,3 +50,5 @@ admin.site.register(Subcategoria)
 admin.site.register(ProductoCategorias)
 admin.site.register(Cuidador)
 admin.site.register(SolicitudCuidado)
+admin.site.register(Tarjeta)
+admin.site.register(Donacion)

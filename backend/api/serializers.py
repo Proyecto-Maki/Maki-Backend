@@ -1435,4 +1435,58 @@ class SetEstadoSolicitudCuidadoSerializer(serializers.ModelSerializer):
         instance.save()
         return instance
 
+class TarjetaSerializer(serializers.ModelSerializer):
+    tipo = serializers.CharField(max_length=255)
+    monto = serializers.DecimalField(max_digits=8, decimal_places=2)
 
+    class Meta:
+        model = Tarjeta
+        fields = ["id", "tipo", "monto"]
+
+    def save(self, **kwargs):
+        tipo = self.validated_data["tipo"]
+        monto = self.validated_data["monto"]
+
+        tarjeta = Tarjeta.objects.create(tipo=tipo, monto=monto)
+        return tarjeta
+    
+class DonacionSerializer(serializers.ModelSerializer):
+    email_cliente = serializers.EmailField()
+    email_fundacion = serializers.EmailField()
+    id_tarjeta = serializers.IntegerField()
+    cliente = ClienteSerializer(read_only=True)
+    fundacion = FundacionSerializer(read_only=True)
+    tarjeta = TarjetaSerializer(read_only=True)
+    fecha = serializers.DateTimeField(read_only=True)
+    
+    class Meta:
+        model = Donacion
+        fields = [
+            "id",
+            "email_cliente",
+            "email_fundacion",
+            "id_tarjeta",
+            "cliente",
+            "fundacion",
+            "tarjeta",
+            "fecha",
+        ]
+
+    def save(self, **kwargs):
+        email_cliente = self.validated_data["email_cliente"]
+        email_fundacion = self.validated_data["email_fundacion"]
+        id_tarjeta = self.validated_data["id_tarjeta"]
+
+        cliente = Cliente.objects.get(user__email=email_cliente)
+        fundacion = Fundacion.objects.get(user__email=email_fundacion)
+        tarjeta = Tarjeta.objects.get(id=id_tarjeta)
+        fecha = timezone.now()
+
+        donacion = Donacion.objects.create(
+            cliente=cliente,
+            fundacion=fundacion,
+            tarjeta=tarjeta,
+            fecha=fecha,
+        )
+
+        return donacion
