@@ -116,14 +116,28 @@ urlpatterns = [
         ResenasProductoView.as_view(),
         name="resenas_producto",
     ),
-    path("resenas/producto/<int:id>/", ResenasProductoView.as_view(), name="resenas_producto"),
-    path("resenas/cuidador/<int:id>/", ResenaCuidadorView.as_view(), name="resenas_cuidador"),
-
-
+    path(
+        "resenas/producto/<int:id>/",
+        ResenasProductoView.as_view(),
+        name="resenas_producto",
+    ),
+    path(
+        "resenas/cuidador/<int:id>/",
+        ResenaCuidadorView.as_view(),
+        name="resenas_cuidador",
+    ),
     path("resenas/user/<email>/", ResenasUserView.as_view(), name="resenas_user"),
     # path("resena/create/", ResenaCreateView.as_view(), name="resena_create"),
-    path("resenas-productos/create/", ResenaProductoCreateView.as_view(), name="resena_producto_create"),
-    path("resenas-cuidadores/create/", ResenaCuidadorCreateView.as_view(), name="resena_cuidador_create"),
+    path(
+        "resenas-productos/create/",
+        ResenaProductoCreateView.as_view(),
+        name="resena_producto_create",
+    ),
+    path(
+        "resenas-cuidadores/create/",
+        ResenaCuidadorCreateView.as_view(),
+        name="resena_cuidador_create",
+    ),
     path("resena/update/<int:id>/", ResenaUpdateView.as_view(), name="resena_update"),
     path("resena/delete/<int:id>/", ResenaDeleteView.as_view(), name="resena_delete"),
     ## Pedidos
@@ -284,8 +298,6 @@ urlpatterns = [
     # Cuidadores
     path("cuidadores/", ListaCuidadoresView.as_view(), name="lista_cuidadores"),
     path("cuidador/<int:id>/", CuidadorDetailView.as_view(), name="cuidador_detail"),
-
-
     # Solicitudes de cuidado
     path(
         "solicitud-cuidado/create/",
@@ -316,5 +328,10 @@ urlpatterns = [
         "solicitud-cuidado/cancelar-solicitud/<int:id>/",
         CancelarSolicitudCuidado.as_view(),
         name="cancelar_solicitud_cuidado",
-    )
+    ),
+
+    # Donaciones
+
+    path("donaciones-recibidas/<email>/", DonacionesFundacionView.as_view(), name="donaciones_recibidas"),
+    path("donaciones-realizadas/<email>/", DonacionesClienteView.as_view(), name="donaciones_realizadas"),
 ]

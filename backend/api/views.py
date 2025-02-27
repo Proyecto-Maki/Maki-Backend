@@ -2314,3 +2314,28 @@ class CancelarSolicitudCuidado(APIView):
             },
             status=status.HTTP_200_OK,
         )
+
+
+## DONACIONES
+
+# Donaciones de clientes
+class DonacionesClienteView(generics.ListAPIView):
+    serializer_class = DonacionSerializer
+    permission_classes = [permissions.IsAuthenticated & IsClienteUser]
+
+    def get_queryset(self):
+        email = self.kwargs.get("email")
+        user = get_object_or_404(User, email=email)
+        return Donacion.objects.filter(cliente__user=user)
+    
+# Donaciones de fundaciones
+
+class DonacionesFundacionView(generics.ListAPIView):
+    serializer_class = DonacionSerializer
+    permission_classes = [permissions.IsAuthenticated & IsFundacionUser]
+
+    def get_queryset(self):
+        email = self.kwargs.get("email")
+        user = get_object_or_404(User, email=email)
+        return Donacion.objects.filter(fundacion__user=user)
+    

@@ -1436,6 +1436,7 @@ class SetEstadoSolicitudCuidadoSerializer(serializers.ModelSerializer):
         return instance
 
 class TarjetaSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField(read_only=True)
     tipo = serializers.CharField(max_length=255)
     monto = serializers.DecimalField(max_digits=8, decimal_places=2)
 
@@ -1451,9 +1452,9 @@ class TarjetaSerializer(serializers.ModelSerializer):
         return tarjeta
     
 class DonacionSerializer(serializers.ModelSerializer):
-    email_cliente = serializers.EmailField()
-    email_fundacion = serializers.EmailField()
-    id_tarjeta = serializers.IntegerField()
+    email_cliente = serializers.EmailField(write_only=True)
+    email_fundacion = serializers.EmailField(write_only=True)
+    id_tarjeta = serializers.IntegerField(write_only=True)
     cliente = ClienteSerializer(read_only=True)
     fundacion = FundacionSerializer(read_only=True)
     tarjeta = TarjetaSerializer(read_only=True)
