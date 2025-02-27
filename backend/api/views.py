@@ -29,6 +29,7 @@ from .new_utils import (
     send_update_adoption_email,
     send_update_care_email,
     send_cancel_care_email,
+    send_create_care_email,
     money_format,
 )
 from django.utils.http import urlsafe_base64_decode
@@ -1168,7 +1169,6 @@ class ResenaProductoCreateView(generics.ListCreateAPIView):
     def create(self, request, *args, **kwargs):
         data = request.data.copy()
         producto_id = data.get("id")
-
 
         if not producto_id:
             return Response(
@@ -2316,7 +2316,71 @@ class CancelarSolicitudCuidado(APIView):
         )
 
 
+class SolicitudCuidadoCreateView(generics.ListCreateAPIView):
+    queryset = SolicitudCuidado.objects.all()
+    permission_classes = [permissions.IsAuthenticated & IsClienteUser]
+    serializer_class = SolicitudCuidadoSerializer
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+
+            # Envio de correo de solicitud de cuidado
+            solicitud_id = serializer.data["id"]
+            email = serializer.data["cliente"]["user"]["email"]
+            mascota_nombre = serializer.data["mascota"]["nombre"]
+            fecha_solicitud = serializer.data["fecha_solicitud"]
+            fecha_inicio = serializer.data["fecha_inicio"]
+            fecha_fin = serializer.data["fecha_fin"]
+            horas_cuidado = serializer.data["horas_cuidado"]
+            is_cuidado_especial = serializer.data["is_cuidado_especial"]
+            descripcion = serializer.data["descripcion"]
+            costo = money_format(serializer.data["costo"])
+            estado = serializer.data["estado"]
+            nombre_cuidador = f"{serializer.data['cuidador']['primer_nombre']} {serializer.data['cuidador']['segundo_nombre'] or ''} {serializer.data['cuidador']['primer_apellido']} {serializer.data['cuidador']['segundo_apellido'] or ''}"
+
+            try:
+                send_care_email(
+                    solicitud_id,
+                    email,
+                    mascota_nombre,
+                    fecha_solicitud,
+                    fecha_inicio,
+                    fecha_fin,
+                    horas_cuidado,
+                    is_cuidado_especial,
+                    descripcion,
+                    costo,
+                    estado,
+                    nombre_cuidador,
+                )
+            except Exception as e:
+                return Response(
+                    {
+                        "error": "Ha ocurrido un error al enviar el correo de solicitud de cuidado",
+                        "detail": "Ha ocurrido un error al enviar el correo de solicitud de cuidado." + str(e),
+                    },
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                )
+
+            return Response(
+                {
+                    "message": "Solicitud de cuidado enviada correctamente. Debes esperar a la respuesta del cuidador."
+                },
+                status=status.HTTP_201_CREATED,
+            )
+        return Response(
+            {
+                "error": serializer.errors,
+                "message": "Ha ocurrido un error al enviar la solicitud de cuidado",
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+
 ## DONACIONES
+
 
 # Donaciones de clientes
 class DonacionesClienteView(generics.ListAPIView):
@@ -2327,8 +2391,10 @@ class DonacionesClienteView(generics.ListAPIView):
         email = self.kwargs.get("email")
         user = get_object_or_404(User, email=email)
         return Donacion.objects.filter(cliente__user=user)
-    
+
+
 # Donaciones de fundaciones
+
 
 class DonacionesFundacionView(generics.ListAPIView):
     serializer_class = DonacionSerializer
@@ -2338,4 +2404,3 @@ class DonacionesFundacionView(generics.ListAPIView):
         email = self.kwargs.get("email")
         user = get_object_or_404(User, email=email)
         return Donacion.objects.filter(fundacion__user=user)
-    

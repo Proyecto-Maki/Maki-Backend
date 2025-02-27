@@ -316,4 +316,66 @@ def send_cancel_care_email(numero_solicitud, email, fecha_solicitud, fecha_inici
         }
     
 
+def send_create_care_email(solicitud_id, email, mascota_nombre, fecha_solicitud, fecha_inicio, fecha_fin, horas_cuidado, is_cuidado_especial, descripcion, nombre_cuidador, estado, costo):
+    Subject = "Creación de solicitud de cuidado #{}".format(solicitud_id)
+    email = email
+
+    horas = "0"
+    if horas_cuidado == 24:
+        horas = "Tiempo completo"
+    else:
+        horas = "{} horas".format(horas_cuidado)
+
+    cuidado = "No"
+    if is_cuidado_especial:
+        cuidado = "Sí"
+
+
+    context = {
+        "solicitud_id": solicitud_id, 
+        "mascota_nombre": mascota_nombre,
+        "fecha_solicitud": date_format(fecha_solicitud),
+        "fecha_inicio": date_format(fecha_inicio),
+        "fecha_fin": date_format(fecha_fin),
+        "horas_cuidado": horas,
+        "is_cuidado_especial": cuidado,
+        "descripcion": descripcion,
+        "nombre_cuidador": nombre_cuidador,
+        "estado": estado,
+        "costo": money_format(costo)
+    }
+    html_message = render_to_string("email-create-care.html", context=context)
+
+    message = Mail(
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        to_emails=email,
+        subject=Subject,
+        html_content=html_message,
+    )
+
+    message.add_bcc(settings.DEFAULT_FROM_EMAIL)
+    # os.environ["REQUESTS_CA_BUNDLE"] = certifi.where()
+
+    if not os.environ.get("PYTHONHTTPSVERIFY", "") and getattr(
+        ssl, "_create_unverified_context", None
+    ):
+        ssl._create_default_https_context = ssl._create_unverified_context
+    try:
+
+        sg = SendGridAPIClient(api_key=settings.SENDGRID_API_KEY)
+        # sg.http.client.ca_certs = certifi.where()  # Configura el archivo de certificados
+        response = sg.send(message)
+        print(response.status_code)
+        print(response.body)
+        print(response.headers)
+        return {
+            "message": "Correo electrónico enviado con éxito",
+            "status_code": response.status_code,
+        }
+    except Exception as e:
+        print(str(e))
+        return {
+            "detail": "Error al enviar el correo electrónico",
+            "error": str(e.body),
+        }
     

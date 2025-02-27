@@ -301,7 +301,7 @@ urlpatterns = [
     # Solicitudes de cuidado
     path(
         "solicitud-cuidado/create/",
-        SolictudCuidadoCreateView.as_view(),
+        SolicitudCuidadoCreateView.as_view(),
         name="solicitud_cuidado_create",
     ),
     path(
