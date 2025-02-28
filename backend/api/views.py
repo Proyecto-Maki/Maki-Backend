@@ -910,7 +910,28 @@ class MascotasUserView(generics.ListAPIView):
     def get_queryset(self):
         email = self.kwargs.get("email")
         user = get_object_or_404(User, email=email)
-        return Mascota.objects.filter(user=user)
+        mascotas = Mascota.objects.filter(user=user)
+        # Debug: Imprimir los datos antes de enviarlos
+        # print("Datos de mascotas enviados al frontend:")
+        # for mascota in mascotas:
+        #     print(
+        #         {
+        #             "id": mascota.id,
+        #             "nombre": mascota.nombre,
+        #             "sexo": mascota.sexo,
+        #             "tipo": mascota.tipo,
+        #             "raza": mascota.raza,
+        #             "edad": mascota.edad,
+        #             "estado_salud": mascota.estado_salud,
+        #             "tamano": mascota.tamano,
+        #             "peso": mascota.peso,
+        #             "imagen": (
+        #                 mascota.imagen.url if mascota.imagen else "No tiene imagen"
+        #             ),
+        #         }
+        #     )
+
+        return mascotas
 
 
 class MascotaDetailView(generics.RetrieveUpdateDestroyAPIView):
