@@ -127,25 +127,36 @@ def mercadopago_webhook_cuidado(request):
             user_id = metadata.get("user_id")
             mascota_id = metadata.get("mascota_id")
             cuidador_id = metadata.get("cuidador_id")
+            total = payment["response"]["transaction_amount"]
 
             if payment_status == "approved":
                 user = User.objects.get(id=user_id)
 
-                nueva_solicitud = SolicitudCuidadoMascota.objects.create(
-                    user=user,
-                    mascota_id=mascota_id,
-                    cuidador_id=cuidador_id,
-                    estado="Confirmada",
-                    total=payment["response"]["transaction_amount"],
-                )
+                # Crear la solicitud de cuidado
+                solicitud_data = {
+                    "cliente": user.id,
+                    "mascota": mascota_id,
+                    "cuidador": cuidador_id,
+                    "fecha_solicitud": timezone.now().isoformat(),
+                    "fecha_inicio": timezone.now().isoformat(),  # 🔹 Cambia esto según tu lógica de fechas
+                    "fecha_fin": timezone.now().isoformat(),  # 🔹 Cambia esto según tu lógica de fechas
+                    "horas_cuidado": 0,  # 🔹 Modificar si el cuidado es por horas
+                    "is_cuidado_especial": False,  # 🔹 Modificar si aplica
+                    "descripcion": "Pago realizado correctamente.",
+                    "costo": total,
+                    "estado": "Pendiente",  # 🔹 Estado inicial de la solicitud
+                }
 
-                return JsonResponse(
-                    {
-                        "message": "Solicitud creada exitosamente",
-                        "solicitud_id": nueva_solicitud.id,
-                    },
-                    status=201,
-                )
+                serializer = SolicitudCuidadoSerializer(data=solicitud_data)
+
+                if serializer.is_valid():
+                    serializer.save()
+                    return JsonResponse(
+                        {"message": "Solicitud de cuidado creada exitosamente."},
+                        status=201,
+                    )
+                else:
+                    return JsonResponse({"error": serializer.errors}, status=400)
 
             return JsonResponse({"message": "Pago no aprobado"}, status=200)
 
