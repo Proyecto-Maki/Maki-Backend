@@ -7,7 +7,7 @@ urlpatterns = [
     path("pagar_con_saldo_maki", pagar_con_saldo_maki, name="pagar_con_saldo_maki"),
     path("api/mercadopago/webhook/", mercadopago_webhook, name="mercadopago_webhook"),
     path(
-        "api/mercadopago/membership_webhook/",
+        "api/mercadopago/membership-webhook/",
         membership_webhook,
         name="membership_webhook",
     ),
