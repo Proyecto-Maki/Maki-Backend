@@ -121,16 +121,22 @@ def membership_webhook(request):
     if request.method == "POST":
         try:
             raw_data = request.body.decode("utf-8")
+            print(f"🔹 Webhook recibido: {raw_data}")
+
             data = json.loads(raw_data)
 
             if data.get("topic") == "merchant_order":
+                print("⚠️ Webhook de merchant_order recibido, ignorando...")
                 return JsonResponse({"message": "Merchant order ignorado"}, status=200)
 
             payment_id = data.get("data", {}).get("id", None)
             if not payment_id:
+                print("❌ No se recibió un ID de pago válido")
                 return JsonResponse(
                     {"error": "No se recibió un ID de pago"}, status=400
                 )
+
+            print(f"✔ ID de pago recibido: {payment_id}")
 
             # Consultar el pago en Mercado Pago
             sdk = mercadopago.SDK(settings.MERCADO_PAGO_ACCESS_TOKEN)
@@ -138,30 +144,47 @@ def membership_webhook(request):
             payment_status = payment["response"]["status"]
             user_id = payment["response"].get("metadata", {}).get("user_id", None)
 
+            print(f"🔹 Estado del pago: {payment_status}")
+            print(f"🔹 ID de usuario en metadata: {user_id}")
+
             if not user_id:
+                print("❌ No se encontró user_id en metadata")
                 return JsonResponse(
                     {"error": "Usuario no encontrado en metadata"}, status=400
                 )
 
+            # Validar si el pago fue aprobado
             if payment_status == "approved":
                 try:
                     user = User.objects.get(id=user_id)
                     fundacion = Fundacion.objects.get(user=user)
                     fundacion.premium = True
                     fundacion.save()
+                    print(
+                        f"✅ Membresía activada para la fundación: {fundacion.nombre}"
+                    )
                     return JsonResponse(
                         {"message": "Membresía activada exitosamente"}, status=200
                     )
-                except (User.DoesNotExist, Fundacion.DoesNotExist):
+                except User.DoesNotExist:
+                    print(f"❌ No se encontró usuario con ID {user_id}")
+                    return JsonResponse({"error": "Usuario no encontrado"}, status=404)
+                except Fundacion.DoesNotExist:
+                    print(
+                        f"❌ No se encontró fundación asociada al usuario {user.email}"
+                    )
                     return JsonResponse(
                         {"error": "Fundación no encontrada"}, status=404
                     )
 
+            print("⚠️ El pago no fue aprobado, no se activa la membresía.")
             return JsonResponse({"message": "Pago no aprobado"}, status=200)
 
         except json.JSONDecodeError:
+            print("❌ Error al decodificar JSON")
             return JsonResponse({"error": "JSON inválido"}, status=400)
         except Exception as e:
+            print(f"❌ Error inesperado: {e}")
             return JsonResponse({"error": str(e)}, status=500)
 
     return JsonResponse({"error": "Método no permitido"}, status=405)
