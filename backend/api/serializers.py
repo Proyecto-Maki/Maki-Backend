@@ -841,8 +841,9 @@ class PadecimientoSerializer(serializers.ModelSerializer):
 
 
 class ResenaSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField(read_only=True)
     email = serializers.EmailField(write_only=True)
-    object_id = serializers.IntegerField(write_only=True)  # Usar un solo campo 'id'
+    object_id = serializers.IntegerField(write_only=True)  
     content_type = serializers.PrimaryKeyRelatedField(
         queryset=ContentType.objects.all()
     )
@@ -854,6 +855,7 @@ class ResenaSerializer(serializers.ModelSerializer):
     class Meta:
         model = Resena
         fields = [
+            "id",
             "object_id",
             "content_type",
             "email",

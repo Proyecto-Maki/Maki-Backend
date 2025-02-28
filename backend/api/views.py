@@ -1360,6 +1360,18 @@ class ResenaProductoCreateView(generics.ListCreateAPIView):
         data["content_type"] = content_type.id
         data["object_id"] = producto_id
 
+        email = data.get("email")
+        user = get_object_or_404(User, email=email)
+
+        if Resena.objects.filter(content_type=content_type, object_id=producto_id, user=user).exists():
+            return Response(
+                {
+                    "error": "Ya has creado una reseña para este producto",
+                    "detail": "No puedes crear más de una reseña para este producto.",
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         serializer = self.get_serializer(data=data)
         if serializer.is_valid():
             serializer.save()
@@ -1408,6 +1420,18 @@ class ResenaCuidadorCreateView(generics.ListCreateAPIView):
 
         data["content_type"] = content_type.id
         data["object_id"] = cuidador_id
+
+        email = data.get("email")
+        user = get_object_or_404(User, email=email)
+
+        if Resena.objects.filter(content_type=content_type, object_id=cuidador_id, user=user).exists():
+            return Response(
+                {
+                    "error": "Ya has creado una reseña para este cuidador",
+                    "detail": "No puedes crear más de una reseña para este cuidador.",
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         serializer = self.get_serializer(data=data)
         if serializer.is_valid():
