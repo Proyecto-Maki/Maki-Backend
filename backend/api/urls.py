@@ -7,6 +7,11 @@ urlpatterns = [
     path("pagar_con_saldo_maki", pagar_con_saldo_maki, name="pagar_con_saldo_maki"),
     path("api/mercadopago/webhook/", mercadopago_webhook, name="mercadopago_webhook"),
     path("create_preference/", create_preference, name="create_preference"),
+    path(
+        "create_membership_preference/",
+        create_membership_preference,
+        name="create_membership_preference",
+    ),
     path("test-email/", SendTestEmail, name="test-email"),
     # path('registro/cliente/', register_cliente, name='register_cliente'),
     # path('registro/fundacion/', register_fundacion, name='register_fundacion'),
@@ -329,9 +334,15 @@ urlpatterns = [
         CancelarSolicitudCuidado.as_view(),
         name="cancelar_solicitud_cuidado",
     ),
-
     # Donaciones
-
-    path("donaciones-recibidas/<email>/", DonacionesFundacionView.as_view(), name="donaciones_recibidas"),
-    path("donaciones-realizadas/<email>/", DonacionesClienteView.as_view(), name="donaciones_realizadas"),
+    path(
+        "donaciones-recibidas/<email>/",
+        DonacionesFundacionView.as_view(),
+        name="donaciones_recibidas",
+    ),
+    path(
+        "donaciones-realizadas/<email>/",
+        DonacionesClienteView.as_view(),
+        name="donaciones_realizadas",
+    ),
 ]
