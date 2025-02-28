@@ -10,6 +10,7 @@ from .permissions import IsClienteUser, IsFundacionUser
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework import exceptions
+from django.utils.timezone import now
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 from .utils import generate_random_code
@@ -462,6 +463,10 @@ class CustomAuthToken(TokenObtainPairSerializer):
             if not user.is_verified:
                 raise exceptions.AuthenticationFailed("La cuenta no está verificada.")
 
+            first_login = user.last_login is None  # Verificar si es la primera vez
+            user.last_login = now()
+            user.save(update_fields=["last_login"])
+
             data = {}
             refresh = self.get_token(user)
             data["id"] = user.id  # Enviar `user_id`
@@ -470,6 +475,8 @@ class CustomAuthToken(TokenObtainPairSerializer):
             data["is_fundacion"] = user.is_fundacion
             data["refresh"] = str(refresh)
             data["access"] = str(refresh.access_token)
+            data["last_login"] = user.last_login
+            data["first_login"] = first_login
 
             return {"data": data, "message": "¡Bienvenido a Maki!"}
         else:
@@ -2359,7 +2366,8 @@ class SolicitudCuidadoCreateView(generics.ListCreateAPIView):
                 return Response(
                     {
                         "error": "Ha ocurrido un error al enviar el correo de solicitud de cuidado",
-                        "detail": "Ha ocurrido un error al enviar el correo de solicitud de cuidado." + str(e),
+                        "detail": "Ha ocurrido un error al enviar el correo de solicitud de cuidado."
+                        + str(e),
                     },
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 )

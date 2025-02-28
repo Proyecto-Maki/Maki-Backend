@@ -59,7 +59,7 @@ class CuidadorSerializer(serializers.ModelSerializer):
     def get_localidad(self, obj):
         """Si la localidad existe, devuelve su nombre"""
         return obj.localidad.nombre if obj.localidad else "Desconocida"
-    
+
     def save(self, **kwargs):
         cedula = self.validated_data["cedula"]
         primer_nombre = self.validated_data["primer_nombre"]
@@ -76,11 +76,10 @@ class CuidadorSerializer(serializers.ModelSerializer):
         telefono = self.validated_data.get("telefono", "")
         email = self.validated_data.get("email", "")
 
-        if (len(cedula) != 10):
+        if len(cedula) != 10:
             raise serializers.ValidationError(
                 {"detail": "La cédula debe tener 10 dígitos"}
             )
-        
 
         cuidador = Cuidador.objects.create(
             cedula=cedula,
@@ -96,10 +95,9 @@ class CuidadorSerializer(serializers.ModelSerializer):
             imagen=imagen,
             telefono=telefono,
             email=email,
-            hoja_vida=hoja_vida
+            hoja_vida=hoja_vida,
         )
         return cuidador
-
 
 
 class LocalidadSerializer(serializers.ModelSerializer):
@@ -142,10 +140,12 @@ class UserSerializer(serializers.ModelSerializer):
         fields = [
             "email",
             "is_cliente",
+            "is_fundacion",
             "direccion",
             "telefono",
             "saldo",
             "is_verified",
+            "last_login",
         ]
 
 
@@ -843,12 +843,14 @@ class PadecimientoSerializer(serializers.ModelSerializer):
 class ResenaSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(write_only=True)
     object_id = serializers.IntegerField(write_only=True)  # Usar un solo campo 'id'
-    content_type = serializers.PrimaryKeyRelatedField(queryset=ContentType.objects.all())
+    content_type = serializers.PrimaryKeyRelatedField(
+        queryset=ContentType.objects.all()
+    )
     titulo = serializers.CharField(max_length=255)
     calificacion = serializers.IntegerField()
     comentario = serializers.CharField(max_length=500)
     user_data = serializers.SerializerMethodField()
-    
+
     class Meta:
         model = Resena
         fields = [
@@ -864,7 +866,7 @@ class ResenaSerializer(serializers.ModelSerializer):
         ]
 
     def get_user_data(self, obj):
-        try: 
+        try:
             user_base = obj.user
             user_data = {
                 "email": user_base.email,
@@ -881,8 +883,10 @@ class ResenaSerializer(serializers.ModelSerializer):
                 user_data.update(fundacion_data)
             return user_data
         except Exception as e:
-            raise serializers.ValidationError(f"Error en la recepción de los datos del usuario: {str(e)}")
-        
+            raise serializers.ValidationError(
+                f"Error en la recepción de los datos del usuario: {str(e)}"
+            )
+
     def save(self, **kwargs):
         user = User.objects.get(email=self.validated_data["email"])
         titulo = self.validated_data["titulo"]
@@ -1329,7 +1333,7 @@ class SolicitudCuidadoSerializer(serializers.ModelSerializer):
         representation = super().to_representation(instance)
         mascota = instance.mascota
         cliente = mascota.user.cliente
-        representation['cliente'] = ClienteSerializer(cliente).data
+        representation["cliente"] = ClienteSerializer(cliente).data
         return representation
 
     def save(self, **kwargs):
@@ -1435,6 +1439,7 @@ class SetEstadoSolicitudCuidadoSerializer(serializers.ModelSerializer):
         instance.save()
         return instance
 
+
 class TarjetaSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(read_only=True)
     tipo = serializers.CharField(max_length=255)
@@ -1450,7 +1455,8 @@ class TarjetaSerializer(serializers.ModelSerializer):
 
         tarjeta = Tarjeta.objects.create(tipo=tipo, monto=monto)
         return tarjeta
-    
+
+
 class DonacionSerializer(serializers.ModelSerializer):
     email_cliente = serializers.EmailField(write_only=True)
     email_fundacion = serializers.EmailField(write_only=True)
@@ -1459,7 +1465,7 @@ class DonacionSerializer(serializers.ModelSerializer):
     fundacion = FundacionSerializer(read_only=True)
     tarjeta = TarjetaSerializer(read_only=True)
     fecha = serializers.DateTimeField(read_only=True)
-    
+
     class Meta:
         model = Donacion
         fields = [
