@@ -11,6 +11,16 @@ urlpatterns = [
         membership_webhook,
         name="membership_webhook",
     ),
+    path(
+        "api/mercadopago/webhook_cuidado/",
+        mercadopago_webhook_cuidado,
+        name="mercadopago_webhook_cuidado",
+    ),
+    path(
+        "api/mercadopago/create_preference_cuidado/",
+        create_preference_cuidado,
+        name="create_preference_cuidado",
+    ),
     path("create_preference/", create_preference, name="create_preference"),
     path(
         "create_membership_preference/",

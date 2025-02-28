@@ -52,6 +52,110 @@ sdk = mercadopago.SDK(os.getenv("MERCADO_PAGO_ACCESS_TOKEN"))
 
 
 @csrf_exempt
+def create_preference_cuidado(request):
+    if request.method == "POST":
+        sdk = mercadopago.SDK(settings.MERCADO_PAGO_ACCESS_TOKEN)
+
+        try:
+            body = json.loads(request.body)
+
+            user_id = body.get("user_id")
+            mascota_id = body.get("mascota_id")
+            cuidador_id = body.get("cuidador_id")
+            total = body.get("total")
+
+            if not user_id or not mascota_id or not cuidador_id or not total:
+                return JsonResponse({"error": "Faltan datos obligatorios"}, status=400)
+
+            preference_data = {
+                "items": [
+                    {
+                        "title": "Servicio de Cuidado de Mascotas",
+                        "quantity": 1,
+                        "unit_price": float(total),
+                        "currency_id": "COP",
+                    }
+                ],
+                "payer": {
+                    "email": body.get("email"),
+                },
+                "back_urls": {
+                    "success": "https://makishop.live/cuidado/success",
+                    "failure": "https://makishop.live/cuidado/failure",
+                    "pending": "https://makishop.live/cuidado/pending",
+                },
+                "auto_return": "approved",
+                "notification_url": "https://backend.makishop.live/api/mercadopago/webhook_cuidado/",
+                "metadata": {
+                    "user_id": str(user_id),
+                    "mascota_id": str(mascota_id),
+                    "cuidador_id": str(cuidador_id),
+                },
+            }
+
+            preference_response = sdk.preference().create(preference_data)
+            preference = preference_response["response"]
+
+            return JsonResponse(
+                {
+                    "id": preference.get("id"),
+                    "init_point": preference.get("init_point"),
+                }
+            )
+
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=500)
+
+    return JsonResponse({"error": "Método no permitido"}, status=405)
+
+
+@csrf_exempt
+def mercadopago_webhook_cuidado(request):
+    if request.method == "POST":
+        try:
+            sdk = mercadopago.SDK(settings.MERCADO_PAGO_ACCESS_TOKEN)
+            data = json.loads(request.body)
+
+            payment_id = data.get("data", {}).get("id")
+            if not payment_id:
+                return JsonResponse({"error": "ID de pago no válido"}, status=400)
+
+            payment = sdk.payment().get(payment_id)
+            payment_status = payment["response"]["status"]
+            metadata = payment["response"].get("metadata", {})
+
+            user_id = metadata.get("user_id")
+            mascota_id = metadata.get("mascota_id")
+            cuidador_id = metadata.get("cuidador_id")
+
+            if payment_status == "approved":
+                user = User.objects.get(id=user_id)
+
+                nueva_solicitud = SolicitudCuidadoMascota.objects.create(
+                    user=user,
+                    mascota_id=mascota_id,
+                    cuidador_id=cuidador_id,
+                    estado="Confirmada",
+                    total=payment["response"]["transaction_amount"],
+                )
+
+                return JsonResponse(
+                    {
+                        "message": "Solicitud creada exitosamente",
+                        "solicitud_id": nueva_solicitud.id,
+                    },
+                    status=201,
+                )
+
+            return JsonResponse({"message": "Pago no aprobado"}, status=200)
+
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=500)
+
+    return JsonResponse({"error": "Método no permitido"}, status=405)
+
+
+@csrf_exempt
 def create_membership_preference(request):
     if request.method == "POST":
         sdk = mercadopago.SDK(settings.MERCADO_PAGO_ACCESS_TOKEN)
@@ -1363,7 +1467,9 @@ class ResenaProductoCreateView(generics.ListCreateAPIView):
         email = data.get("email")
         user = get_object_or_404(User, email=email)
 
-        if Resena.objects.filter(content_type=content_type, object_id=producto_id, user=user).exists():
+        if Resena.objects.filter(
+            content_type=content_type, object_id=producto_id, user=user
+        ).exists():
             return Response(
                 {
                     "error": "Ya has creado una reseña para este producto",
@@ -1424,7 +1530,9 @@ class ResenaCuidadorCreateView(generics.ListCreateAPIView):
         email = data.get("email")
         user = get_object_or_404(User, email=email)
 
-        if Resena.objects.filter(content_type=content_type, object_id=cuidador_id, user=user).exists():
+        if Resena.objects.filter(
+            content_type=content_type, object_id=cuidador_id, user=user
+        ).exists():
             return Response(
                 {
                     "error": "Ya has creado una reseña para este cuidador",
