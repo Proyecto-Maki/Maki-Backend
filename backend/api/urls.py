@@ -6,6 +6,11 @@ from .views import *
 urlpatterns = [
     path("pagar_con_saldo_maki", pagar_con_saldo_maki, name="pagar_con_saldo_maki"),
     path("api/mercadopago/webhook/", mercadopago_webhook, name="mercadopago_webhook"),
+    path(
+        "api/mercadopago/membership_webhook/",
+        membership_webhook,
+        name="membership_webhook",
+    ),
     path("create_preference/", create_preference, name="create_preference"),
     path(
         "create_membership_preference/",
