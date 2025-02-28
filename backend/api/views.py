@@ -52,6 +52,122 @@ sdk = mercadopago.SDK(os.getenv("MERCADO_PAGO_ACCESS_TOKEN"))
 
 
 @csrf_exempt
+def create_membership_preference(request):
+    if request.method == "POST":
+        sdk = mercadopago.SDK(settings.MERCADO_PAGO_ACCESS_TOKEN)
+
+        try:
+            body = json.loads(request.body)
+
+            user_id = body.get("user_id")
+            if not user_id:
+                return JsonResponse({"error": "user_id es obligatorio"}, status=400)
+
+            # Obtener el usuario para verificar si es fundación
+            try:
+                user = User.objects.get(id=user_id)
+                if not user.is_fundacion:
+                    return JsonResponse(
+                        {"error": "Solo las fundaciones pueden comprar membresías"},
+                        status=403,
+                    )
+            except User.DoesNotExist:
+                return JsonResponse({"error": "Usuario no encontrado"}, status=404)
+
+            # Configuración del plan de membresía
+            membership_plan = body.get("membership_plan")  # Puede ser 'Peludos' u otro
+            price = 26000  # Precio fijo en COP para la membresía "Peludos"
+
+            preference_data = {
+                "items": [
+                    {
+                        "title": f"Membresía {membership_plan}",
+                        "quantity": 1,
+                        "unit_price": price,
+                        "currency_id": "COP",
+                    }
+                ],
+                "back_urls": {
+                    "success": "https://makishop.live/membresias/success",
+                    "failure": "https://makishop.live/membresias/failure",
+                    "pending": "https://makishop.live/membresias/pending",
+                },
+                "auto_return": "approved",
+                "notification_url": "https://backend.makishop.live/api/mercadopago/membership-webhook/",
+                "metadata": {
+                    "user_id": str(user_id),
+                    "membership_plan": membership_plan,
+                },
+            }
+
+            preference_response = sdk.preference().create(preference_data)
+            preference = preference_response["response"]
+
+            return JsonResponse(
+                {
+                    "id": preference.get("id"),
+                    "init_point": preference.get("init_point"),
+                }
+            )
+
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=500)
+
+    return JsonResponse({"error": "Método no permitido"}, status=405)
+
+
+@csrf_exempt
+def membership_webhook(request):
+    if request.method == "POST":
+        try:
+            raw_data = request.body.decode("utf-8")
+            data = json.loads(raw_data)
+
+            if data.get("topic") == "merchant_order":
+                return JsonResponse({"message": "Merchant order ignorado"}, status=200)
+
+            payment_id = data.get("data", {}).get("id", None)
+            if not payment_id:
+                return JsonResponse(
+                    {"error": "No se recibió un ID de pago"}, status=400
+                )
+
+            # Consultar el pago en Mercado Pago
+            sdk = mercadopago.SDK(settings.MERCADO_PAGO_ACCESS_TOKEN)
+            payment = sdk.payment().get(payment_id)
+            payment_status = payment["response"]["status"]
+            user_id = payment["response"].get("metadata", {}).get("user_id", None)
+
+            if not user_id:
+                return JsonResponse(
+                    {"error": "Usuario no encontrado en metadata"}, status=400
+                )
+
+            if payment_status == "approved":
+                try:
+                    user = User.objects.get(id=user_id)
+                    fundacion = Fundacion.objects.get(user=user)
+                    fundacion.premium = True
+                    fundacion.save()
+                    return JsonResponse(
+                        {"message": "Membresía activada exitosamente"}, status=200
+                    )
+                except (User.DoesNotExist, Fundacion.DoesNotExist):
+                    return JsonResponse(
+                        {"error": "Fundación no encontrada"}, status=404
+                    )
+
+            return JsonResponse({"message": "Pago no aprobado"}, status=200)
+
+        except json.JSONDecodeError:
+            return JsonResponse({"error": "JSON inválido"}, status=400)
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=500)
+
+    return JsonResponse({"error": "Método no permitido"}, status=405)
+
+
+@csrf_exempt
 def create_preference(request):
     if request.method == "POST":
         sdk = mercadopago.SDK(settings.MERCADO_PAGO_ACCESS_TOKEN)
