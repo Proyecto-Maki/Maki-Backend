@@ -377,6 +377,7 @@ class Cuidador(models.Model):
 
     def __str__(self):
         return f"{self.primer_nombre} {self.primer_apellido}"
+
     telefono = models.CharField(max_length=10, null=True, blank=True)
     email = models.EmailField(null=True, blank=True)
 
@@ -404,8 +405,12 @@ class SolicitudCuidado(models.Model):
     horas_cuidado = models.IntegerField(null=False, blank=False, default=0)
     is_cuidado_especial = models.BooleanField(default=False)
     descripcion = models.TextField(null=False, blank=False)
-    estado = models.CharField(max_length=255, null=False, blank=False, choices=ESTADOS, default="Pendiente")
-    costo = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, null=False, blank=False)
+    estado = models.CharField(
+        max_length=255, null=False, blank=False, choices=ESTADOS, default="Pendiente"
+    )
+    costo = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0.00, null=False, blank=False
+    )
 
 
 ## MODELO DE RESEÑA
@@ -413,7 +418,7 @@ class SolicitudCuidado(models.Model):
 
 class Resena(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    
+
     titulo = models.CharField(
         max_length=255, null=False, blank=False, default="Sin titulo"
     )
@@ -423,7 +428,7 @@ class Resena(models.Model):
     fecha = models.DateTimeField(auto_now_add=True)
     content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
     object_id = models.PositiveIntegerField(null=True, blank=True)
-    content_object = GenericForeignKey('content_type', 'object_id')
+    content_object = GenericForeignKey("content_type", "object_id")
 
     class Meta:
         constraints = [

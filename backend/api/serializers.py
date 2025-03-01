@@ -1299,9 +1299,7 @@ class ProductoCategoriasSerializer(serializers.ModelSerializer):
 class SolicitudCuidadoSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(write_only=True)
     id_mascota = serializers.IntegerField(write_only=True)
-    id_cuidador = serializers.IntegerField(
-        write_only=True
-    )  # Asegúrate de que este campo esté definido correctamente
+    id_cuidador = serializers.IntegerField(write_only=True)
     id_cliente = serializers.PrimaryKeyRelatedField(
         queryset=Cliente.objects.all(),
         source="cliente",
@@ -1311,7 +1309,9 @@ class SolicitudCuidadoSerializer(serializers.ModelSerializer):
     fecha_fin = serializers.DateTimeField(write_only=True)
     descripcion = serializers.CharField(max_length=500)
     is_cuidado_especial = serializers.BooleanField()
-    costo = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
+    costo = serializers.DecimalField(
+        max_digits=10, decimal_places=2
+    )  # Asegúrate de que este campo esté definido correctamente
     horas_cuidado = serializers.IntegerField()
 
     mascota = MascotaSerializer(read_only=True)

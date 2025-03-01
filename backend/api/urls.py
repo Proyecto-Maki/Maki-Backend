@@ -320,9 +320,9 @@ urlpatterns = [
     path("cuidador/<int:id>/", CuidadorDetailView.as_view(), name="cuidador_detail"),
     # Solicitudes de cuidado
     path(
-        "solicitud-cuidado/create/",
+        "solicitudes_cuidado/",
         SolicitudCuidadoCreateView.as_view(),
-        name="solicitud_cuidado_create",
+        name="solicitudes-cuidado",
     ),
     path(
         "mis-solicitudes-cuidado/<email>/",
