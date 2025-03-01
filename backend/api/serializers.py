@@ -1299,34 +1299,38 @@ class ProductoCategoriasSerializer(serializers.ModelSerializer):
 class SolicitudCuidadoSerializer(serializers.ModelSerializer):
 
     email = serializers.EmailField(write_only=True)
+
     id_mascota = serializers.PrimaryKeyRelatedField(
         queryset=Mascota.objects.all(),
         source="mascota",  # 🔹 Mapear `id_mascota` al campo `mascota`
         write_only=True,  # 🔹 Solo se usa al escribir datos, no se muestra al leer
     )
 
-    id_mascota = serializers.IntegerField(write_only=True)
     id_cuidador = serializers.PrimaryKeyRelatedField(
         queryset=Cuidador.objects.all(),
         source="cuidador",  # 🔹 Mapear `id_cuidador` al campo `cuidador`
         write_only=True,  # 🔹 Solo se usa al escribir datos, no se muestra al leer
     )
-    id_cuidador = serializers.IntegerField(write_only=True)
 
-    fecha_inicio = serializers.DateTimeField()
-    fecha_fin = serializers.DateTimeField()
-    descripcion = serializers.CharField(max_length=500)
-    is_cuidado_especial = serializers.BooleanField()
-    costo = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
-    horas_cuidado = serializers.IntegerField()
-    mascota = MascotaSerializer(read_only=True)
-    cuidador = CuidadorSerializer(read_only=True)
     id_cliente = serializers.PrimaryKeyRelatedField(
         queryset=User.objects.all(),
         source="cliente",  # 🔹 Mapear `id_cliente` al campo `cliente`
         write_only=True,  # 🔹 Solo se usa al escribir datos, no se muestra al leer
     )
-    cliente = ClienteSerializer(read_only=True)
+
+    fecha_inicio = serializers.DateTimeField(write_only=True)
+    fecha_fin = serializers.DateTimeField(write_only=True)
+    descripcion = serializers.CharField(max_length=500)
+    is_cuidado_especial = serializers.BooleanField()
+    costo = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
+    horas_cuidado = serializers.IntegerField()
+
+    # Serializers para mostrar los datos completos en respuesta
+    mascota = MascotaSerializer(read_only=True)
+    cuidador = CuidadorSerializer(read_only=True)
+    cliente = serializers.StringRelatedField(
+        read_only=True
+    )  # 🔹 Muestra el nombre del cliente en la respuesta
 
     class Meta:
         model = SolicitudCuidado
