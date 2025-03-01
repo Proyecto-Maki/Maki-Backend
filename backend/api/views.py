@@ -130,6 +130,13 @@ def mercadopago_webhook_cuidado(request):
             metadata = payment["response"].get("metadata", {})
 
             user_id = metadata.get("user_id")
+            cliente = Cliente.objects.filter(
+                user__id=user_id
+            ).first()  # 🔹 Buscar Cliente por User
+            if not cliente:
+                print(f"⚠️ No se encontró un Cliente para el User ID {user_id}")
+                return JsonResponse({"error": "Cliente no encontrado"}, status=400)
+
             mascota_id = metadata.get("mascota_id")
             if mascota_id is None:
                 print("⚠️ `mascota_id` no está presente en metadata:", metadata)
@@ -151,9 +158,17 @@ def mercadopago_webhook_cuidado(request):
                 print(f"✔ Creando solicitud de cuidado para User {user_id}")
 
                 factory = RequestFactory()
+
+                # Buscar el Cliente asociado al User ID
+                cliente = Cliente.objects.filter(user__id=user_id).first()
+
+                if not cliente:
+                    print(f"⚠️ No se encontró un Cliente para el User ID {user_id}")
+                    return JsonResponse({"error": "Cliente no encontrado"}, status=400)
+
                 request_data = {
                     "email": "usuario@example.com",  # 🔹 Reemplazar con email válido si está disponible
-                    "id_cliente": user_id,
+                    "id_cliente": cliente.id,  # 🔹 Enviar el ID correcto del Cliente
                     "id_mascota": mascota_id,
                     "id_cuidador": cuidador_id,
                     "fecha_solicitud": timezone.now().isoformat(),

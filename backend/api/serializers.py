@@ -1371,7 +1371,17 @@ def save(self, **kwargs):
             {"detail": "La mascota no existe", "code": "invalid_mascota"}
         )
 
-    cliente = Cliente.objects.get(user__email=email)
+    try:
+        cliente = Cliente.objects.get(
+            user__email=email
+        )  # 🔹 Buscar un Cliente, no un User
+    except Cliente.DoesNotExist:
+        raise serializers.ValidationError(
+            {
+                "detail": "No se encontró un Cliente asociado a este email",
+                "code": "invalid_cliente",
+            }
+        )
 
     if not mascota.user == cliente.user:
         raise serializers.ValidationError(
