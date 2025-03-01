@@ -159,44 +159,32 @@ def mercadopago_webhook_cuidado(request):
             metadata = payment_info["response"].get("metadata", {})
 
             print(f"🔹 Estado del pago: {payment_status}")
-            print(f"🔹 Metadata recibida: {json.dumps(metadata, indent=2)}")
+            print(f"🔹 Metadata recibida en webhook: {json.dumps(metadata, indent=2)}")
 
-            # Validar si el pago fue aprobado
+            # Solo continuar si el pago está aprobado
             if payment_status == "approved":
-                required_fields = [
-                    "user_id",
-                    "email",
-                    "mascota_id",
-                    "cuidador_id",
-                    "fecha_inicio",
-                    "fecha_fin",
-                    "total",
-                ]
-                missing_fields = [
-                    field for field in required_fields if field not in metadata
-                ]
-
-                if missing_fields:
-                    print(
-                        f"❌ Faltan los siguientes datos en metadata: {missing_fields}"
-                    )
-                    return JsonResponse(
-                        {"error": f"Faltan datos en metadata: {missing_fields}"},
-                        status=400,
-                    )
-
-                user_id = metadata["user_id"]
-                email = metadata["email"]
-                mascota_id = metadata["mascota_id"]
-                cuidador_id = metadata["cuidador_id"]
-                fecha_inicio = metadata["fecha_inicio"]
-                fecha_fin = metadata["fecha_fin"]
+                user_id = metadata.get("user_id", None)
+                mascota_id = metadata.get("mascota_id", None)
+                cuidador_id = metadata.get("cuidador_id", None)
+                email = metadata.get(
+                    "email", "No proporcionado"
+                )  # 🔹 Valor por defecto
+                fecha_inicio = metadata.get("fecha_inicio", None)
+                fecha_fin = metadata.get("fecha_fin", None)
                 horas_cuidado = metadata.get("horas_cuidado", 0)
                 is_cuidado_especial = metadata.get("is_cuidado_especial", False)
-                descripcion = metadata.get("descripcion", "No disponible")
-                total = metadata["total"]
+                descripcion = metadata.get("descripcion", "No proporcionada")
+                total = metadata.get("total", 0.00)  # 🔹 Si falta, se asigna 0
 
-                # Validar la existencia de los registros en la base de datos
+                # **Validar si los IDs de usuario, mascota y cuidador existen**
+                if not user_id or not mascota_id or not cuidador_id:
+                    print(
+                        "❌ Faltan identificadores esenciales (usuario, mascota o cuidador). No se puede crear la solicitud."
+                    )
+                    return JsonResponse(
+                        {"error": "Faltan datos esenciales en metadata"}, status=400
+                    )
+
                 try:
                     cliente = Cliente.objects.get(id=user_id)
                     mascota = Mascota.objects.get(id=mascota_id)
@@ -208,7 +196,15 @@ def mercadopago_webhook_cuidado(request):
                 except Cuidador.DoesNotExist:
                     return JsonResponse({"error": "Cuidador no encontrado"}, status=400)
 
-                # Crear la solicitud de cuidado
+                # **Asignar fechas por defecto si no se enviaron**
+                from datetime import datetime, timedelta
+
+                if not fecha_inicio:
+                    fecha_inicio = datetime.now().isoformat()
+                if not fecha_fin:
+                    fecha_fin = (datetime.now() + timedelta(days=1)).isoformat()
+
+                # Crear la solicitud de cuidado con los datos obtenidos
                 solicitud_data = {
                     "cliente": cliente.id,
                     "mascota": mascota.id,
