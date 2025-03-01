@@ -10,12 +10,14 @@ from .permissions import IsClienteUser, IsFundacionUser
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework import exceptions
+from rest_framework import status
 from django.utils.timezone import now
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 from .utils import generate_random_code
 from datetime import timedelta
 from django.utils import timezone
+from django.test import RequestFactory
 
 from django.contrib.auth.decorators import login_required
 
@@ -114,10 +116,13 @@ def mercadopago_webhook_cuidado(request):
     if request.method == "POST":
         try:
             sdk = mercadopago.SDK(settings.MERCADO_PAGO_ACCESS_TOKEN)
-            data = json.loads(request.body)
+            raw_data = request.body.decode("utf-8")
+            print(f"📌 Webhook recibido: {raw_data}")
 
+            data = json.loads(raw_data)
             payment_id = data.get("data", {}).get("id")
             if not payment_id:
+                print("⚠️ No se recibió un ID de pago válido")
                 return JsonResponse({"error": "ID de pago no válido"}, status=400)
 
             payment = sdk.payment().get(payment_id)
@@ -130,37 +135,48 @@ def mercadopago_webhook_cuidado(request):
             total = payment["response"]["transaction_amount"]
 
             if payment_status == "approved":
-                user = User.objects.get(id=user_id)
+                print(f"✔ Creando solicitud de cuidado para User {user_id}")
 
-                # Crear la solicitud de cuidado
-                solicitud_data = {
-                    "cliente": user.id,
+                # Crear un request simulado para llamar a `SolicitudCuidadoCreateView`
+                factory = RequestFactory()
+                request_data = {
+                    "cliente": user_id,
                     "mascota": mascota_id,
                     "cuidador": cuidador_id,
                     "fecha_solicitud": timezone.now().isoformat(),
-                    "fecha_inicio": timezone.now().isoformat(),  # 🔹 Cambia esto según tu lógica de fechas
-                    "fecha_fin": timezone.now().isoformat(),  # 🔹 Cambia esto según tu lógica de fechas
-                    "horas_cuidado": 0,  # 🔹 Modificar si el cuidado es por horas
-                    "is_cuidado_especial": False,  # 🔹 Modificar si aplica
-                    "descripcion": "Pago realizado correctamente.",
+                    "fecha_inicio": timezone.now().isoformat(),  # 🔹 Cambiar si tienes fechas reales
+                    "fecha_fin": timezone.now().isoformat(),  # 🔹 Ajustar si aplica
+                    "horas_cuidado": 0,  # 🔹 Ajustar si es por horas
+                    "is_cuidado_especial": False,
+                    "descripcion": "Pago aprobado en Mercado Pago.",
                     "costo": total,
-                    "estado": "Pendiente",  # 🔹 Estado inicial de la solicitud
+                    "estado": "Pendiente",
                 }
 
-                serializer = SolicitudCuidadoSerializer(data=solicitud_data)
+                print(f"📌 Enviando datos a la API: {request_data}")
 
-                if serializer.is_valid():
-                    serializer.save()
+                request_fake = factory.post(
+                    "/api/solicitudes-cuidado/",
+                    data=json.dumps(request_data),
+                    content_type="application/json",
+                )
+
+                response = SolicitudCuidadoCreateView.as_view()(request_fake)
+
+                if response.status_code == status.HTTP_201_CREATED:
+                    print("✅ Solicitud creada exitosamente")
                     return JsonResponse(
                         {"message": "Solicitud de cuidado creada exitosamente."},
                         status=201,
                     )
                 else:
-                    return JsonResponse({"error": serializer.errors}, status=400)
+                    print(f"⚠ Error en la creación de solicitud: {response.data}")
+                    return JsonResponse({"error": response.data}, status=400)
 
             return JsonResponse({"message": "Pago no aprobado"}, status=200)
 
         except Exception as e:
+            print(f"⚠️ Error inesperado en el Webhook: {str(e)}")
             return JsonResponse({"error": str(e)}, status=500)
 
     return JsonResponse({"error": "Método no permitido"}, status=405)
