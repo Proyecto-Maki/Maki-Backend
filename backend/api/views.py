@@ -156,7 +156,7 @@ def mercadopago_webhook_cuidado(request):
                 print(f"📌 Enviando datos a la API: {request_data}")
 
                 request_fake = factory.post(
-                    "/api/solicitudes-cuidado/",
+                    "/solicitud-cuidado/create/",  # 🔹 Asegúrate de que coincide con urls.py
                     data=json.dumps(request_data),
                     content_type="application/json",
                 )
@@ -2651,37 +2651,41 @@ class CancelarSolicitudCuidado(APIView):
 from rest_framework.permissions import AllowAny
 
 
+from rest_framework.permissions import AllowAny
+
+
 class SolicitudCuidadoCreateView(generics.ListCreateAPIView):
     queryset = SolicitudCuidado.objects.all()
     serializer_class = SolicitudCuidadoSerializer
-
-    def get_permissions(self):
-        """
-        Si la solicitud proviene del webhook de Mercado Pago, permitir acceso sin autenticación.
-        Si no, aplicar autenticación normal.
-        """
-        if self.request.META.get("HTTP_USER_AGENT") == "MercadoPago":
-            return [AllowAny()]
-        return [permissions.IsAuthenticated(), IsClienteUser()]
+    permission_classes = [AllowAny]  # 🔹 Permitimos acceso al webhook sin autenticación
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            solicitud = serializer.save()
 
-            # Envio de correo de solicitud de cuidado
+            # Datos de la solicitud
             solicitud_id = serializer.data["id"]
-            email = serializer.data["cliente"]["user"]["email"]
-            mascota_nombre = serializer.data["mascota"]["nombre"]
-            fecha_solicitud = serializer.data["fecha_solicitud"]
-            fecha_inicio = serializer.data["fecha_inicio"]
-            fecha_fin = serializer.data["fecha_fin"]
-            horas_cuidado = serializer.data["horas_cuidado"]
-            is_cuidado_especial = serializer.data["is_cuidado_especial"]
-            descripcion = serializer.data["descripcion"]
-            costo = money_format(serializer.data["costo"])
-            estado = serializer.data["estado"]
-            nombre_cuidador = f"{serializer.data['cuidador']['primer_nombre']} {serializer.data['cuidador']['segundo_nombre'] or ''} {serializer.data['cuidador']['primer_apellido']} {serializer.data['cuidador']['segundo_apellido'] or ''}"
+            email = (
+                serializer.data.get("cliente", {})
+                .get("user", {})
+                .get("email", "No disponible")
+            )
+            mascota_nombre = serializer.data.get("mascota", {}).get(
+                "nombre", "No disponible"
+            )
+            fecha_solicitud = serializer.data.get("fecha_solicitud", "No disponible")
+            fecha_inicio = serializer.data.get("fecha_inicio", "No disponible")
+            fecha_fin = serializer.data.get("fecha_fin", "No disponible")
+            horas_cuidado = serializer.data.get("horas_cuidado", 0)
+            is_cuidado_especial = serializer.data.get("is_cuidado_especial", False)
+            descripcion = serializer.data.get("descripcion", "No disponible")
+            costo = money_format(serializer.data.get("costo", 0))
+            estado = serializer.data.get("estado", "Pendiente")
+
+            # Verificar si el cuidador tiene información completa
+            cuidador = serializer.data.get("cuidador", {})
+            nombre_cuidador = f"{cuidador.get('primer_nombre', '')} {cuidador.get('segundo_nombre', '')} {cuidador.get('primer_apellido', '')} {cuidador.get('segundo_apellido', '')}".strip()
 
             try:
                 send_care_email(
@@ -2699,11 +2703,11 @@ class SolicitudCuidadoCreateView(generics.ListCreateAPIView):
                     nombre_cuidador,
                 )
             except Exception as e:
+                print(f"⚠️ Error al enviar correo: {e}")
                 return Response(
                     {
-                        "error": "Ha ocurrido un error al enviar el correo de solicitud de cuidado",
-                        "detail": "Ha ocurrido un error al enviar el correo de solicitud de cuidado."
-                        + str(e),
+                        "error": "Error al enviar correo",
+                        "detail": str(e),
                     },
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 )
@@ -2714,10 +2718,11 @@ class SolicitudCuidadoCreateView(generics.ListCreateAPIView):
                 },
                 status=status.HTTP_201_CREATED,
             )
+
         return Response(
             {
                 "error": serializer.errors,
-                "message": "Ha ocurrido un error al enviar la solicitud de cuidado",
+                "message": "Error al enviar la solicitud de cuidado",
             },
             status=status.HTTP_400_BAD_REQUEST,
         )
