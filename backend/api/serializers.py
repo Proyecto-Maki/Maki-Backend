@@ -1299,13 +1299,19 @@ class ProductoCategoriasSerializer(serializers.ModelSerializer):
 class SolicitudCuidadoSerializer(serializers.ModelSerializer):
 
     email = serializers.EmailField(write_only=True)
+    id_mascota = serializers.PrimaryKeyRelatedField(
+        queryset=Mascota.objects.all(),
+        source="mascota",  # 🔹 Mapear `id_mascota` al campo `mascota`
+        write_only=True,  # 🔹 Solo se usa al escribir datos, no se muestra al leer
+    )
+
     id_mascota = serializers.IntegerField(write_only=True)
-    # id_cuidador = serializers.IntegerField(write_only=True)
     id_cuidador = serializers.PrimaryKeyRelatedField(
         queryset=Cuidador.objects.all(),
         source="cuidador",  # 🔹 Mapear `id_cuidador` al campo `cuidador`
         write_only=True,  # 🔹 Solo se usa al escribir datos, no se muestra al leer
     )
+    id_cuidador = serializers.IntegerField(write_only=True)
 
     fecha_inicio = serializers.DateTimeField()
     fecha_fin = serializers.DateTimeField()
@@ -1315,6 +1321,11 @@ class SolicitudCuidadoSerializer(serializers.ModelSerializer):
     horas_cuidado = serializers.IntegerField()
     mascota = MascotaSerializer(read_only=True)
     cuidador = CuidadorSerializer(read_only=True)
+    id_cliente = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(),
+        source="cliente",  # 🔹 Mapear `id_cliente` al campo `cliente`
+        write_only=True,  # 🔹 Solo se usa al escribir datos, no se muestra al leer
+    )
     cliente = ClienteSerializer(read_only=True)
 
     class Meta:
