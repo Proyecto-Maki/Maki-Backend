@@ -115,99 +115,185 @@ def create_preference_cuidado(request):
 def mercadopago_webhook_cuidado(request):
     if request.method == "POST":
         try:
-            sdk = mercadopago.SDK(settings.MERCADO_PAGO_ACCESS_TOKEN)
-            raw_data = request.body.decode("utf-8")
-            print(f"📌 Webhook recibido: {raw_data}")
+            data = json.loads(request.body)
+            print("📩 Webhook recibido:", data)
 
-            data = json.loads(raw_data)
-            payment_id = data.get("data", {}).get("id")
-            if not payment_id:
-                print("⚠️ No se recibió un ID de pago válido")
-                return JsonResponse({"error": "ID de pago no válido"}, status=400)
+            # Verificar si el evento es de pago
+            if data.get("type") == "payment":
+                payment_id = data.get("data", {}).get("id")
 
-            payment = sdk.payment().get(payment_id)
-            payment_status = payment["response"]["status"]
-            metadata = payment["response"].get("metadata", {})
+                # Consultar Mercado Pago para obtener detalles del pago
+                payment = Payment()
+                payment_info = payment.get(payment_id)
 
-            user_id = metadata.get("user_id")
-            cliente = Cliente.objects.filter(
-                user__id=user_id
-            ).first()  # 🔹 Buscar Cliente por User
-            if not cliente:
-                print(f"⚠️ No se encontró un Cliente para el User ID {user_id}")
-                return JsonResponse({"error": "Cliente no encontrado"}, status=400)
+                if (
+                    payment_info["status"] == 200
+                    and payment_info["response"]["status"] == "approved"
+                ):
+                    metadata = payment_info["response"].get("metadata", {})
 
-            mascota_id = metadata.get("mascota_id")
-            if mascota_id is None:
-                print("⚠️ `mascota_id` no está presente en metadata:", metadata)
-                return JsonResponse(
-                    {"error": "mascota_id no encontrado en metadata"}, status=400
-                )
+                    # Extraer los datos de la solicitud de cuidado desde `metadata`
+                    user_id = metadata.get("user_id")
+                    mascota_id = metadata.get("mascota_id")
+                    cuidador_id = metadata.get("cuidador_id")
+                    fecha_inicio = metadata.get("fecha_inicio")
+                    fecha_fin = metadata.get("fecha_fin")
+                    horas_cuidado = metadata.get("horas_cuidado")
+                    is_cuidado_especial = metadata.get("is_cuidado_especial")
+                    descripcion = metadata.get("descripcion")
+                    total = payment_info["response"]["transaction_amount"]
 
-            cuidador_id = metadata.get("cuidador_id")
+                    # Validar si existen los registros en la base de datos
+                    try:
+                        cliente = Cliente.objects.get(id=user_id)
+                        mascota = Mascota.objects.get(id=mascota_id)
+                        cuidador = Cuidador.objects.get(id=cuidador_id)
+                    except Cliente.DoesNotExist:
+                        return JsonResponse(
+                            {"error": "Cliente no encontrado"}, status=400
+                        )
+                    except Mascota.DoesNotExist:
+                        return JsonResponse(
+                            {"error": "Mascota no encontrada"}, status=400
+                        )
+                    except Cuidador.DoesNotExist:
+                        return JsonResponse(
+                            {"error": "Cuidador no encontrado"}, status=400
+                        )
 
-            if not user_id or not mascota_id or not cuidador_id:
-                print(
-                    f"⚠️ Error: Falta user_id ({user_id}), mascota_id ({mascota_id}), o cuidador_id ({cuidador_id}) en metadata."
-                )
-                return JsonResponse({"error": "Faltan datos en metadata"}, status=400)
+                    # Crear la solicitud de cuidado
+                    solicitud_data = {
+                        "cliente": cliente.id,
+                        "mascota": mascota.id,
+                        "cuidador": cuidador.id,
+                        "fecha_inicio": fecha_inicio,
+                        "fecha_fin": fecha_fin,
+                        "horas_cuidado": horas_cuidado,
+                        "is_cuidado_especial": is_cuidado_especial,
+                        "descripcion": descripcion,
+                        "estado": "Aceptada",
+                        "costo": total,
+                    }
 
-            total = payment["response"]["transaction_amount"]
+                    serializer = SolicitudCuidadoSerializer(data=solicitud_data)
+                    if serializer.is_valid():
+                        solicitud = serializer.save()
+                        print(f"✅ Solicitud de cuidado creada con ID {solicitud.id}")
+                        return JsonResponse(
+                            {"message": "Solicitud de cuidado creada exitosamente"},
+                            status=201,
+                        )
+                    else:
+                        return JsonResponse({"error": serializer.errors}, status=400)
 
-            if payment_status == "approved":
-                print(f"✔ Creando solicitud de cuidado para User {user_id}")
+                return JsonResponse({"message": "Pago no aprobado"}, status=400)
 
-                factory = RequestFactory()
-
-                # Buscar el Cliente asociado al User ID
-                cliente = Cliente.objects.filter(user__id=user_id).first()
-
-                if not cliente:
-                    print(f"⚠️ No se encontró un Cliente para el User ID {user_id}")
-                    return JsonResponse({"error": "Cliente no encontrado"}, status=400)
-
-                request_data = {
-                    "email": "usuario@example.com",  # 🔹 Reemplazar con email válido si está disponible
-                    "id_cliente": cliente.id,  # 🔹 Enviar el ID correcto del Cliente
-                    "id_mascota": mascota_id,
-                    "id_cuidador": cuidador_id,
-                    "fecha_solicitud": timezone.now().isoformat(),
-                    "fecha_inicio": timezone.now().isoformat(),
-                    "fecha_fin": timezone.now().isoformat(),
-                    "horas_cuidado": 0,
-                    "is_cuidado_especial": False,
-                    "descripcion": "Pago aprobado en Mercado Pago.",
-                    "costo": total,
-                    "estado": "Pendiente",
-                }
-
-                print(f"📌 Enviando datos a la API: {request_data}")
-
-                request_fake = factory.post(
-                    "/solicitud-cuidado/create/",
-                    data=json.dumps(request_data),
-                    content_type="application/json",
-                )
-
-                response = SolicitudCuidadoCreateView.as_view()(request_fake)
-
-                if response.status_code == status.HTTP_201_CREATED:
-                    print("✅ Solicitud creada exitosamente")
-                    return JsonResponse(
-                        {"message": "Solicitud de cuidado creada exitosamente."},
-                        status=201,
-                    )
-                else:
-                    print(f"⚠ Error en la creación de solicitud: {response.data}")
-                    return JsonResponse({"error": response.data}, status=400)
-
-            return JsonResponse({"message": "Pago no aprobado"}, status=200)
+            return JsonResponse({"message": "Evento no manejado"}, status=400)
 
         except Exception as e:
-            print(f"⚠️ Error inesperado en el Webhook: {str(e)}")
+            print("⚠️ Error en el webhook:", str(e))
             return JsonResponse({"error": str(e)}, status=500)
 
-    return JsonResponse({"error": "Método no permitido"}, status=405)
+    return JsonResponse({"message": "Método no permitido"}, status=405)
+
+
+# @csrf_exempt
+# def mercadopago_webhook_cuidado(request):
+#     if request.method == "POST":
+#         try:
+#             sdk = mercadopago.SDK(settings.MERCADO_PAGO_ACCESS_TOKEN)
+#             raw_data = request.body.decode("utf-8")
+#             print(f"📌 Webhook recibido: {raw_data}")
+
+#             data = json.loads(raw_data)
+#             payment_id = data.get("data", {}).get("id")
+#             if not payment_id:
+#                 print("⚠️ No se recibió un ID de pago válido")
+#                 return JsonResponse({"error": "ID de pago no válido"}, status=400)
+
+#             payment = sdk.payment().get(payment_id)
+#             payment_status = payment["response"]["status"]
+#             metadata = payment["response"].get("metadata", {})
+
+#             user_id = metadata.get("user_id")
+#             cliente = Cliente.objects.filter(
+#                 user__id=user_id
+#             ).first()  # 🔹 Buscar Cliente por User
+#             if not cliente:
+#                 print(f"⚠️ No se encontró un Cliente para el User ID {user_id}")
+#                 return JsonResponse({"error": "Cliente no encontrado"}, status=400)
+
+#             mascota_id = metadata.get("mascota_id")
+#             if mascota_id is None:
+#                 print("⚠️ `mascota_id` no está presente en metadata:", metadata)
+#                 return JsonResponse(
+#                     {"error": "mascota_id no encontrado en metadata"}, status=400
+#                 )
+
+#             cuidador_id = metadata.get("cuidador_id")
+
+#             if not user_id or not mascota_id or not cuidador_id:
+#                 print(
+#                     f"⚠️ Error: Falta user_id ({user_id}), mascota_id ({mascota_id}), o cuidador_id ({cuidador_id}) en metadata."
+#                 )
+#                 return JsonResponse({"error": "Faltan datos en metadata"}, status=400)
+
+#             total = payment["response"]["transaction_amount"]
+
+#             if payment_status == "approved":
+#                 print(f"✔ Creando solicitud de cuidado para User {user_id}")
+
+#                 factory = RequestFactory()
+
+#                 # Buscar el Cliente asociado al User ID
+#                 cliente = Cliente.objects.filter(user__id=user_id).first()
+
+#                 if not cliente:
+#                     print(f"⚠️ No se encontró un Cliente para el User ID {user_id}")
+#                     return JsonResponse({"error": "Cliente no encontrado"}, status=400)
+
+#                 request_data = {
+#                     "email": "usuario@example.com",  # 🔹 Reemplazar con email válido si está disponible
+#                     "id_cliente": cliente.id,  # 🔹 Enviar el ID correcto del Cliente
+#                     "id_mascota": mascota_id,
+#                     "id_cuidador": cuidador_id,
+#                     "fecha_solicitud": timezone.now().isoformat(),
+#                     "fecha_inicio": timezone.now().isoformat(),
+#                     "fecha_fin": timezone.now().isoformat(),
+#                     "horas_cuidado": 0,
+#                     "is_cuidado_especial": False,
+#                     "descripcion": "Pago aprobado en Mercado Pago.",
+#                     "costo": total,
+#                     "estado": "Pendiente",
+#                 }
+
+#                 print(f"📌 Enviando datos a la API: {request_data}")
+
+#                 request_fake = factory.post(
+#                     "/solicitud-cuidado/create/",
+#                     data=json.dumps(request_data),
+#                     content_type="application/json",
+#                 )
+
+#                 response = SolicitudCuidadoCreateView.as_view()(request_fake)
+
+#                 if response.status_code == status.HTTP_201_CREATED:
+#                     print("✅ Solicitud creada exitosamente")
+#                     return JsonResponse(
+#                         {"message": "Solicitud de cuidado creada exitosamente."},
+#                         status=201,
+#                     )
+#                 else:
+#                     print(f"⚠ Error en la creación de solicitud: {response.data}")
+#                     return JsonResponse({"error": response.data}, status=400)
+
+#             return JsonResponse({"message": "Pago no aprobado"}, status=200)
+
+#         except Exception as e:
+#             print(f"⚠️ Error inesperado en el Webhook: {str(e)}")
+#             return JsonResponse({"error": str(e)}, status=500)
+
+#     return JsonResponse({"error": "Método no permitido"}, status=405)
 
 
 @csrf_exempt
