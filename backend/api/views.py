@@ -2644,17 +2644,25 @@ class CancelarSolicitudCuidado(APIView):
 
 class SolicitudCuidadoCreateView(generics.ListCreateAPIView):
     queryset = SolicitudCuidado.objects.all()
-    permission_classes = [permissions.IsAuthenticated & IsClienteUser]
+    permission_classes = [permissions.IsAuthenticated, IsClienteUser]
+    serializer_class = SolicitudCuidadoSerializer
+
+
+from rest_framework.permissions import AllowAny
+
+
+class SolicitudCuidadoCreateView(generics.ListCreateAPIView):
+    queryset = SolicitudCuidado.objects.all()
     serializer_class = SolicitudCuidadoSerializer
 
     def get_permissions(self):
         """
-        Permite acceso sin autenticación si la solicitud proviene del webhook de Mercado Pago.
-        Caso contrario, aplica autenticación estándar.
+        Si la solicitud proviene del webhook de Mercado Pago, permitir acceso sin autenticación.
+        Si no, aplicar autenticación normal.
         """
         if self.request.META.get("HTTP_USER_AGENT") == "MercadoPago":
             return [AllowAny()]
-        return [permissions.IsAuthenticated & IsClienteUser]
+        return [permissions.IsAuthenticated(), IsClienteUser()]
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
