@@ -1297,25 +1297,18 @@ class ProductoCategoriasSerializer(serializers.ModelSerializer):
 
 
 class SolicitudCuidadoSerializer(serializers.ModelSerializer):
-
     email = serializers.EmailField(write_only=True)
-
-    id_mascota = serializers.IntegerField(
-        write_only=True
-    )  # 🔹 Evita problemas con ForeignKey
-
+    id_mascota = serializers.IntegerField(write_only=True)
     id_cuidador = serializers.PrimaryKeyRelatedField(
         queryset=Cuidador.objects.all(),
-        source="cuidador",  # 🔹 Mapear `id_cuidador` al campo `cuidador`
-        write_only=True,  # 🔹 Solo se usa al escribir datos, no se muestra al leer
+        source="cuidador",
+        write_only=True,
     )
-
     id_cliente = serializers.PrimaryKeyRelatedField(
-        queryset=User.objects.all(),
-        source="cliente",  # 🔹 Mapear `id_cliente` al campo `cliente`
-        write_only=True,  # 🔹 Solo se usa al escribir datos, no se muestra al leer
+        queryset=Cliente.objects.all(),
+        source="cliente",
+        write_only=True,
     )
-
     fecha_inicio = serializers.DateTimeField(write_only=True)
     fecha_fin = serializers.DateTimeField(write_only=True)
     descripcion = serializers.CharField(max_length=500)
@@ -1323,12 +1316,9 @@ class SolicitudCuidadoSerializer(serializers.ModelSerializer):
     costo = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
     horas_cuidado = serializers.IntegerField()
 
-    # Serializers para mostrar los datos completos en respuesta
     mascota = MascotaSerializer(read_only=True)
     cuidador = CuidadorSerializer(read_only=True)
-    cliente = serializers.StringRelatedField(
-        read_only=True
-    )  # 🔹 Muestra el nombre del cliente en la respuesta
+    cliente = serializers.StringRelatedField(read_only=True)
 
     class Meta:
         model = SolicitudCuidado
@@ -1357,72 +1347,67 @@ class SolicitudCuidadoSerializer(serializers.ModelSerializer):
         representation["cliente"] = ClienteSerializer(cliente).data
         return representation
 
+    def save(self, **kwargs):
+        email = self.validated_data["email"]
+        id_mascota = self.validated_data["id_mascota"]
 
-def save(self, **kwargs):
-    email = self.validated_data["email"]
-    id_mascota = self.validated_data["id_mascota"]
+        try:
+            mascota = Mascota.objects.get(id=id_mascota)
+        except Mascota.DoesNotExist:
+            raise serializers.ValidationError(
+                {"detail": "La mascota no existe", "code": "invalid_mascota"}
+            )
 
-    try:
-        mascota = Mascota.objects.get(
-            id=id_mascota
-        )  # 🔹 Verificar que la mascota existe
-    except Mascota.DoesNotExist:
-        raise serializers.ValidationError(
-            {"detail": "La mascota no existe", "code": "invalid_mascota"}
+        try:
+            cliente = Cliente.objects.get(user__email=email)
+        except Cliente.DoesNotExist:
+            raise serializers.ValidationError(
+                {
+                    "detail": "No se encontró un Cliente asociado a este email",
+                    "code": "invalid_cliente",
+                }
+            )
+
+        if not mascota.user == cliente.user:
+            raise serializers.ValidationError(
+                {
+                    "detail": "No puedes solicitar el cuidado de una mascota que no es tuya",
+                    "code": "invalid_mascota",
+                }
+            )
+
+        id_cuidador = self.validated_data["id_cuidador"]
+        cuidador = Cuidador.objects.get(id=id_cuidador)
+        fecha_inicio = self.validated_data["fecha_inicio"]
+        fecha_fin = self.validated_data["fecha_fin"]
+        descripcion = self.validated_data["descripcion"]
+        is_cuidado_especial = self.validated_data["is_cuidado_especial"]
+        horas_cuidado = self.validated_data["horas_cuidado"]
+        costo = self.validated_data["costo"]
+        estado = "Pendiente"
+
+        if costo <= 0.0:
+            raise serializers.ValidationError(
+                {
+                    "detail": "El costo del cuidado debe ser mayor a cero",
+                    "code": "invalid_cost",
+                }
+            )
+
+        solicitud_cuidado = SolicitudCuidado.objects.create(
+            cliente=cliente,
+            mascota=mascota,
+            cuidador=cuidador,
+            fecha_inicio=fecha_inicio,
+            fecha_fin=fecha_fin,
+            descripcion=descripcion,
+            is_cuidado_especial=is_cuidado_especial,
+            costo=costo,
+            fecha_solicitud=timezone.now(),
+            estado=estado,
         )
 
-    try:
-        cliente = Cliente.objects.get(
-            user__email=email
-        )  # 🔹 Buscar un Cliente, no un User
-    except Cliente.DoesNotExist:
-        raise serializers.ValidationError(
-            {
-                "detail": "No se encontró un Cliente asociado a este email",
-                "code": "invalid_cliente",
-            }
-        )
-
-    if not mascota.user == cliente.user:
-        raise serializers.ValidationError(
-            {
-                "detail": "No puedes solicitar el cuidado de una mascota que no es tuya",
-                "code": "invalid_mascota",
-            }
-        )
-
-    id_cuidador = self.validated_data["id_cuidador"]
-    cuidador = Cuidador.objects.get(id=id_cuidador)
-    fecha_inicio = self.validated_data["fecha_inicio"]
-    fecha_fin = self.validated_data["fecha_fin"]
-    descripcion = self.validated_data["descripcion"]
-    is_cuidado_especial = self.validated_data["is_cuidado_especial"]
-    horas_cuidado = self.validated_data["horas_cuidado"]
-    costo = self.validated_data["costo"]
-    estado = "Pendiente"
-
-    if costo <= 0.0:
-        raise serializers.ValidationError(
-            {
-                "detail": "El costo del cuidado debe ser mayor a cero",
-                "code": "invalid_cost",
-            }
-        )
-
-    solicitud_cuidado = SolicitudCuidado.objects.create(
-        cliente=cliente,
-        mascota=mascota,
-        cuidador=cuidador,
-        fecha_inicio=fecha_inicio,
-        fecha_fin=fecha_fin,
-        descripcion=descripcion,
-        is_cuidado_especial=is_cuidado_especial,
-        costo=costo,
-        fecha_solicitud=timezone.now(),
-        estado=estado,
-    )
-
-    return solicitud_cuidado
+        return solicitud_cuidado
 
 
 class SetEstadoSolicitudCuidadoSerializer(serializers.ModelSerializer):
