@@ -1,3 +1,4 @@
+import logging
 import os
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, authenticate
@@ -565,6 +566,8 @@ def mercadopago_webhook(request):
 
 from django.db import transaction
 
+logger = logging.getLogger(__name__)
+
 
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
@@ -576,6 +579,7 @@ def pagar_con_saldo_maki(request):
         carrito = get_object_or_404(
             Carrito, codigo=codigo_carrito, user=user, pagado=False
         )
+
         total_pedido = sum(
             item.producto.precio * item.cantidad for item in carrito.items.all()
         )
@@ -584,16 +588,22 @@ def pagar_con_saldo_maki(request):
             return Response({"error": "Saldo insuficiente"}, status=400)
 
         with transaction.atomic():
+            # Verifica que el saldo se actualiza correctamente
             user.saldo -= total_pedido
             user.save()
 
             pedido = Pedido.objects.create(
                 user=user, total=total_pedido, estado="Preparación"
             )
+
             for item in carrito.items.all():
+                if item.producto.stock < item.cantidad:
+                    raise ValueError(f"Stock insuficiente para {item.producto.nombre}")
+
                 DetallePedido.objects.create(
                     pedido=pedido, producto=item.producto, cantidad=item.cantidad
                 )
+
                 item.producto.stock -= item.cantidad
                 item.producto.save()
 
@@ -605,7 +615,8 @@ def pagar_con_saldo_maki(request):
         )
 
     except Exception as e:
-        return Response({"error": str(e)}, status=500)
+        logger.error(f"Error en el pago con saldo: {e}")
+        return Response({"error": f"Error interno: {str(e)}"}, status=500)
 
 
 @api_view(["GET"])
