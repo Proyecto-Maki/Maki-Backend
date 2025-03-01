@@ -5,6 +5,11 @@ from .views import *
 
 urlpatterns = [
     path("pagar_con_saldo_maki", pagar_con_saldo_maki, name="pagar_con_saldo_maki"),
+    path(
+        "mercadopago/preference/donar/",
+        create_preference_donar,
+        name="create_preference_donar",
+    ),
     path("api/mercadopago/webhook/", mercadopago_webhook, name="mercadopago_webhook"),
     path(
         "api/mercadopago/membership-webhook/",
@@ -350,6 +355,7 @@ urlpatterns = [
         name="cancelar_solicitud_cuidado",
     ),
     # Donaciones
+    path("donaciones/", CrearDonacionView.as_view(), name="crear_donacion"),
     path(
         "donaciones-recibidas/<email>/",
         DonacionesFundacionView.as_view(),

@@ -54,6 +54,79 @@ sdk = mercadopago.SDK(os.getenv("MERCADO_PAGO_ACCESS_TOKEN"))
 
 
 @csrf_exempt
+def create_preference_donar(request):
+    if request.method == "POST":
+        sdk = mercadopago.SDK(settings.MERCADO_PAGO_ACCESS_TOKEN)
+
+        try:
+            body = json.loads(request.body)
+
+            # Verificar si `user_id`, `fundacion_id`, `tarjeta_tipo` y `monto` están en la solicitud
+            user_id = body.get("user_id")
+            fundacion_id = body.get("fundacion_id")
+            tarjeta_tipo = body.get("tarjeta_tipo")
+            monto = body.get("monto")
+
+            if not user_id or not fundacion_id or not tarjeta_tipo or not monto:
+                print("Faltan datos en la solicitud")
+                return JsonResponse(
+                    {
+                        "error": "user_id, fundacion_id, tarjeta_tipo y monto son obligatorios"
+                    },
+                    status=400,
+                )
+
+            print(f"User ID recibido: {user_id}")
+            print(f"Fundación ID: {fundacion_id}")
+            print(f"Tarjeta seleccionada: {tarjeta_tipo}")
+            print(f"Monto: {monto}")
+
+            preference_data = {
+                "items": [
+                    {
+                        "title": f"Donación a {fundacion_id} - {tarjeta_tipo}",
+                        "quantity": 1,
+                        "currency_id": "COP",
+                        "unit_price": float(monto),
+                    }
+                ],
+                "payer": {
+                    "email": body.get("email", "anonimo@makishop.live"),
+                },
+                "back_urls": {
+                    "success": "https://makishop.live/success",
+                    "failure": "https://makishop.live/failure",
+                    "pending": "https://makishop.live/pending",
+                },
+                "auto_return": "approved",
+                "notification_url": "https://backend.makishop.live/api/mercadopago/webhook/",
+                "metadata": {
+                    "user_id": str(user_id),
+                    "fundacion_id": str(fundacion_id),
+                    "tarjeta_tipo": tarjeta_tipo,
+                },
+            }
+
+            preference_response = sdk.preference().create(preference_data)
+            preference = preference_response["response"]
+
+            print(f"Preferencia creada con metadata: {preference_data['metadata']}")
+
+            return JsonResponse(
+                {
+                    "id": preference.get("id"),
+                    "init_point": preference.get("init_point"),
+                }
+            )
+
+        except Exception as e:
+            print(f"Error al crear la preferencia: {e}")
+            return JsonResponse({"error": "Error al crear la preferencia"}, status=500)
+
+    return JsonResponse({"error": "Método no permitido"}, status=405)
+
+
+@csrf_exempt
 def create_preference_cuidado(request):
     if request.method == "POST":
         sdk = mercadopago.SDK(settings.MERCADO_PAGO_ACCESS_TOKEN)
@@ -2753,6 +2826,39 @@ class SolicitudCuidadoCreateView(generics.ListCreateAPIView):
 
 
 ## DONACIONES
+
+
+class CrearDonacionView(APIView):
+    permission_classes = [permissions.IsAuthenticated & IsClienteUser]
+
+    def post(self, request):
+        print("Datos recibidos en la solicitud:", request.data)  # <-- Depuración
+
+        cliente_email = request.data.get("cliente_email")
+        fundacion_id = request.data.get("fundacion_id")
+        tarjeta_tipo = request.data.get("tarjeta_tipo")
+
+        if not cliente_email or not fundacion_id or not tarjeta_tipo:
+            return Response(
+                {"error": "Faltan campos requeridos."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            cliente = get_object_or_404(Cliente, user__email=cliente_email)
+            fundacion = get_object_or_404(Fundacion, id=fundacion_id)
+            tarjeta = get_object_or_404(Tarjeta, tipo=tarjeta_tipo)
+
+            donacion = Donacion.objects.create(
+                cliente=cliente, fundacion=fundacion, tarjeta=tarjeta
+            )
+
+            return Response(
+                DonacionSerializer(donacion).data, status=status.HTTP_201_CREATED
+            )
+
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
 # Donaciones de clientes
