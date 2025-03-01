@@ -1299,11 +1299,9 @@ class ProductoCategoriasSerializer(serializers.ModelSerializer):
 class SolicitudCuidadoSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(write_only=True)
     id_mascota = serializers.IntegerField(write_only=True)
-    id_cuidador = serializers.PrimaryKeyRelatedField(
-        queryset=Cuidador.objects.all(),
-        source="cuidador",
-        write_only=True,
-    )
+    id_cuidador = serializers.IntegerField(
+        write_only=True
+    )  # Asegúrate de que este campo esté definido correctamente
     id_cliente = serializers.PrimaryKeyRelatedField(
         queryset=Cliente.objects.all(),
         source="cliente",

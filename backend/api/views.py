@@ -143,6 +143,11 @@ def mercadopago_webhook_cuidado(request):
                 )
 
             cuidador_id = metadata.get("cuidador_id")
+            if not cuidador_id:
+                print("⚠️ `cuidador_id` no está presente en metadata:", metadata)
+                return JsonResponse(
+                    {"error": "cuidador_id no encontrado en metadata"}, status=400
+                )
 
             if not user_id or not mascota_id or not cuidador_id:
                 print(
