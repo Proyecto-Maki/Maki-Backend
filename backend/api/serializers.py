@@ -1297,9 +1297,16 @@ class ProductoCategoriasSerializer(serializers.ModelSerializer):
 
 
 class SolicitudCuidadoSerializer(serializers.ModelSerializer):
+
     email = serializers.EmailField(write_only=True)
     id_mascota = serializers.IntegerField(write_only=True)
-    id_cuidador = serializers.IntegerField(write_only=True)
+    # id_cuidador = serializers.IntegerField(write_only=True)
+    id_cuidador = serializers.PrimaryKeyRelatedField(
+        queryset=Cuidador.objects.all(),
+        source="cuidador",  # 🔹 Mapear `id_cuidador` al campo `cuidador`
+        write_only=True,  # 🔹 Solo se usa al escribir datos, no se muestra al leer
+    )
+
     fecha_inicio = serializers.DateTimeField()
     fecha_fin = serializers.DateTimeField()
     descripcion = serializers.CharField(max_length=500)
