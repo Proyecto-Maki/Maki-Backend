@@ -172,7 +172,7 @@ def mercadopago_webhook_cuidado(request):
                 horas_cuidado = metadata.get("horas_cuidado", 0)
                 is_cuidado_especial = metadata.get("is_cuidado_especial", False)
                 descripcion = metadata.get("descripcion", "No disponible")
-                total = payment_info["response"]["transaction_amount"]
+                total = metadata.get("total", 0.00)
 
                 # Validar la existencia de los registros en la base de datos
                 try:
