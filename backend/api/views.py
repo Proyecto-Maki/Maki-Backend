@@ -61,38 +61,18 @@ def create_preference_donar(request):
         try:
             body = json.loads(request.body)
 
-            # Verificar si `user_id`, `fundacion_id`, `tarjeta_tipo` y `monto` están en la solicitud
-            user_id = body.get("user_id")
-            fundacion_id = body.get("fundacion_id")
-            tarjeta_tipo = body.get("tarjeta_tipo")
-            monto = body.get("monto")
-
-            if not user_id or not fundacion_id or not tarjeta_tipo or not monto:
-                print("Faltan datos en la solicitud")
-                return JsonResponse(
-                    {
-                        "error": "user_id, fundacion_id, tarjeta_tipo y monto son obligatorios"
-                    },
-                    status=400,
-                )
-
-            print(f"User ID recibido: {user_id}")
-            print(f"Fundación ID: {fundacion_id}")
-            print(f"Tarjeta seleccionada: {tarjeta_tipo}")
-            print(f"Monto: {monto}")
-
+            # Configurar datos de la preferencia sin validaciones
             preference_data = {
                 "items": [
                     {
-                        "title": f"Donación a {fundacion_id} - {tarjeta_tipo}",
+                        "title": f"Donación",
                         "quantity": 1,
                         "currency_id": "COP",
-                        "unit_price": float(monto),
+                        "unit_price": float(
+                            body.get("monto", 10000)
+                        ),  # Default a $10,000 si no llega monto
                     }
                 ],
-                "payer": {
-                    "email": body.get("email", "anonimo@makishop.live"),
-                },
                 "back_urls": {
                     "success": "https://makishop.live/success",
                     "failure": "https://makishop.live/failure",
@@ -100,27 +80,14 @@ def create_preference_donar(request):
                 },
                 "auto_return": "approved",
                 "notification_url": "https://backend.makishop.live/api/mercadopago/webhook/",
-                "metadata": {
-                    "user_id": str(user_id),
-                    "fundacion_id": str(fundacion_id),
-                    "tarjeta_tipo": tarjeta_tipo,
-                },
             }
 
             preference_response = sdk.preference().create(preference_data)
             preference = preference_response["response"]
 
-            print(f"Preferencia creada con metadata: {preference_data['metadata']}")
-
-            return JsonResponse(
-                {
-                    "id": preference.get("id"),
-                    "init_point": preference.get("init_point"),
-                }
-            )
+            return JsonResponse({"init_point": preference.get("init_point")})
 
         except Exception as e:
-            print(f"Error al crear la preferencia: {e}")
             return JsonResponse({"error": "Error al crear la preferencia"}, status=500)
 
     return JsonResponse({"error": "Método no permitido"}, status=405)
