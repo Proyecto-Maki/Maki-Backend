@@ -140,13 +140,14 @@ def mercadopago_webhook_cuidado(request):
                 # Crear un request simulado para llamar a `SolicitudCuidadoCreateView`
                 factory = RequestFactory()
                 request_data = {
-                    "cliente": user_id,
-                    "mascota": mascota_id,
-                    "cuidador": cuidador_id,
+                    "email": "usuario@example.com",  # 🔹 Asegúrate de enviar un email válido
+                    "id_cliente": user_id,  # 🔹 Verifica que tu serializer espere `id_cliente`
+                    "id_mascota": mascota_id,  # 🔹 Cambiar `mascota` por `id_mascota`
+                    "id_cuidador": cuidador_id,  # 🔹 Cambiar `cuidador` por `id_cuidador`
                     "fecha_solicitud": timezone.now().isoformat(),
-                    "fecha_inicio": timezone.now().isoformat(),  # 🔹 Cambiar si tienes fechas reales
-                    "fecha_fin": timezone.now().isoformat(),  # 🔹 Ajustar si aplica
-                    "horas_cuidado": 0,  # 🔹 Ajustar si es por horas
+                    "fecha_inicio": timezone.now().isoformat(),
+                    "fecha_fin": timezone.now().isoformat(),
+                    "horas_cuidado": 0,
                     "is_cuidado_especial": False,
                     "descripcion": "Pago aprobado en Mercado Pago.",
                     "costo": total,

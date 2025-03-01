@@ -843,7 +843,7 @@ class PadecimientoSerializer(serializers.ModelSerializer):
 class ResenaSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(read_only=True)
     email = serializers.EmailField(write_only=True)
-    object_id = serializers.IntegerField(write_only=True)  
+    object_id = serializers.IntegerField(write_only=True)
     content_type = serializers.PrimaryKeyRelatedField(
         queryset=ContentType.objects.all()
     )
@@ -1315,20 +1315,17 @@ class SolicitudCuidadoSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "email",
+            "id_cliente",
             "id_mascota",
             "id_cuidador",
+            "fecha_solicitud",
             "fecha_inicio",
             "fecha_fin",
-            "descripcion",
-            "is_cuidado_especial",
-            "costo",
-            "fecha_solicitud",
-            "fecha_actualizacion",
             "horas_cuidado",
+            "is_cuidado_especial",
+            "descripcion",
+            "costo",
             "estado",
-            "mascota",
-            "cuidador",
-            "cliente",
         ]
 
     def to_representation(self, instance):
