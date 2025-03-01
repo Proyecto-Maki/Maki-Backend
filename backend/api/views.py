@@ -132,18 +132,24 @@ def mercadopago_webhook_cuidado(request):
             user_id = metadata.get("user_id")
             mascota_id = metadata.get("mascota_id")
             cuidador_id = metadata.get("cuidador_id")
+
+            if not user_id or not mascota_id or not cuidador_id:
+                print(
+                    f"⚠️ Error: Falta user_id ({user_id}), mascota_id ({mascota_id}), o cuidador_id ({cuidador_id}) en metadata."
+                )
+                return JsonResponse({"error": "Faltan datos en metadata"}, status=400)
+
             total = payment["response"]["transaction_amount"]
 
             if payment_status == "approved":
                 print(f"✔ Creando solicitud de cuidado para User {user_id}")
 
-                # Crear un request simulado para llamar a `SolicitudCuidadoCreateView`
                 factory = RequestFactory()
                 request_data = {
-                    "email": "usuario@example.com",  # 🔹 Asegúrate de enviar un email válido
-                    "id_cliente": user_id,  # 🔹 Verifica que tu serializer espere `id_cliente`
-                    "id_mascota": mascota_id,  # 🔹 Cambiar `mascota` por `id_mascota`
-                    "id_cuidador": cuidador_id,  # 🔹 Cambiar `cuidador` por `id_cuidador`
+                    "email": "usuario@example.com",  # 🔹 Reemplazar con email válido si está disponible
+                    "id_cliente": user_id,
+                    "id_mascota": mascota_id,
+                    "id_cuidador": cuidador_id,
                     "fecha_solicitud": timezone.now().isoformat(),
                     "fecha_inicio": timezone.now().isoformat(),
                     "fecha_fin": timezone.now().isoformat(),
@@ -157,7 +163,7 @@ def mercadopago_webhook_cuidado(request):
                 print(f"📌 Enviando datos a la API: {request_data}")
 
                 request_fake = factory.post(
-                    "/solicitud-cuidado/create/",  # 🔹 Asegúrate de que coincide con urls.py
+                    "/solicitud-cuidado/create/",
                     data=json.dumps(request_data),
                     content_type="application/json",
                 )

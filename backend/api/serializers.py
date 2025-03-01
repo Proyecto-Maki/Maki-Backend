@@ -1302,7 +1302,7 @@ class SolicitudCuidadoSerializer(serializers.ModelSerializer):
 
     id_mascota = serializers.PrimaryKeyRelatedField(
         queryset=Mascota.objects.all(),
-        source="mascota",  # 🔹 Mapear `id_mascota` al campo `mascota`
+        source="mascota",  # 🔹 Mapear `id_mascota` al campo `mascota` en la base de datos
         write_only=True,  # 🔹 Solo se usa al escribir datos, no se muestra al leer
     )
 
@@ -1349,7 +1349,7 @@ class SolicitudCuidadoSerializer(serializers.ModelSerializer):
             "estado",
             "mascota",
             "cuidador",
-            "cliente",  # 🔹 Agregado "cliente"
+            "cliente",
         ]
 
     def to_representation(self, instance):
