@@ -236,6 +236,11 @@ urlpatterns = [
         PublicacionAdopcionClienteView.as_view(),
         name="publicaciones_adopcion_cliente",
     ),
+    path(
+        "publicaciones-adopcion-categoria/",
+        PublicacionAdopcionClienteCategoriaView.as_view(),
+        name="publicaciones_adopcion_categoria",
+    ),
     ## Solicitudes de adopción - cliente
     path(
         "solicitud-adopcion/create/",
@@ -307,8 +312,16 @@ urlpatterns = [
     ),
     # Cuidadores
     path("cuidadores/", ListaCuidadoresView.as_view(), name="lista_cuidadores"),
-    path("cuidadores-categoria/", CuidadoresPorCategoriaView.as_view(), name="cuidadores_categoria"),
-    path("cuidadores-categoria/<str:categoria>/", CuidadoresPorCategoriaView.as_view(), name="cuidadores_categoria"),
+    path(
+        "cuidadores-categoria/",
+        CuidadoresPorCategoriaView.as_view(),
+        name="cuidadores_categoria",
+    ),
+    path(
+        "cuidadores-categoria/<str:categoria>/",
+        CuidadoresPorCategoriaView.as_view(),
+        name="cuidadores_categoria",
+    ),
     path("cuidador/<int:id>/", CuidadorDetailView.as_view(), name="cuidador_detail"),
     # Solicitudes de cuidado
     path(

@@ -1875,6 +1875,24 @@ class PublicacionAdopcionClienteView(generics.ListAPIView):
         return PublicacionAdopcion.objects.select_related("mascota").filter(
             fundacion=fundacion
         )
+    
+class PublicacionAdopcionClienteCategoriaView(generics.ListAPIView):
+    serializer_class = PublicacionAdopcionSerializer
+    permission_classes = [permissions.IsAuthenticated & IsClienteUser]
+
+    def get_queryset(self):
+        categoria = self.request.query_params.get("categoria")
+        email_fundacion = self.request.query_params.get("email_fundacion")
+        user = get_object_or_404(User, email=email_fundacion)
+        fundacion = get_object_or_404(Fundacion, user=user)
+        if categoria:
+            return PublicacionAdopcion.objects.select_related("mascota").filter(
+                fundacion=fundacion, mascota__tipo=categoria
+            )
+        else:
+            return PublicacionAdopcion.objects.select_related("mascota").filter(
+                fundacion=fundacion
+            )
 
 
 ## PUBLICACION DE ADOPCION - PARA LAS FUNDACIONES
