@@ -2642,10 +2642,10 @@ class CancelarSolicitudCuidado(APIView):
         )
 
 
-class SolicitudCuidadoCreateView(generics.ListCreateAPIView):
-    queryset = SolicitudCuidado.objects.all()
-    permission_classes = [permissions.IsAuthenticated, IsClienteUser]
-    serializer_class = SolicitudCuidadoSerializer
+# class SolicitudCuidadoCreateView(generics.ListCreateAPIView):
+#     queryset = SolicitudCuidado.objects.all()
+#     permission_classes = [permissions.IsAuthenticated, IsClienteUser]
+#     serializer_class = SolicitudCuidadoSerializer
 
 
 from rest_framework.permissions import AllowAny
@@ -2662,7 +2662,7 @@ class SolicitudCuidadoCreateView(generics.ListCreateAPIView):
         """
         if self.request.META.get("HTTP_USER_AGENT") == "MercadoPago":
             return [AllowAny()]
-        return [permissions.IsAuthenticated(), IsClienteUser()]
+        return [permissions.IsAuthenticated() & IsClienteUser()]
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
