@@ -1340,7 +1340,6 @@ class SolicitudCuidadoSerializer(serializers.ModelSerializer):
             "id_cliente",
             "id_mascota",
             "id_cuidador",
-            "fecha_solicitud",
             "fecha_inicio",
             "fecha_fin",
             "horas_cuidado",
@@ -1348,6 +1347,9 @@ class SolicitudCuidadoSerializer(serializers.ModelSerializer):
             "descripcion",
             "costo",
             "estado",
+            "mascota",
+            "cuidador",
+            "cliente",  # 🔹 Agregado "cliente"
         ]
 
     def to_representation(self, instance):
