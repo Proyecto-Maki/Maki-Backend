@@ -2662,7 +2662,7 @@ class SolicitudCuidadoCreateView(generics.ListCreateAPIView):
         """
         if self.request.META.get("HTTP_USER_AGENT") == "MercadoPago":
             return [AllowAny()]
-        return [permissions.IsAuthenticated() & IsClienteUser()]
+        return [permissions.IsAuthenticated(), IsClienteUser()]
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
