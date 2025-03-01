@@ -1942,6 +1942,17 @@ class ListaCuidadoresView(APIView):
         serializer = CuidadorSerializer(cuidadores, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+class CuidadoresPorCategoriaView(APIView):
+    permission_classes = [permissions.IsAuthenticated & IsClienteUser]
+
+    def get(self, request):
+        categoria = request.query_params.get("categoria", None)
+        if categoria:
+            cuidadores = Cuidador.objects.filter(categoria_mascotas=categoria)
+        else:
+            cuidadores = Cuidador.objects.all()
+        serializer = CuidadorSerializer(cuidadores, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 class CuidadorDetailView(APIView):
     serializer_class = CuidadorSerializer
