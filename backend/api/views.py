@@ -115,86 +115,114 @@ def create_preference_cuidado(request):
 def mercadopago_webhook_cuidado(request):
     if request.method == "POST":
         try:
-            data = json.loads(request.body)
-            print("📩 Webhook recibido:", data)
+            raw_data = request.body.decode("utf-8")
+            print(f"📩 Webhook recibido: {raw_data}")
 
-            # Verificar si el evento es de pago
-            if data.get("type") == "payment":
-                payment_id = data.get("data", {}).get("id")
+            data = json.loads(raw_data)
 
-                # Consultar Mercado Pago para obtener detalles del pago
-                payment = Payment()
-                payment_info = payment.get(payment_id)
+            # Ignorar webhooks que no sean de pagos
+            if data.get("topic") == "merchant_order":
+                print("⚠️ Webhook de merchant_order recibido, ignorando...")
+                return JsonResponse({"message": "Merchant order ignorado"}, status=200)
 
-                if (
-                    payment_info["status"] == 200
-                    and payment_info["response"]["status"] == "approved"
-                ):
-                    metadata = payment_info["response"].get("metadata", {})
+            # Verificar que es un evento de pago
+            if data.get("type") != "payment":
+                print("⚠️ Evento no relacionado con pagos, ignorando...")
+                return JsonResponse(
+                    {"message": "Evento no relacionado con pagos"}, status=200
+                )
 
-                    # Extraer los datos de la solicitud de cuidado desde `metadata`
-                    user_id = metadata.get("user_id")
-                    mascota_id = metadata.get("mascota_id")
-                    cuidador_id = metadata.get("cuidador_id")
-                    fecha_inicio = metadata.get("fecha_inicio")
-                    fecha_fin = metadata.get("fecha_fin")
-                    horas_cuidado = metadata.get("horas_cuidado")
-                    is_cuidado_especial = metadata.get("is_cuidado_especial")
-                    descripcion = metadata.get("descripcion")
-                    total = payment_info["response"]["transaction_amount"]
+            # Obtener el ID del pago
+            payment_id = data.get("data", {}).get("id", None)
+            if not payment_id:
+                print("❌ No se recibió un ID de pago válido")
+                return JsonResponse(
+                    {"error": "No se recibió un ID de pago"}, status=400
+                )
 
-                    # Validar si existen los registros en la base de datos
-                    try:
-                        cliente = Cliente.objects.get(id=user_id)
-                        mascota = Mascota.objects.get(id=mascota_id)
-                        cuidador = Cuidador.objects.get(id=cuidador_id)
-                    except Cliente.DoesNotExist:
-                        return JsonResponse(
-                            {"error": "Cliente no encontrado"}, status=400
-                        )
-                    except Mascota.DoesNotExist:
-                        return JsonResponse(
-                            {"error": "Mascota no encontrada"}, status=400
-                        )
-                    except Cuidador.DoesNotExist:
-                        return JsonResponse(
-                            {"error": "Cuidador no encontrado"}, status=400
-                        )
+            print(f"✔ ID de pago recibido: {payment_id}")
 
-                    # Crear la solicitud de cuidado
-                    solicitud_data = {
-                        "cliente": cliente.id,
-                        "mascota": mascota.id,
-                        "cuidador": cuidador.id,
-                        "fecha_inicio": fecha_inicio,
-                        "fecha_fin": fecha_fin,
-                        "horas_cuidado": horas_cuidado,
-                        "is_cuidado_especial": is_cuidado_especial,
-                        "descripcion": descripcion,
-                        "estado": "Aceptada",
-                        "costo": total,
-                    }
+            # Consultar Mercado Pago usando el SDK correctamente
+            sdk = mercadopago.SDK(settings.MERCADO_PAGO_ACCESS_TOKEN)
+            payment_info = sdk.payment().get(payment_id)
 
-                    serializer = SolicitudCuidadoSerializer(data=solicitud_data)
-                    if serializer.is_valid():
-                        solicitud = serializer.save()
-                        print(f"✅ Solicitud de cuidado creada con ID {solicitud.id}")
-                        return JsonResponse(
-                            {"message": "Solicitud de cuidado creada exitosamente"},
-                            status=201,
-                        )
-                    else:
-                        return JsonResponse({"error": serializer.errors}, status=400)
+            if (
+                "response" not in payment_info
+                or "status" not in payment_info["response"]
+            ):
+                print("❌ No se pudo obtener información del pago")
+                return JsonResponse(
+                    {"error": "No se pudo obtener información del pago"}, status=400
+                )
 
-                return JsonResponse({"message": "Pago no aprobado"}, status=400)
+            payment_status = payment_info["response"]["status"]
+            metadata = payment_info["response"].get("metadata", {})
 
-            return JsonResponse({"message": "Evento no manejado"}, status=400)
+            print(f"🔹 Estado del pago: {payment_status}")
+            print(f"🔹 Metadata recibida: {metadata}")
 
+            # Validar si el pago fue aprobado
+            if payment_status == "approved":
+                user_id = metadata.get("user_id")
+                mascota_id = metadata.get("mascota_id")
+                cuidador_id = metadata.get("cuidador_id")
+                fecha_inicio = metadata.get("fecha_inicio")
+                fecha_fin = metadata.get("fecha_fin")
+                horas_cuidado = metadata.get("horas_cuidado", 0)
+                is_cuidado_especial = metadata.get("is_cuidado_especial", False)
+                descripcion = metadata.get("descripcion", "No disponible")
+                total = payment_info["response"]["transaction_amount"]
+
+                # Validar la existencia de los registros en la base de datos
+                try:
+                    cliente = Cliente.objects.get(id=user_id)
+                    mascota = Mascota.objects.get(id=mascota_id)
+                    cuidador = Cuidador.objects.get(id=cuidador_id)
+                except Cliente.DoesNotExist:
+                    print("❌ Cliente no encontrado")
+                    return JsonResponse({"error": "Cliente no encontrado"}, status=400)
+                except Mascota.DoesNotExist:
+                    print("❌ Mascota no encontrada")
+                    return JsonResponse({"error": "Mascota no encontrada"}, status=400)
+                except Cuidador.DoesNotExist:
+                    print("❌ Cuidador no encontrado")
+                    return JsonResponse({"error": "Cuidador no encontrado"}, status=400)
+
+                # Crear la solicitud de cuidado
+                solicitud_data = {
+                    "cliente": cliente.id,
+                    "mascota": mascota.id,
+                    "cuidador": cuidador.id,
+                    "fecha_inicio": fecha_inicio,
+                    "fecha_fin": fecha_fin,
+                    "horas_cuidado": horas_cuidado,
+                    "is_cuidado_especial": is_cuidado_especial,
+                    "descripcion": descripcion,
+                    "estado": "Aceptada",
+                    "costo": total,
+                }
+
+                serializer = SolicitudCuidadoSerializer(data=solicitud_data)
+                if serializer.is_valid():
+                    solicitud = serializer.save()
+                    print(f"✅ Solicitud de cuidado creada con ID {solicitud.id}")
+                    return JsonResponse(
+                        {"message": "Solicitud creada exitosamente"}, status=201
+                    )
+                else:
+                    print("❌ Error al serializar la solicitud", serializer.errors)
+                    return JsonResponse({"error": serializer.errors}, status=400)
+
+            return JsonResponse({"message": "Pago no aprobado"}, status=200)
+
+        except json.JSONDecodeError:
+            print("❌ Error al decodificar JSON")
+            return JsonResponse({"error": "JSON inválido"}, status=400)
         except Exception as e:
-            print("⚠️ Error en el webhook:", str(e))
+            print(f"❌ Error inesperado: {e}")
             return JsonResponse({"error": str(e)}, status=500)
 
-    return JsonResponse({"message": "Método no permitido"}, status=405)
+    return JsonResponse({"error": "Método no permitido"}, status=405)
 
 
 # @csrf_exempt
