@@ -159,20 +159,42 @@ def mercadopago_webhook_cuidado(request):
             metadata = payment_info["response"].get("metadata", {})
 
             print(f"🔹 Estado del pago: {payment_status}")
-            print(f"🔹 Metadata recibida: {metadata}")
+            print(f"🔹 Metadata recibida: {json.dumps(metadata, indent=2)}")
 
             # Validar si el pago fue aprobado
             if payment_status == "approved":
-                user_id = metadata.get("user_id")
-                email = metadata.get("email")
-                mascota_id = metadata.get("mascota_id")
-                cuidador_id = metadata.get("cuidador_id")
-                fecha_inicio = metadata.get("fecha_inicio")
-                fecha_fin = metadata.get("fecha_fin")
+                required_fields = [
+                    "user_id",
+                    "email",
+                    "mascota_id",
+                    "cuidador_id",
+                    "fecha_inicio",
+                    "fecha_fin",
+                    "total",
+                ]
+                missing_fields = [
+                    field for field in required_fields if field not in metadata
+                ]
+
+                if missing_fields:
+                    print(
+                        f"❌ Faltan los siguientes datos en metadata: {missing_fields}"
+                    )
+                    return JsonResponse(
+                        {"error": f"Faltan datos en metadata: {missing_fields}"},
+                        status=400,
+                    )
+
+                user_id = metadata["user_id"]
+                email = metadata["email"]
+                mascota_id = metadata["mascota_id"]
+                cuidador_id = metadata["cuidador_id"]
+                fecha_inicio = metadata["fecha_inicio"]
+                fecha_fin = metadata["fecha_fin"]
                 horas_cuidado = metadata.get("horas_cuidado", 0)
                 is_cuidado_especial = metadata.get("is_cuidado_especial", False)
                 descripcion = metadata.get("descripcion", "No disponible")
-                total = metadata.get("total", 0.00)
+                total = metadata["total"]
 
                 # Validar la existencia de los registros en la base de datos
                 try:
