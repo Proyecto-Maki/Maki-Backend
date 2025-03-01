@@ -120,7 +120,7 @@ def mercadopago_webhook_cuidado(request):
 
             data = json.loads(raw_data)
 
-            # Ignorar webhooks que no sean de pagos
+            # Ignorar webhooks de merchant_order
             if data.get("topic") == "merchant_order":
                 print("⚠️ Webhook de merchant_order recibido, ignorando...")
                 return JsonResponse({"message": "Merchant order ignorado"}, status=200)
@@ -164,6 +164,7 @@ def mercadopago_webhook_cuidado(request):
             # Validar si el pago fue aprobado
             if payment_status == "approved":
                 user_id = metadata.get("user_id")
+                email = metadata.get("email")
                 mascota_id = metadata.get("mascota_id")
                 cuidador_id = metadata.get("cuidador_id")
                 fecha_inicio = metadata.get("fecha_inicio")
@@ -179,13 +180,10 @@ def mercadopago_webhook_cuidado(request):
                     mascota = Mascota.objects.get(id=mascota_id)
                     cuidador = Cuidador.objects.get(id=cuidador_id)
                 except Cliente.DoesNotExist:
-                    print("❌ Cliente no encontrado")
                     return JsonResponse({"error": "Cliente no encontrado"}, status=400)
                 except Mascota.DoesNotExist:
-                    print("❌ Mascota no encontrada")
                     return JsonResponse({"error": "Mascota no encontrada"}, status=400)
                 except Cuidador.DoesNotExist:
-                    print("❌ Cuidador no encontrado")
                     return JsonResponse({"error": "Cuidador no encontrado"}, status=400)
 
                 # Crear la solicitud de cuidado
@@ -215,14 +213,9 @@ def mercadopago_webhook_cuidado(request):
 
             return JsonResponse({"message": "Pago no aprobado"}, status=200)
 
-        except json.JSONDecodeError:
-            print("❌ Error al decodificar JSON")
-            return JsonResponse({"error": "JSON inválido"}, status=400)
         except Exception as e:
             print(f"❌ Error inesperado: {e}")
             return JsonResponse({"error": str(e)}, status=500)
-
-    return JsonResponse({"error": "Método no permitido"}, status=405)
 
 
 # @csrf_exempt
