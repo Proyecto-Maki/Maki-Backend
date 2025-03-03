@@ -24,6 +24,8 @@ import cloudinary.api
 import cloudinary_storage
 
 load_dotenv()
+RECAPTCHA_SECRET_KEY = os.getenv("RECAPTCHA_SECRET_KEY")
+
 MERCADO_PAGO_ACCESS_TOKEN = os.getenv("MERCADO_PAGO_ACCESS_TOKEN")
 
 BASE_DIR = Path(__file__).resolve().parent.parent
