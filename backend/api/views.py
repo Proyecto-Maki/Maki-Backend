@@ -809,6 +809,7 @@ class CustomAuthToken(TokenObtainPairSerializer):
     def validate(self, attrs):
         credentials = {"email": attrs.get("email"), "password": attrs.get("password")}
         captcha_response = self.context["request"].data.get("captcha")
+        print(f"🔹 CAPTCHA recibido en el backend: {captcha_response}")
 
         # 📌 Validar reCAPTCHA antes de autenticar al usuario
         if not self.verify_recaptcha(captcha_response):
@@ -851,6 +852,7 @@ class CustomAuthToken(TokenObtainPairSerializer):
         data = {"secret": secret_key, "response": captcha_response}
         response = requests.post(url, data=data)
         result = response.json()
+        print(f"🔹 Respuesta de Google reCAPTCHA: {result}")
         return result.get("success", False)
 
 
