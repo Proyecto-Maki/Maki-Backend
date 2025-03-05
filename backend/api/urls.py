@@ -11,6 +11,21 @@ urlpatterns = [
         membership_webhook,
         name="membership_webhook",
     ),
+    path(
+        "api/mercadopago/webhook_cuidado/",
+        mercadopago_webhook_cuidado,
+        name="mercadopago_webhook_cuidado",
+    ),
+    path(
+        "api/mercadopago/preference/donar/",
+        create_preference_donar,
+        name="create_preference_donar",
+    ),
+    path(
+        "api/mercadopago/create_preference_cuidado/",
+        create_preference_cuidado,
+        name="create_preference_cuidado",
+    ),
     path("create_preference/", create_preference, name="create_preference"),
     path(
         "create_membership_preference/",
@@ -325,9 +340,9 @@ urlpatterns = [
     path("cuidador/<int:id>/", CuidadorDetailView.as_view(), name="cuidador_detail"),
     # Solicitudes de cuidado
     path(
-        "solicitud-cuidado/create/",
+        "solicitudes_cuidado/",
         SolicitudCuidadoCreateView.as_view(),
-        name="solicitud_cuidado_create",
+        name="solicitudes-cuidado",
     ),
     path(
         "mis-solicitudes-cuidado/<email>/",
@@ -355,6 +370,7 @@ urlpatterns = [
         name="cancelar_solicitud_cuidado",
     ),
     # Donaciones
+    path("donaciones/", CrearDonacionView.as_view(), name="crear_donacion"),
     path(
         "donaciones-recibidas/<email>/",
         DonacionesFundacionView.as_view(),

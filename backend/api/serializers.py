@@ -843,7 +843,7 @@ class PadecimientoSerializer(serializers.ModelSerializer):
 class ResenaSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(read_only=True)
     email = serializers.EmailField(write_only=True)
-    object_id = serializers.IntegerField(write_only=True)  
+    object_id = serializers.IntegerField(write_only=True)
     content_type = serializers.PrimaryKeyRelatedField(
         queryset=ContentType.objects.all()
     )
@@ -1300,31 +1300,38 @@ class SolicitudCuidadoSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(write_only=True)
     id_mascota = serializers.IntegerField(write_only=True)
     id_cuidador = serializers.IntegerField(write_only=True)
-    fecha_inicio = serializers.DateTimeField()
-    fecha_fin = serializers.DateTimeField()
+    id_cliente = serializers.PrimaryKeyRelatedField(
+        queryset=Cliente.objects.all(),
+        source="cliente",
+        write_only=True,
+    )
+    fecha_inicio = serializers.DateTimeField(write_only=True)
+    fecha_fin = serializers.DateTimeField(write_only=True)
     descripcion = serializers.CharField(max_length=500)
     is_cuidado_especial = serializers.BooleanField()
-    costo = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
+    costo = serializers.DecimalField(
+        max_digits=10, decimal_places=2
+    )  # Asegúrate de que este campo esté definido correctamente
     horas_cuidado = serializers.IntegerField()
+
     mascota = MascotaSerializer(read_only=True)
     cuidador = CuidadorSerializer(read_only=True)
-    cliente = ClienteSerializer(read_only=True)
+    cliente = serializers.StringRelatedField(read_only=True)
 
     class Meta:
         model = SolicitudCuidado
         fields = [
             "id",
             "email",
+            "id_cliente",
             "id_mascota",
             "id_cuidador",
             "fecha_inicio",
             "fecha_fin",
-            "descripcion",
-            "is_cuidado_especial",
-            "costo",
-            "fecha_solicitud",
-            "fecha_actualizacion",
             "horas_cuidado",
+            "is_cuidado_especial",
+            "descripcion",
+            "costo",
             "estado",
             "mascota",
             "cuidador",
@@ -1342,14 +1349,20 @@ class SolicitudCuidadoSerializer(serializers.ModelSerializer):
         email = self.validated_data["email"]
         id_mascota = self.validated_data["id_mascota"]
 
-        cliente = Cliente.objects.get(user__email=email)
-        mascota = Mascota.objects.get(id=id_mascota)
+        try:
+            mascota = Mascota.objects.get(id=id_mascota)
+        except Mascota.DoesNotExist:
+            raise serializers.ValidationError(
+                {"detail": "La mascota no existe", "code": "invalid_mascota"}
+            )
 
-        if SolicitudCuidado.objects.filter(cliente=cliente, mascota=mascota).exists():
+        try:
+            cliente = Cliente.objects.get(user__email=email)
+        except Cliente.DoesNotExist:
             raise serializers.ValidationError(
                 {
-                    "detail": "Ya has solicitado este cuidado",
-                    "code": "duplicate_request",
+                    "detail": "No se encontró un Cliente asociado a este email",
+                    "code": "invalid_cliente",
                 }
             )
 
@@ -1367,7 +1380,10 @@ class SolicitudCuidadoSerializer(serializers.ModelSerializer):
         fecha_fin = self.validated_data["fecha_fin"]
         descripcion = self.validated_data["descripcion"]
         is_cuidado_especial = self.validated_data["is_cuidado_especial"]
-        print(costo)
+        horas_cuidado = self.validated_data["horas_cuidado"]
+        costo = self.validated_data["costo"]
+        estado = "Pendiente"
+
         if costo <= 0.0:
             raise serializers.ValidationError(
                 {
@@ -1375,58 +1391,21 @@ class SolicitudCuidadoSerializer(serializers.ModelSerializer):
                     "code": "invalid_cost",
                 }
             )
-        costo = self.validated_data["costo"]
-        horas_cuidado = self.validated_data["horas_cuidado"]
-        estado = "Pendiente"
 
-        if fecha_inicio > fecha_fin:
-            raise serializers.ValidationError(
-                {
-                    "detail": "La fecha de inicio no puede ser mayor a la fecha de fin",
-                    "code": "invalid_dates",
-                }
-            )
+        solicitud_cuidado = SolicitudCuidado.objects.create(
+            cliente=cliente,
+            mascota=mascota,
+            cuidador=cuidador,
+            fecha_inicio=fecha_inicio,
+            fecha_fin=fecha_fin,
+            descripcion=descripcion,
+            is_cuidado_especial=is_cuidado_especial,
+            costo=costo,
+            fecha_solicitud=timezone.now(),
+            estado=estado,
+        )
 
-        if fecha_inicio < timezone.now():
-            raise serializers.ValidationError(
-                {
-                    "detail": "La fecha de inicio no puede ser menor a la fecha actual",
-                    "code": "invalid_dates",
-                }
-            )
-
-        if fecha_fin < timezone.now():
-            raise serializers.ValidationError(
-                {
-                    "detail": "La fecha de fin no puede ser menor a la fecha actual",
-                    "code": "invalid_dates",
-                }
-            )
-
-        if ((fecha_inicio == fecha_fin) and (horas_cuidado > 0)) or (
-            (fecha_inicio < fecha_fin) and (horas_cuidado == 24)
-        ):
-            solicitud_cuidado = SolicitudCuidado.objects.create(
-                cliente=cliente,
-                mascota=mascota,
-                cuidador=cuidador,
-                fecha_inicio=fecha_inicio,
-                fecha_fin=fecha_fin,
-                descripcion=descripcion,
-                is_cuidado_especial=is_cuidado_especial,
-                costo=costo,
-                fecha=timezone.now(),
-                estado=estado,
-            )
-
-            return solicitud_cuidado
-        else:
-            raise serializers.ValidationError(
-                {
-                    "detail": "No es posible crear la solicitud de cuidado con las fechas y horas seleccionadas",
-                    "code": "invalid_hours",
-                }
-            )
+        return solicitud_cuidado
 
 
 class SetEstadoSolicitudCuidadoSerializer(serializers.ModelSerializer):

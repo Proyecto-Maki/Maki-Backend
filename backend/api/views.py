@@ -1,3 +1,4 @@
+import logging
 import os
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, authenticate
@@ -10,12 +11,14 @@ from .permissions import IsClienteUser, IsFundacionUser
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework import exceptions
+from rest_framework import status
 from django.utils.timezone import now
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 from .utils import generate_random_code
 from datetime import timedelta
 from django.utils import timezone
+from django.test import RequestFactory
 
 from django.contrib.auth.decorators import login_required
 
@@ -49,6 +52,199 @@ import json
 
 
 sdk = mercadopago.SDK(os.getenv("MERCADO_PAGO_ACCESS_TOKEN"))
+
+
+@csrf_exempt
+def create_preference_donar(request):
+    if request.method == "POST":
+        sdk = mercadopago.SDK(settings.MERCADO_PAGO_ACCESS_TOKEN)
+
+        try:
+            body = json.loads(request.body)
+
+            # Configurar datos de la preferencia sin validaciones
+            preference_data = {
+                "items": [
+                    {
+                        "title": f"Donación",
+                        "quantity": 1,
+                        "currency_id": "COP",
+                        "unit_price": float(
+                            body.get("monto", 10000)
+                        ),  # Default a $10,000 si no llega monto
+                    }
+                ],
+                "back_urls": {
+                    "success": "https://makishop.live/success",
+                    "failure": "https://makishop.live/failure",
+                    "pending": "https://makishop.live/pending",
+                },
+                "auto_return": "approved",
+                "notification_url": "https://backend.makishop.live/api/mercadopago/webhook/",
+            }
+
+            preference_response = sdk.preference().create(preference_data)
+            preference = preference_response["response"]
+
+            return JsonResponse({"init_point": preference.get("init_point")})
+
+        except Exception as e:
+            return JsonResponse({"error": "Error al crear la preferencia"}, status=500)
+
+    return JsonResponse({"error": "Método no permitido"}, status=405)
+
+
+@csrf_exempt
+def create_preference_cuidado(request):
+    if request.method == "POST":
+        sdk = mercadopago.SDK(settings.MERCADO_PAGO_ACCESS_TOKEN)
+
+        try:
+            body = json.loads(request.body)
+
+            user_id = body.get("user_id")
+            mascota_id = body.get("mascota_id")
+            cuidador_id = body.get("cuidador_id")
+            total = body.get("total")
+
+            if not user_id or not mascota_id or not cuidador_id or not total:
+                return JsonResponse({"error": "Faltan datos obligatorios"}, status=400)
+
+            preference_data = {
+                "items": [
+                    {
+                        "title": "Servicio de Cuidado de Mascotas",
+                        "quantity": 1,
+                        "unit_price": float(total),
+                        "currency_id": "COP",
+                    }
+                ],
+                "payer": {
+                    "email": body.get("email"),
+                },
+                "back_urls": {
+                    "success": "https://makishop.live/cuidado/success",
+                    "failure": "https://makishop.live/cuidado/failure",
+                    "pending": "https://makishop.live/cuidado/pending",
+                },
+                "auto_return": "approved",
+                "notification_url": "https://backend.makishop.live/api/mercadopago/webhook_cuidado/",
+                "metadata": {
+                    "user_id": str(user_id),
+                    "mascota_id": str(mascota_id),
+                    "cuidador_id": str(cuidador_id),
+                },
+            }
+
+            preference_response = sdk.preference().create(preference_data)
+            preference = preference_response["response"]
+
+            return JsonResponse(
+                {
+                    "id": preference.get("id"),
+                    "init_point": preference.get("init_point"),
+                }
+            )
+
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=500)
+
+    return JsonResponse({"error": "Método no permitido"}, status=405)
+
+
+@csrf_exempt
+def mercadopago_webhook_cuidado(request):
+    if request.method == "POST":
+        try:
+            sdk = mercadopago.SDK(settings.MERCADO_PAGO_ACCESS_TOKEN)
+            raw_data = request.body.decode("utf-8")
+            print(f"📌 Webhook recibido: {raw_data}")
+
+            data = json.loads(raw_data)
+            payment_id = data.get("data", {}).get("id")
+            if not payment_id:
+                print("⚠️ No se recibió un ID de pago válido")
+                return JsonResponse({"error": "ID de pago no válido"}, status=400)
+
+            payment = sdk.payment().get(payment_id)
+            payment_status = payment["response"]["status"]
+            metadata = payment["response"].get("metadata", {})
+
+            user_id = metadata.get("user_id")
+            cliente = Cliente.objects.filter(user__id=user_id).first()
+            if not cliente:
+                print(f"⚠️ No se encontró un Cliente para el User ID {user_id}")
+                return JsonResponse({"error": "Cliente no encontrado"}, status=400)
+
+            mascota_id = metadata.get("mascota_id")
+            if mascota_id is None:
+                print("⚠️ `mascota_id` no está presente en metadata:", metadata)
+                return JsonResponse(
+                    {"error": "mascota_id no encontrado en metadata"}, status=400
+                )
+
+            cuidador_id = metadata.get("cuidador_id")
+            if not cuidador_id:
+                print("⚠️ `cuidador_id` no está presente en metadata:", metadata)
+                return JsonResponse(
+                    {"error": "cuidador_id no encontrado en metadata"}, status=400
+                )
+
+            if not user_id or not mascota_id or not cuidador_id:
+                print(
+                    f"⚠️ Error: Falta user_id ({user_id}), mascota_id ({mascota_id}), o cuidador_id ({cuidador_id}) en metadata."
+                )
+                return JsonResponse({"error": "Faltan datos en metadata"}, status=400)
+
+            total = payment["response"]["transaction_amount"]
+
+            if payment_status == "approved":
+                print(f"✔ Creando solicitud de cuidado para User {user_id}")
+
+                factory = RequestFactory()
+
+                request_data = {
+                    "email": cliente.user.email,
+                    "id_cliente": cliente.id,
+                    "id_mascota": mascota_id,
+                    "id_cuidador": cuidador_id,
+                    "fecha_solicitud": timezone.now().isoformat(),
+                    "fecha_inicio": timezone.now().isoformat(),
+                    "fecha_fin": timezone.now().isoformat(),
+                    "horas_cuidado": 0,
+                    "is_cuidado_especial": False,
+                    "descripcion": "Pago aprobado en Mercado Pago.",
+                    "costo": total,
+                    "estado": "Pendiente",
+                }
+
+                print(f"📌 Enviando datos a la API: {request_data}")
+
+                request_fake = factory.post(
+                    "/solicitud-cuidado/create/",
+                    data=json.dumps(request_data),
+                    content_type="application/json",
+                )
+
+                response = SolicitudCuidadoCreateView.as_view()(request_fake)
+
+                if response.status_code == status.HTTP_201_CREATED:
+                    print("✅ Solicitud creada exitosamente")
+                    return JsonResponse(
+                        {"message": "Solicitud de cuidado creada exitosamente."},
+                        status=201,
+                    )
+                else:
+                    print(f"⚠ Error en la creación de solicitud: {response.data}")
+                    return JsonResponse({"error": response.data}, status=400)
+
+            return JsonResponse({"message": "Pago no aprobado"}, status=200)
+
+        except Exception as e:
+            print(f"⚠️ Error inesperado en el Webhook: {str(e)}")
+            return JsonResponse({"error": str(e)}, status=500)
+
+    return JsonResponse({"error": "Método no permitido"}, status=405)
 
 
 @csrf_exempt
@@ -370,6 +566,8 @@ def mercadopago_webhook(request):
 
 from django.db import transaction
 
+logger = logging.getLogger(__name__)
+
 
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
@@ -381,6 +579,7 @@ def pagar_con_saldo_maki(request):
         carrito = get_object_or_404(
             Carrito, codigo=codigo_carrito, user=user, pagado=False
         )
+
         total_pedido = sum(
             item.producto.precio * item.cantidad for item in carrito.items.all()
         )
@@ -389,16 +588,22 @@ def pagar_con_saldo_maki(request):
             return Response({"error": "Saldo insuficiente"}, status=400)
 
         with transaction.atomic():
+            # Verifica que el saldo se actualiza correctamente
             user.saldo -= total_pedido
             user.save()
 
             pedido = Pedido.objects.create(
                 user=user, total=total_pedido, estado="Preparación"
             )
+
             for item in carrito.items.all():
+                if item.producto.stock < item.cantidad:
+                    raise ValueError(f"Stock insuficiente para {item.producto.nombre}")
+
                 DetallePedido.objects.create(
                     pedido=pedido, producto=item.producto, cantidad=item.cantidad
                 )
+
                 item.producto.stock -= item.cantidad
                 item.producto.save()
 
@@ -410,7 +615,8 @@ def pagar_con_saldo_maki(request):
         )
 
     except Exception as e:
-        return Response({"error": str(e)}, status=500)
+        logger.error(f"Error en el pago con saldo: {e}")
+        return Response({"error": f"Error interno: {str(e)}"}, status=500)
 
 
 @api_view(["GET"])
@@ -1363,7 +1569,9 @@ class ResenaProductoCreateView(generics.ListCreateAPIView):
         email = data.get("email")
         user = get_object_or_404(User, email=email)
 
-        if Resena.objects.filter(content_type=content_type, object_id=producto_id, user=user).exists():
+        if Resena.objects.filter(
+            content_type=content_type, object_id=producto_id, user=user
+        ).exists():
             return Response(
                 {
                     "error": "Ya has creado una reseña para este producto",
@@ -1424,7 +1632,9 @@ class ResenaCuidadorCreateView(generics.ListCreateAPIView):
         email = data.get("email")
         user = get_object_or_404(User, email=email)
 
-        if Resena.objects.filter(content_type=content_type, object_id=cuidador_id, user=user).exists():
+        if Resena.objects.filter(
+            content_type=content_type, object_id=cuidador_id, user=user
+        ).exists():
             return Response(
                 {
                     "error": "Ya has creado una reseña para este cuidador",
@@ -2536,29 +2746,50 @@ class CancelarSolicitudCuidado(APIView):
         )
 
 
+# class SolicitudCuidadoCreateView(generics.ListCreateAPIView):
+#     queryset = SolicitudCuidado.objects.all()
+#     permission_classes = [permissions.IsAuthenticated, IsClienteUser]
+#     serializer_class = SolicitudCuidadoSerializer
+
+
+from rest_framework.permissions import AllowAny
+
+
+from rest_framework.permissions import AllowAny
+
+
 class SolicitudCuidadoCreateView(generics.ListCreateAPIView):
     queryset = SolicitudCuidado.objects.all()
-    permission_classes = [permissions.IsAuthenticated & IsClienteUser]
     serializer_class = SolicitudCuidadoSerializer
+    permission_classes = [AllowAny]  # 🔹 Permitimos acceso al webhook sin autenticación
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            solicitud = serializer.save()
 
-            # Envio de correo de solicitud de cuidado
+            # Datos de la solicitud
             solicitud_id = serializer.data["id"]
-            email = serializer.data["cliente"]["user"]["email"]
-            mascota_nombre = serializer.data["mascota"]["nombre"]
-            fecha_solicitud = serializer.data["fecha_solicitud"]
-            fecha_inicio = serializer.data["fecha_inicio"]
-            fecha_fin = serializer.data["fecha_fin"]
-            horas_cuidado = serializer.data["horas_cuidado"]
-            is_cuidado_especial = serializer.data["is_cuidado_especial"]
-            descripcion = serializer.data["descripcion"]
-            costo = money_format(serializer.data["costo"])
-            estado = serializer.data["estado"]
-            nombre_cuidador = f"{serializer.data['cuidador']['primer_nombre']} {serializer.data['cuidador']['segundo_nombre'] or ''} {serializer.data['cuidador']['primer_apellido']} {serializer.data['cuidador']['segundo_apellido'] or ''}"
+            email = (
+                serializer.data.get("cliente", {})
+                .get("user", {})
+                .get("email", "No disponible")
+            )
+            mascota_nombre = serializer.data.get("mascota", {}).get(
+                "nombre", "No disponible"
+            )
+            fecha_solicitud = serializer.data.get("fecha_solicitud", "No disponible")
+            fecha_inicio = serializer.data.get("fecha_inicio", "No disponible")
+            fecha_fin = serializer.data.get("fecha_fin", "No disponible")
+            horas_cuidado = serializer.data.get("horas_cuidado", 0)
+            is_cuidado_especial = serializer.data.get("is_cuidado_especial", False)
+            descripcion = serializer.data.get("descripcion", "No disponible")
+            costo = money_format(serializer.data.get("costo", 0))
+            estado = serializer.data.get("estado", "Pendiente")
+
+            # Verificar si el cuidador tiene información completa
+            cuidador = serializer.data.get("cuidador", {})
+            nombre_cuidador = f"{cuidador.get('primer_nombre', '')} {cuidador.get('segundo_nombre', '')} {cuidador.get('primer_apellido', '')} {cuidador.get('segundo_apellido', '')}".strip()
 
             try:
                 send_care_email(
@@ -2576,11 +2807,11 @@ class SolicitudCuidadoCreateView(generics.ListCreateAPIView):
                     nombre_cuidador,
                 )
             except Exception as e:
+                print(f"⚠️ Error al enviar correo: {e}")
                 return Response(
                     {
-                        "error": "Ha ocurrido un error al enviar el correo de solicitud de cuidado",
-                        "detail": "Ha ocurrido un error al enviar el correo de solicitud de cuidado."
-                        + str(e),
+                        "error": "Error al enviar correo",
+                        "detail": str(e),
                     },
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 )
@@ -2591,16 +2822,50 @@ class SolicitudCuidadoCreateView(generics.ListCreateAPIView):
                 },
                 status=status.HTTP_201_CREATED,
             )
+
         return Response(
             {
                 "error": serializer.errors,
-                "message": "Ha ocurrido un error al enviar la solicitud de cuidado",
+                "message": "Error al enviar la solicitud de cuidado",
             },
             status=status.HTTP_400_BAD_REQUEST,
         )
 
 
 ## DONACIONES
+
+
+class CrearDonacionView(APIView):
+    permission_classes = [permissions.IsAuthenticated & IsClienteUser]
+
+    def post(self, request):
+        print("Datos recibidos en la solicitud:", request.data)  # <-- Depuración
+
+        cliente_email = request.data.get("cliente_email")
+        fundacion_id = request.data.get("fundacion_id")
+        tarjeta_tipo = request.data.get("tarjeta_tipo")
+
+        if not cliente_email or not fundacion_id or not tarjeta_tipo:
+            return Response(
+                {"error": "Faltan campos requeridos."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            cliente = get_object_or_404(Cliente, user__email=cliente_email)
+            fundacion = get_object_or_404(Fundacion, id=fundacion_id)
+            tarjeta = get_object_or_404(Tarjeta, tipo=tarjeta_tipo)
+
+            donacion = Donacion.objects.create(
+                cliente=cliente, fundacion=fundacion, tarjeta=tarjeta
+            )
+
+            return Response(
+                DonacionSerializer(donacion).data, status=status.HTTP_201_CREATED
+            )
+
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
 # Donaciones de clientes
