@@ -795,11 +795,27 @@ class VerificarCodigo(generics.GenericAPIView):
             )
 
 
+import requests
+from django.conf import settings
+from django.contrib.auth import authenticate
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from rest_framework import exceptions
+from django.utils.timezone import now
+
+
 class CustomAuthToken(TokenObtainPairSerializer):
     username_field = "email"
 
     def validate(self, attrs):
         credentials = {"email": attrs.get("email"), "password": attrs.get("password")}
+        captcha_response = self.context["request"].data.get("captcha")
+        print(f"🔹 CAPTCHA recibido en el backend: {captcha_response}")
+
+        # 📌 Validar reCAPTCHA antes de autenticar al usuario
+        if not self.verify_recaptcha(captcha_response):
+            raise exceptions.AuthenticationFailed(
+                "Captcha inválido. Inténtalo de nuevo."
+            )
 
         user = authenticate(**credentials)
         if user:
@@ -814,7 +830,7 @@ class CustomAuthToken(TokenObtainPairSerializer):
 
             data = {}
             refresh = self.get_token(user)
-            data["id"] = user.id  # Enviar `user_id`
+            data["id"] = user.id
             data["email"] = user.email
             data["is_cliente"] = user.is_cliente
             data["is_fundacion"] = user.is_fundacion
@@ -828,6 +844,16 @@ class CustomAuthToken(TokenObtainPairSerializer):
             raise exceptions.AuthenticationFailed(
                 "No es posible iniciar sesión con esas credenciales."
             )
+
+    def verify_recaptcha(self, captcha_response):
+        """Verifica el CAPTCHA con Google reCAPTCHA"""
+        secret_key = settings.RECAPTCHA_SECRET_KEY
+        url = "https://www.google.com/recaptcha/api/siteverify"
+        data = {"secret": secret_key, "response": captcha_response}
+        response = requests.post(url, data=data)
+        result = response.json()
+        print(f"🔹 Respuesta de Google reCAPTCHA: {result}")
+        return result.get("success", False)
 
 
 class CustomTokenObtainPairView(TokenObtainPairView):
