@@ -446,6 +446,16 @@ class ClienteSignupSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {"detail": "Ya existe un usuario con este correo"}
             )
+        
+        if Cliente.objects.filter(cedula=self.validated_data["cedula"]).exists():
+            raise serializers.ValidationError(
+                {"detail": "Ya existe un cliente con esta cédula"}
+            ) 
+        
+        if User.objects.filter(telefono=self.validated_data["telefono"]).exists():
+            raise serializers.ValidationError(
+                {"detail": "Ya existe un usuario con este teléfono"}
+            )
 
         # Crear el usuario
         user = User(
@@ -569,6 +579,17 @@ class FundacionSignupSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {"detail": "Ya existe un usuario con este correo"}
             )
+        
+        if Fundacion.objects.filter(nit=self.validated_data["nit"]).exists():
+            raise serializers.ValidationError(
+                {"detail": "Ya existe una fundación con este NIT"}
+            )
+        
+        if User.objects.filter(telefono=self.validated_data["telefono"]).exists():
+            raise serializers.ValidationError(
+                {"detail": "Ya existe un usuario con este teléfono"}
+            )
+        
 
         if password != password2:
             raise serializers.ValidationError(
