@@ -215,7 +215,7 @@ STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 
 # MERCADO_PAGO_ACCESS_TOKEN = os.getenv("MERCADO_PAGO_ACCESS_TOKEN")
 MERCADO_PAGO_ACCESS_TOKEN = (
-    "TEST-4763199278464528-012513-40fb4eff60dd346888c1b003f27412d2-199627328"
+    os.getenv("MERCADO_PAGO_ACCESS_TOKEN")
 )
 
 
@@ -225,13 +225,12 @@ ALLOWED_HOSTS = [
     "127.0.0.1",
     "localhost",
     #"maki-backend-production.up.railway.app",
-    "backend.makishop.live",
+    os.getenv("BACKEND_URL"),
 ]
 
 CSRF_TRUSTED_ORIGINS = [
     # "http://*",
-    # "https://maki-backend-production.up.railway.app",
-    "https://backend.makishop.live",
+    f"https://{os.getenv("BACKEND_URL")}",
 ]
 
 AUTH_USER_MODEL = "api.User"
