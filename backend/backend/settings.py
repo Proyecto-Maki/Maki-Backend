@@ -48,9 +48,6 @@ SECRET_KEY = os.getenv("SECRET_KEY")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv("DEBUG")
 
-# ALLOWED_HOSTS = ["*"]
-
-
 # Application definition
 
 INSTALLED_APPS = [
@@ -72,12 +69,6 @@ INSTALLED_APPS = [
     "corsheaders",
     "drf_yasg",
 ]
-
-# REST_FRAMEWORK = {
-#     'DEFAULT_AUTHENTICATION_CLASSES': [
-#         'rest_framework.authentication.TokenAuthentication',
-#     ],
-# }
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
@@ -134,10 +125,7 @@ WSGI_APPLICATION = "backend.wsgi.application"
 
 print(os.getenv("DATABASE_URL"))
 DATABASES = {
-    # 'default': {
-    #     'ENGINE': 'django.db.backends.sqlite3',
-    #     'NAME': BASE_DIR / 'db.sqlite3',
-    # }
+
     "default": dj_database_url.config(default=os.getenv("DATABASE_URL"))
 }
 
@@ -178,15 +166,9 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 
-# MEDIA_ROOT = os.path.join(os.path.dirname(BASE_DIR), 'mediafiles')
-MEDIA_URL = "/media/"  # or any prefix you choose
-# DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 
-# CLOUDINARY_STORAGE = {
-#     'CLOUD_NAME': os.getenv("CLOUD_NAME"),
-#     'API_KEY': os.getenv("CLOUD_API_KEY"),
-#     'API_SECRET':  os.getenv("CLOUD_API_SECRET"),
-# }
+MEDIA_URL = "/media/"  # or any prefix you choose
+
 
 cloudinary.config(
     cloud_name=os.getenv("CLOUD_NAME"),
@@ -227,7 +209,6 @@ full_backend_url = f"https://{backend_url}"
 ALLOWED_HOSTS = [
     "127.0.0.1",
     "localhost",
-    #"maki-backend-production.up.railway.app",
     backend_url,
 ]
 
@@ -240,14 +221,5 @@ AUTH_USER_MODEL = "api.User"
 
 SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY")
 
-# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-# # EMAIL_HOST = 'sandbox.smtp.mailtrap.io'
-
-# EMAIL_HOST = 'smtp.sendgrid.net'
-# #EMAIL_HOST = 'smtp.gmail.com'
-# EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
-# EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
-# EMAIL_PORT = '2525'
-# EMAIL_PORT = '587'
 DEFAULT_FROM_EMAIL = "makishopmanagement@gmail.com"
-# EMAIL_USE_TLS = True
+
