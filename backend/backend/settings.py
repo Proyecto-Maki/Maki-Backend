@@ -48,7 +48,7 @@ SECRET_KEY = os.getenv("SECRET_KEY")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv("DEBUG")
 
-ALLOWED_HOSTS = ["*"]
+# ALLOWED_HOSTS = ["*"]
 
 
 # Application definition
@@ -224,13 +224,13 @@ STATICFILES_STORAGE = "django.contrib.staticfiles.storage.ManifestStaticFilesSto
 ALLOWED_HOSTS = [
     "127.0.0.1",
     "localhost",
-    "maki-backend-production.up.railway.app",
+    #"maki-backend-production.up.railway.app",
     "backend.makishop.live",
 ]
 
 CSRF_TRUSTED_ORIGINS = [
-    "http://*",
-    "https://maki-backend-production.up.railway.app",
+    # "http://*",
+    # "https://maki-backend-production.up.railway.app",
     "https://backend.makishop.live",
 ]
 
