@@ -221,16 +221,19 @@ MERCADO_PAGO_ACCESS_TOKEN = (
 
 STATICFILES_STORAGE = "django.contrib.staticfiles.storage.ManifestStaticFilesStorage"
 
+backend_url = os.getenv("BACKEND_URL")
+full_backend_url = f"https://{backend_url}"
+
 ALLOWED_HOSTS = [
     "127.0.0.1",
     "localhost",
     #"maki-backend-production.up.railway.app",
-    os.getenv("BACKEND_URL"),
+    backend_url,
 ]
 
 CSRF_TRUSTED_ORIGINS = [
     # "http://*",
-    f"https://{os.getenv("BACKEND_URL")}",
+    full_backend_url,
 ]
 
 AUTH_USER_MODEL = "api.User"
